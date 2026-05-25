@@ -1,0 +1,20 @@
+# Front-controller rewrite — every request goes through public/index.php
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # Pass real files (CSS/JS/images/uploads) through directly
+    RewriteCond %{REQUEST_FILENAME} -f [OR]
+    RewriteCond %{REQUEST_FILENAME} -d
+    RewriteRule ^ - [L]
+
+    # Everything else -> index.php
+    RewriteRule ^ index.php [L]
+</IfModule>
+
+# Don't list directories
+Options -Indexes
+
+# Don't expose .env, schema.sql, app/, etc. (defence in depth — public/ is doc-root anyway)
+<FilesMatch "\.(env|sql|md|yml|yaml|lock|json|log)$">
+    Require all denied
+</FilesMatch>

@@ -1,0 +1,24 @@
+# Local env (do not commit real secrets)
+.env
+
+# OS / editor noise
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*.bak
+*~
+.idea/
+.vscode/
+
+# User uploads — they live on the deploy volume, not in git
+public/uploads/avatars/*
+public/uploads/blog/*
+public/uploads/site/*
+!public/uploads/avatars/.gitkeep
+!public/uploads/blog/.gitkeep
+!public/uploads/site/.gitkeep
+
+# PHP composer (if added later)
+/vendor/
+composer.phar

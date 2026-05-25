@@ -1,0 +1,53 @@
+# Local dev & "single-stack" Coolify deploy (web + db on one host).
+# For Coolify production with a managed DB, deploy just the `web` service
+# and point DB_HOST/DB_USERNAME/DB_PASSWORD at the managed instance.
+
+services:
+  web:
+    build: .
+    container_name: spiritual2_web
+    restart: unless-stopped
+    ports:
+      - "8080:80"
+    environment:
+      APP_NAME: "${APP_NAME:-Spiritual Matrimony}"
+      APP_URL: "${APP_URL:-http://localhost:8080}"
+      APP_ENV: "${APP_ENV:-production}"
+      APP_DEBUG: "${APP_DEBUG:-false}"
+      APP_TIMEZONE: "${APP_TIMEZONE:-Asia/Kolkata}"
+      DB_HOST: "${DB_HOST:-db}"
+      DB_PORT: "${DB_PORT:-3306}"
+      DB_DATABASE: "${DB_DATABASE:-spiritual}"
+      DB_USERNAME: "${DB_USERNAME:-spiritual}"
+      DB_PASSWORD: "${DB_PASSWORD:-spiritual_pw}"
+    volumes:
+      - uploads:/var/www/html/public/uploads
+    depends_on:
+      db:
+        condition: service_healthy
+    networks: [spiritual]
+
+  db:
+    image: mariadb:11
+    container_name: spiritual2_db
+    restart: unless-stopped
+    environment:
+      MARIADB_DATABASE:       "${DB_DATABASE:-spiritual}"
+      MARIADB_USER:           "${DB_USERNAME:-spiritual}"
+      MARIADB_PASSWORD:       "${DB_PASSWORD:-spiritual_pw}"
+      MARIADB_ROOT_PASSWORD:  "${DB_ROOT_PASSWORD:-rootpw_change_me}"
+    volumes:
+      - dbdata:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    networks: [spiritual]
+
+volumes:
+  dbdata:
+  uploads:
+
+networks:
+  spiritual:
