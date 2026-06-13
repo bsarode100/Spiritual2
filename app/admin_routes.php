@@ -67,6 +67,24 @@ $r->post('/admin/users/{id}/delete', $admin(function ($a) {
     redirect('/admin/users');
 }));
 
+// Generate a single-use password reset link admin can share with the member
+// (useful when email delivery fails — common on cheap shared hosting).
+$r->post('/admin/users/{id}/reset-link', $admin(function ($a) {
+    $u = DB::one('SELECT id, email FROM users WHERE id = ?', [$a['id']]);
+    if (!$u) { http_response_code(404); view('errors/404'); return; }
+    $token = bin2hex(random_bytes(32));
+    DB::insert('password_resets', [
+        'user_id'      => $u['id'],
+        'token_hash'   => hash('sha256', $token),
+        'expires_at'   => date('Y-m-d H:i:s', strtotime('+60 minutes')),
+        'requested_ip' => $_SERVER['REMOTE_ADDR'] ?? null,
+    ]);
+    $url = rtrim($GLOBALS['CFG']['app']['url'] ?? '', '/') . '/reset-password/' . $token;
+    // Stash the link in the flash so it renders once on the user page.
+    flash('success', 'Reset link generated (valid 60 min, single-use). Copy and send to the member:|' . $url);
+    redirect('/admin/users/' . (int)$a['id']);
+}));
+
 // ---------- BLOG ----------
 $r->get('/admin/blog', $admin(function () {
     $rows = DB::all('SELECT * FROM blog_posts ORDER BY id DESC');

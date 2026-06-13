@@ -10,7 +10,10 @@
         <input type="email" name="email" required autofocus>
     </div>
     <div class="field">
-        <label>Password</label>
+        <label style="display:flex; justify-content:space-between; align-items:baseline;">
+            <span>Password</span>
+            <a href="/forgot-password" style="font-weight:400; font-size:.88rem;">Forgot password?</a>
+        </label>
         <input type="password" name="password" required>
     </div>
     <button class="btn btn-primary btn-block btn-lg">Sign In</button>

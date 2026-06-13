@@ -37,7 +37,23 @@
     </aside>
 
     <main class="admin-main">
-        <?php if ($msg = flash('success')): ?><div class="flash flash-success"><?= e($msg) ?></div><?php endif; ?>
+        <?php if ($msg = flash('success')): ?>
+            <?php
+            // Flash messages with a "|URL" suffix render the URL as a copyable code block.
+            [$msgText, $msgUrl] = array_pad(explode('|', $msg, 2), 2, null);
+            ?>
+            <div class="flash flash-success">
+                <?= e($msgText) ?>
+                <?php if ($msgUrl): ?>
+                    <div style="margin-top: .75rem; display:flex; gap:.5rem; align-items:center;">
+                        <input type="text" value="<?= e($msgUrl) ?>" readonly onclick="this.select()"
+                               style="flex:1; padding:.5rem; border:1px solid var(--c-cream-2); border-radius:6px; font-family:monospace; font-size:.85rem;">
+                        <button type="button" class="btn btn-ghost btn-sm"
+                                onclick="navigator.clipboard.writeText('<?= e($msgUrl) ?>').then(()=>{this.textContent='Copied ✓'})">Copy</button>
+                    </div>
+                <?php endif; ?>
+            </div>
+        <?php endif; ?>
         <?php if ($msg = flash('error')):   ?><div class="flash flash-error"><?= e($msg)   ?></div><?php endif; ?>
         <?= $content ?>
     </main>

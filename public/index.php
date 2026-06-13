@@ -46,6 +46,19 @@ try {
 
 // Lightweight idempotent migrations for existing installs (additive only).
 try {
+    DB::pdo()->exec("CREATE TABLE IF NOT EXISTS `password_resets` (
+        `id`           BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+        `user_id`      BIGINT UNSIGNED NOT NULL,
+        `token_hash`   CHAR(64) NOT NULL,
+        `expires_at`   DATETIME NOT NULL,
+        `used_at`      DATETIME DEFAULT NULL,
+        `requested_ip` VARCHAR(45) DEFAULT NULL,
+        `created_at`   DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        PRIMARY KEY (`id`),
+        UNIQUE KEY `password_resets_token_unique` (`token_hash`),
+        KEY `password_resets_user_idx` (`user_id`)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+
     DB::pdo()->exec("CREATE TABLE IF NOT EXISTS `payments` (
         `id`                BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
         `user_id`           BIGINT UNSIGNED NOT NULL,

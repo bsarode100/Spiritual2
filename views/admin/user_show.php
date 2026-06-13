@@ -11,6 +11,17 @@
     <div class="info-row"><span class="k">Status</span><span class="v"><span class="pill <?= $u['status']==='active'?'green':'red' ?>"><?= e($u['status']) ?></span></span></div>
     <div class="info-row"><span class="k">Joined</span><span class="v"><?= date('F j, Y g:i a', strtotime($u['created_at'])) ?></span></div>
     <div class="info-row"><span class="k">Last Login</span><span class="v"><?= $u['last_login_at'] ? date('M j, Y g:i a', strtotime($u['last_login_at'])) : 'Never' ?></span></div>
+
+    <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--c-cream-2); display: flex; gap: .5rem; flex-wrap: wrap;">
+        <form method="post" action="/admin/users/<?= (int)$u['id'] ?>/reset-link" style="margin: 0;">
+            <?= csrf_field() ?>
+            <button class="btn btn-ghost btn-sm">🔑 Generate password reset link</button>
+        </form>
+        <form method="post" action="/admin/users/<?= (int)$u['id'] ?>/toggle" style="margin: 0;">
+            <?= csrf_field() ?>
+            <button class="btn btn-ghost btn-sm"><?= $u['status']==='blocked' ? 'Unblock' : 'Block' ?></button>
+        </form>
+    </div>
 </div>
 
 <?php if ($p): ?>

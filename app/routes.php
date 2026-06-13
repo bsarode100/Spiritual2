@@ -353,6 +353,114 @@ $r->post('/logout', function () {
 // also allow GET for convenience
 $r->get('/logout', function () { Auth::logout(); redirect('/'); });
 
+// ------------------- FORGOT / RESET PASSWORD -------------------
+$r->get('/forgot-password', function () {
+    if (Auth::check()) redirect('/dashboard');
+    view('auth/forgot', [], 'auth');
+});
+
+$r->post('/forgot-password', function () {
+    $email = trim($_POST['email'] ?? '');
+    // Always show the same response to avoid leaking which emails are registered.
+    $generic = 'If an account exists for that email, we have sent a password reset link. Please check your inbox (and spam folder).';
+
+    if (filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        $u = DB::one('SELECT id, name, email FROM users WHERE email = ? AND status != "blocked"', [$email]);
+        if ($u) {
+            // Rate-limit: max 3 active (unused, unexpired) tokens per user.
+            $active = (int) DB::val(
+                'SELECT COUNT(*) FROM password_resets WHERE user_id = ? AND used_at IS NULL AND expires_at > NOW()',
+                [$u['id']]
+            );
+            if ($active < 3) {
+                $token = bin2hex(random_bytes(32));      // 64 hex chars, sent in URL
+                $hash  = hash('sha256', $token);          // only the hash is stored
+                $ip    = $_SERVER['REMOTE_ADDR'] ?? null;
+                DB::insert('password_resets', [
+                    'user_id'      => $u['id'],
+                    'token_hash'   => $hash,
+                    'expires_at'   => date('Y-m-d H:i:s', strtotime('+60 minutes')),
+                    'requested_ip' => $ip,
+                ]);
+                send_password_reset_email($u, $token);
+            }
+        }
+    }
+    flash('success', $generic);
+    redirect('/forgot-password');
+});
+
+$r->get('/reset-password/{token}', function ($a) {
+    $row = find_valid_reset_token($a['token']);
+    if (!$row) {
+        flash('error', 'This reset link is invalid or has expired. Please request a new one.');
+        redirect('/forgot-password');
+    }
+    view('auth/reset', ['token' => $a['token']], 'auth');
+});
+
+$r->post('/reset-password/{token}', function ($a) {
+    $row = find_valid_reset_token($a['token']);
+    if (!$row) {
+        flash('error', 'This reset link is invalid or has expired. Please request a new one.');
+        redirect('/forgot-password');
+    }
+    $pass    = $_POST['password'] ?? '';
+    $confirm = $_POST['password_confirm'] ?? '';
+    if (strlen($pass) < 6) {
+        flash('error', 'Password must be at least 6 characters.');
+        redirect('/reset-password/' . $a['token']);
+    }
+    if ($pass !== $confirm) {
+        flash('error', 'Passwords do not match.');
+        redirect('/reset-password/' . $a['token']);
+    }
+
+    DB::update('users', ['password_hash' => password_hash($pass, PASSWORD_BCRYPT)], ['id' => $row['user_id']]);
+    DB::update('password_resets', ['used_at' => date('Y-m-d H:i:s')], ['id' => $row['id']]);
+    // Invalidate any other outstanding tokens for this user — a successful reset closes the window.
+    DB::q('UPDATE password_resets SET used_at = NOW() WHERE user_id = ? AND used_at IS NULL', [$row['user_id']]);
+
+    flash('success', 'Password updated. Please sign in with your new password.');
+    redirect('/login');
+});
+
+// Helper: look up an unused, unexpired token by its plain value. Returns the row or null.
+function find_valid_reset_token(string $token): ?array {
+    if (!preg_match('/^[a-f0-9]{64}$/', $token)) return null;
+    $hash = hash('sha256', $token);
+    return DB::one(
+        'SELECT * FROM password_resets WHERE token_hash = ? AND used_at IS NULL AND expires_at > NOW() LIMIT 1',
+        [$hash]
+    );
+}
+
+// Helper: send the reset email via PHP mail(). Best-effort — fails silently if mail() is unavailable.
+function send_password_reset_email(array $user, string $token): void {
+    $appUrl  = rtrim($GLOBALS['CFG']['app']['url'] ?? '', '/');
+    $siteName = setting('site_name', 'Spiritual Matrimony');
+    $supportEmail = setting('contact_email', 'no-reply@' . ($_SERVER['SERVER_NAME'] ?? 'localhost'));
+    $link = $appUrl . '/reset-password/' . $token;
+
+    $subject = "Reset your {$siteName} password";
+    $body = "Namaste {$user['name']},\n\n"
+          . "We received a request to reset the password for your {$siteName} account.\n\n"
+          . "Reset link (valid for 60 minutes, single-use):\n"
+          . $link . "\n\n"
+          . "If you did not request this, simply ignore this email — your password will not change.\n\n"
+          . "With sincerity,\n"
+          . $siteName . " team\n";
+
+    $headers = [
+        'From: ' . $siteName . ' <' . $supportEmail . '>',
+        'Reply-To: ' . $supportEmail,
+        'MIME-Version: 1.0',
+        'Content-Type: text/plain; charset=UTF-8',
+        'X-Mailer: ' . $siteName,
+    ];
+    @mail($user['email'], $subject, $body, implode("\r\n", $headers));
+}
+
 // ------------------- MEMBER DASHBOARD -------------------
 $r->get('/dashboard', function () {
     Auth::require();
