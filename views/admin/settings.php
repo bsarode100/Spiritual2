@@ -7,6 +7,7 @@ $groups = [
     'Stats'       => ['stat_members','stat_marriages','stat_paths','stat_countries'],
     'Contact'     => ['contact_email','contact_phone','contact_address'],
     'Social'      => ['social_facebook','social_instagram','social_youtube'],
+    'Payments'    => ['payment_payee_name','payment_upi_id','payment_upi_qr_url','payment_bank_name','payment_account_name','payment_account_number','payment_ifsc','payment_branch','payment_contact_phone','payment_contact_email','payment_instructions'],
 ];
 $lookup = [];
 foreach ($rows as $r) $lookup[$r['setting_key']] = $r['setting_value'];
@@ -15,7 +16,10 @@ $known = array_merge(...array_values($groups));
 $extras = array_diff(array_keys($lookup), $known);
 if ($extras) $groups['Other'] = array_values($extras);
 ?>
-<div class="admin-head"><h1>Site Settings</h1></div>
+<div class="admin-head">
+    <h1>Site Settings</h1>
+    <a href="/admin/payment-details" class="btn btn-ghost btn-sm">💳 Dedicated Payment Details editor →</a>
+</div>
 <form method="post" action="/admin/settings">
     <?= csrf_field() ?>
     <?php foreach ($groups as $group => $keys): ?>
@@ -23,7 +27,7 @@ if ($extras) $groups['Other'] = array_values($extras);
             <h3><?= e($group) ?></h3>
             <?php foreach ($keys as $k):
                 $v = $lookup[$k] ?? '';
-                $isLong = in_array($k, ['hero_subheading','footer_about','about_short','contact_address']);
+                $isLong = in_array($k, ['hero_subheading','footer_about','about_short','contact_address','payment_instructions']);
             ?>
                 <div class="field">
                     <label><?= e(ucfirst(str_replace('_',' ', $k))) ?></label>

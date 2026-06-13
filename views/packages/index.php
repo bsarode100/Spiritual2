@@ -31,4 +31,8 @@
             </div>
         <?php endforeach; ?>
     </div>
+
+    <div class="text-center" style="margin-top: 3rem;">
+        <p style="color: var(--c-ink-soft);">Ready to upgrade? See <a href="/payment-details"><strong>payment details &rarr;</strong></a> for our UPI ID and bank account.</p>
+    </div>
 </div></section>

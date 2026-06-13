@@ -269,6 +269,46 @@ $r->post('/admin/settings', $admin(function () {
     redirect('/admin/settings');
 }));
 
+// ---------- PAYMENT DETAILS ----------
+// Dedicated page for UPI ID, bank account, QR image and contact info. Stored
+// in site_settings under payment_* keys so the public /payment-details page
+// and footer/setting() helper can read them with no extra schema.
+$PAYMENT_KEYS = [
+    'payment_payee_name',
+    'payment_upi_id',
+    'payment_upi_qr_url',
+    'payment_bank_name',
+    'payment_account_name',
+    'payment_account_number',
+    'payment_ifsc',
+    'payment_branch',
+    'payment_contact_phone',
+    'payment_contact_email',
+    'payment_instructions',
+];
+
+$r->get('/admin/payment-details', $admin(function () use ($PAYMENT_KEYS) {
+    $values = [];
+    foreach ($PAYMENT_KEYS as $k) {
+        $values[$k] = (string) DB::val('SELECT setting_value FROM site_settings WHERE setting_key = ?', [$k]);
+    }
+    view('admin/payment_details', ['values' => $values], 'admin');
+}));
+
+$r->post('/admin/payment-details', $admin(function () use ($PAYMENT_KEYS) {
+    foreach ($PAYMENT_KEYS as $k) {
+        $v = trim((string)($_POST[$k] ?? ''));
+        $exists = DB::val('SELECT 1 FROM site_settings WHERE setting_key = ?', [$k]);
+        if ($exists) {
+            DB::update('site_settings', ['setting_value' => $v], ['setting_key' => $k]);
+        } else {
+            DB::insert('site_settings', ['setting_key' => $k, 'setting_value' => $v]);
+        }
+    }
+    flash('success','Payment details saved. Members will see them on /payment-details.');
+    redirect('/admin/payment-details');
+}));
+
 // ---------- CONTACT MESSAGES ----------
 $r->get('/admin/messages', $admin(function () {
     $rows = DB::all('SELECT * FROM contact_messages ORDER BY created_at DESC');

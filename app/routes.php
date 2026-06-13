@@ -27,6 +27,24 @@ $r->get('/about',   function () { $page = DB::one("SELECT * FROM pages WHERE slu
 $r->get('/privacy', function () { $page = DB::one("SELECT * FROM pages WHERE slug='privacy'"); view('page', ['page' => $page]); });
 $r->get('/terms',   function () { $page = DB::one("SELECT * FROM pages WHERE slug='terms'");   view('page', ['page' => $page]); });
 
+// ------------------- PAYMENT DETAILS (public) -------------------
+$r->get('/payment-details', function () {
+    $details = [
+        'payee_name'      => setting('payment_payee_name', ''),
+        'upi_id'          => setting('payment_upi_id', ''),
+        'upi_qr_url'      => setting('payment_upi_qr_url', ''),
+        'bank_name'       => setting('payment_bank_name', ''),
+        'account_name'    => setting('payment_account_name', ''),
+        'account_number'  => setting('payment_account_number', ''),
+        'ifsc'            => setting('payment_ifsc', ''),
+        'branch'          => setting('payment_branch', ''),
+        'contact_phone'   => setting('payment_contact_phone', ''),
+        'contact_email'   => setting('payment_contact_email', ''),
+        'instructions'    => setting('payment_instructions', ''),
+    ];
+    view('payment_details', ['details' => $details]);
+});
+
 // ------------------- CONTACT -------------------
 $r->get('/contact', function () { view('contact'); });
 

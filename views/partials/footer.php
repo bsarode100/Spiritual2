@@ -38,6 +38,7 @@
                 <ul>
                     <li><a href="/about">Our Story</a></li>
                     <li><a href="/contact">Contact</a></li>
+                    <li><a href="/payment-details">Payment Details</a></li>
                     <li><a href="/privacy">Privacy</a></li>
                     <li><a href="/terms">Terms</a></li>
                 </ul>
