@@ -44,6 +44,39 @@ try {
     DB::q("UPDATE users SET password_hash = ? WHERE role = 'member'", [$mem]);
 }
 
+// Lightweight idempotent migrations for existing installs (additive only).
+try {
+    DB::pdo()->exec("CREATE TABLE IF NOT EXISTS `payments` (
+        `id`                BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+        `user_id`           BIGINT UNSIGNED NOT NULL,
+        `package_id`        BIGINT UNSIGNED NOT NULL,
+        `gateway`           VARCHAR(40) NOT NULL DEFAULT 'razorpay',
+        `gateway_order_id`  VARCHAR(120) DEFAULT NULL,
+        `gateway_payment_id`VARCHAR(120) DEFAULT NULL,
+        `gateway_signature` VARCHAR(255) DEFAULT NULL,
+        `amount`            DECIMAL(10,2) NOT NULL DEFAULT 0,
+        `currency`          VARCHAR(8) NOT NULL DEFAULT 'INR',
+        `status`            ENUM('created','paid','failed','refunded') NOT NULL DEFAULT 'created',
+        `notes`             TEXT,
+        `subscription_id`   BIGINT UNSIGNED DEFAULT NULL,
+        `created_at`        DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        `updated_at`        DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        PRIMARY KEY (`id`),
+        KEY `payments_user_idx` (`user_id`),
+        KEY `payments_order_idx` (`gateway_order_id`)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+
+    foreach ([
+        'razorpay_enabled'        => '0',
+        'razorpay_mode'           => 'test',
+        'razorpay_key_id'         => '',
+        'razorpay_key_secret'     => '',
+        'razorpay_webhook_secret' => '',
+    ] as $k => $v) {
+        DB::q("INSERT IGNORE INTO site_settings (setting_key, setting_value) VALUES (?, ?)", [$k, $v]);
+    }
+} catch (Throwable $e) { /* harmless on first install */ }
+
 csrf_check();
 
 $r = new Router();

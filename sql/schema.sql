@@ -247,6 +247,30 @@ CREATE TABLE `site_settings` (
   PRIMARY KEY (`setting_key`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- ---------- PAYMENTS (Razorpay) ----------
+DROP TABLE IF EXISTS `payments`;
+CREATE TABLE `payments` (
+  `id`                BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `user_id`           BIGINT UNSIGNED NOT NULL,
+  `package_id`        BIGINT UNSIGNED NOT NULL,
+  `gateway`           VARCHAR(40) NOT NULL DEFAULT 'razorpay',
+  `gateway_order_id`  VARCHAR(120) DEFAULT NULL,
+  `gateway_payment_id`VARCHAR(120) DEFAULT NULL,
+  `gateway_signature` VARCHAR(255) DEFAULT NULL,
+  `amount`            DECIMAL(10,2) NOT NULL DEFAULT 0,
+  `currency`          VARCHAR(8) NOT NULL DEFAULT 'INR',
+  `status`            ENUM('created','paid','failed','refunded') NOT NULL DEFAULT 'created',
+  `notes`             TEXT,
+  `subscription_id`   BIGINT UNSIGNED DEFAULT NULL,
+  `created_at`        DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at`        DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `payments_user_idx` (`user_id`),
+  KEY `payments_order_idx` (`gateway_order_id`),
+  CONSTRAINT `payments_user_fk` FOREIGN KEY (`user_id`)    REFERENCES `users`    (`id`) ON DELETE CASCADE,
+  CONSTRAINT `payments_pkg_fk`  FOREIGN KEY (`package_id`) REFERENCES `packages` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 -- ---------- CONTACT MESSAGES ----------
 DROP TABLE IF EXISTS `contact_messages`;
 CREATE TABLE `contact_messages` (
@@ -326,7 +350,13 @@ INSERT INTO `site_settings` (`setting_key`,`setting_value`) VALUES
 ('payment_branch',''),
 ('payment_contact_phone',''),
 ('payment_contact_email','hello@spiritualmatrimony.com'),
-('payment_instructions','After completing the payment via UPI or bank transfer, share the transaction reference and your registered email with our support team. Your premium plan will be activated within 24 hours.');
+('payment_instructions','After completing the payment via UPI or bank transfer, share the transaction reference and your registered email with our support team. Your premium plan will be activated within 24 hours.'),
+-- Razorpay gateway (editable from /admin/razorpay). Keep `razorpay_enabled` = 0 until you've pasted real keys.
+('razorpay_enabled','0'),
+('razorpay_mode','test'),
+('razorpay_key_id',''),
+('razorpay_key_secret',''),
+('razorpay_webhook_secret','');
 
 -- Default packages
 INSERT INTO `packages` (`name`,`tagline`,`price`,`currency`,`duration_days`,`contacts_limit`,`features`,`highlighted`,`display_order`) VALUES

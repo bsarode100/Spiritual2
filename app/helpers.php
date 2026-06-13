@@ -64,6 +64,10 @@ function csrf_field(): string {
 
 function csrf_check(): void {
     if ($_SERVER['REQUEST_METHOD'] !== 'POST') return;
+    // Webhook endpoints are authenticated via gateway HMAC signatures, not CSRF.
+    $path = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?: '/';
+    $exempt = ['/razorpay/webhook', '/checkout/verify'];
+    if (in_array($path, $exempt, true)) return;
     if (!hash_equals($_SESSION['csrf'] ?? '', $_POST['_csrf'] ?? '')) {
         http_response_code(419);
         echo 'CSRF token mismatch. <a href="/">Go home</a>.';

@@ -25,6 +25,7 @@
             <li><a href="/admin/stories"  class="<?= str_contains($cur,'/admin/stories') ? 'is-active' : '' ?>">💞 Happy Stories</a></li>
             <li><a href="/admin/packages" class="<?= str_contains($cur,'/admin/packages') ? 'is-active' : '' ?>">💎 Packages</a></li>
             <li><a href="/admin/payment-details" class="<?= str_contains($cur,'/admin/payment-details') ? 'is-active' : '' ?>">💳 Payment Details</a></li>
+            <li><a href="/admin/razorpay" class="<?= str_contains($cur,'/admin/razorpay') ? 'is-active' : '' ?>">🪙 Razorpay Gateway</a></li>
             <li><a href="/admin/pages"    class="<?= str_contains($cur,'/admin/pages') ? 'is-active' : '' ?>">📄 Pages</a></li>
             <li><a href="/admin/settings" class="<?= str_contains($cur,'/admin/settings') ? 'is-active' : '' ?>">⚙️ Site Settings</a></li>
             <li><a href="/admin/messages" class="<?= str_contains($cur,'/admin/messages') ? 'is-active' : '' ?>">✉️ Contact Messages</a></li>

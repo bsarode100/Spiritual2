@@ -235,8 +235,34 @@ $r->get('/admin/pages', $admin(function () {
     view('admin/pages_index', ['rows' => $rows], 'admin');
 }));
 
+$r->get('/admin/pages/new', $admin(function () {
+    view('admin/pages_form', ['page' => null], 'admin');
+}));
+
+$r->post('/admin/pages', $admin(function () {
+    $slug = slugify(trim($_POST['slug'] ?? '') ?: ($_POST['title'] ?? ''));
+    $title = trim($_POST['title'] ?? '');
+    if (!$slug || !$title) {
+        flash('error', 'Title and slug are required.');
+        redirect('/admin/pages/new');
+    }
+    if (DB::val('SELECT 1 FROM pages WHERE slug = ?', [$slug])) {
+        flash('error', "A page with slug '{$slug}' already exists.");
+        redirect('/admin/pages/new');
+    }
+    DB::insert('pages', [
+        'slug'      => $slug,
+        'title'     => $title,
+        'body'      => $_POST['body'] ?? '',
+        'published' => isset($_POST['published']) ? 1 : 0,
+    ]);
+    flash('success', "Page created. Live at /page/{$slug}");
+    redirect('/admin/pages');
+}));
+
 $r->get('/admin/pages/{id}/edit', $admin(function ($a) {
     $page = DB::one('SELECT * FROM pages WHERE id = ?', [$a['id']]);
+    if (!$page) { http_response_code(404); view('errors/404'); return; }
     view('admin/pages_form', ['page' => $page], 'admin');
 }));
 
@@ -247,6 +273,19 @@ $r->post('/admin/pages/{id}', $admin(function ($a) {
         'published' => isset($_POST['published']) ? 1 : 0,
     ], ['id' => $a['id']]);
     flash('success','Page updated.');
+    redirect('/admin/pages');
+}));
+
+$r->post('/admin/pages/{id}/delete', $admin(function ($a) {
+    $p = DB::one('SELECT slug FROM pages WHERE id = ?', [$a['id']]);
+    // Protect the four pages with hard-coded short URLs (/about, /privacy, /terms, /contact)
+    $protected = ['about','privacy','terms','contact'];
+    if ($p && in_array($p['slug'], $protected, true)) {
+        flash('error', "The '{$p['slug']}' page is built-in and cannot be deleted (you can unpublish it instead).");
+    } else {
+        DB::q('DELETE FROM pages WHERE id = ?', [$a['id']]);
+        flash('success','Page deleted.');
+    }
     redirect('/admin/pages');
 }));
 
@@ -307,6 +346,38 @@ $r->post('/admin/payment-details', $admin(function () use ($PAYMENT_KEYS) {
     }
     flash('success','Payment details saved. Members will see them on /payment-details.');
     redirect('/admin/payment-details');
+}));
+
+// ---------- RAZORPAY ----------
+$RAZORPAY_KEYS = ['razorpay_enabled','razorpay_mode','razorpay_key_id','razorpay_key_secret','razorpay_webhook_secret'];
+
+$r->get('/admin/razorpay', $admin(function () use ($RAZORPAY_KEYS) {
+    $values = [];
+    foreach ($RAZORPAY_KEYS as $k) {
+        $values[$k] = (string) DB::val('SELECT setting_value FROM site_settings WHERE setting_key = ?', [$k]);
+    }
+    $recent = DB::all("SELECT p.*, u.name AS user_name, u.email AS user_email, pk.name AS package_name
+                       FROM payments p
+                       LEFT JOIN users u ON u.id = p.user_id
+                       LEFT JOIN packages pk ON pk.id = p.package_id
+                       ORDER BY p.created_at DESC LIMIT 25");
+    view('admin/razorpay', ['values' => $values, 'recent' => $recent], 'admin');
+}));
+
+$r->post('/admin/razorpay', $admin(function () use ($RAZORPAY_KEYS) {
+    foreach ($RAZORPAY_KEYS as $k) {
+        $v = trim((string)($_POST[$k] ?? ''));
+        if ($k === 'razorpay_enabled') $v = isset($_POST[$k]) ? '1' : '0';
+        if ($k === 'razorpay_mode')    $v = in_array($v, ['test','live'], true) ? $v : 'test';
+        $exists = DB::val('SELECT 1 FROM site_settings WHERE setting_key = ?', [$k]);
+        if ($exists) {
+            DB::update('site_settings', ['setting_value' => $v], ['setting_key' => $k]);
+        } else {
+            DB::insert('site_settings', ['setting_key' => $k, 'setting_value' => $v]);
+        }
+    }
+    flash('success','Razorpay settings saved.');
+    redirect('/admin/razorpay');
 }));
 
 // ---------- CONTACT MESSAGES ----------

@@ -81,7 +81,200 @@ $r->get('/blog/{slug}', function ($a) {
 // ------------------- PACKAGES -------------------
 $r->get('/packages', function () {
     $packages = DB::all('SELECT * FROM packages WHERE is_active = 1 ORDER BY display_order, id');
-    view('packages/index', ['packages' => $packages]);
+    $rzp_enabled = setting('razorpay_enabled') === '1'
+                && setting('razorpay_key_id') !== ''
+                && setting('razorpay_key_secret') !== '';
+    view('packages/index', ['packages' => $packages, 'rzp_enabled' => $rzp_enabled]);
+});
+
+// ------------------- CHECKOUT (Razorpay) -------------------
+$r->get('/checkout/{id}', function ($a) {
+    Auth::require();
+    $pkg = DB::one('SELECT * FROM packages WHERE id = ? AND is_active = 1', [$a['id']]);
+    if (!$pkg) { http_response_code(404); view('errors/404'); return; }
+    if ((float)$pkg['price'] <= 0) {
+        flash('success', 'You are already on the free plan.');
+        redirect('/dashboard');
+    }
+
+    $enabled = setting('razorpay_enabled') === '1';
+    $keyId   = setting('razorpay_key_id');
+    $secret  = setting('razorpay_key_secret');
+    if (!$enabled || !$keyId || !$secret) {
+        flash('error', 'Online payment is currently unavailable. Please use UPI/bank details on /payment-details.');
+        redirect('/payment-details');
+    }
+
+    // Create Razorpay order
+    $amountPaise = (int) round((float)$pkg['price'] * 100);
+    $receipt = 'spm_' . Auth::id() . '_' . time();
+    $payload = [
+        'amount'   => $amountPaise,
+        'currency' => $pkg['currency'] ?: 'INR',
+        'receipt'  => $receipt,
+        'notes'    => [
+            'user_id'    => (string) Auth::id(),
+            'package_id' => (string) $pkg['id'],
+        ],
+    ];
+
+    $ch = curl_init('https://api.razorpay.com/v1/orders');
+    curl_setopt_array($ch, [
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_POST           => true,
+        CURLOPT_USERPWD        => $keyId . ':' . $secret,
+        CURLOPT_HTTPHEADER     => ['Content-Type: application/json'],
+        CURLOPT_POSTFIELDS     => json_encode($payload),
+        CURLOPT_TIMEOUT        => 30,
+    ]);
+    $resp = curl_exec($ch);
+    $http = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    curl_close($ch);
+
+    if ($http !== 200 || !$resp) {
+        flash('error', 'Could not start checkout. Please try again or use UPI/bank transfer.');
+        redirect('/packages');
+    }
+    $order = json_decode($resp, true);
+    if (empty($order['id'])) {
+        flash('error', 'Razorpay order creation failed. Please try again.');
+        redirect('/packages');
+    }
+
+    DB::insert('payments', [
+        'user_id'          => Auth::id(),
+        'package_id'       => (int)$pkg['id'],
+        'gateway'          => 'razorpay',
+        'gateway_order_id' => $order['id'],
+        'amount'           => $pkg['price'],
+        'currency'         => $pkg['currency'] ?: 'INR',
+        'status'           => 'created',
+        'notes'            => json_encode($payload['notes']),
+    ]);
+
+    view('checkout/razorpay', [
+        'pkg'      => $pkg,
+        'order'    => $order,
+        'key_id'   => $keyId,
+        'user'     => Auth::user(),
+    ], null);
+});
+
+$r->post('/checkout/verify', function () {
+    Auth::require();
+    $orderId   = $_POST['razorpay_order_id']   ?? '';
+    $paymentId = $_POST['razorpay_payment_id'] ?? '';
+    $signature = $_POST['razorpay_signature']  ?? '';
+
+    if (!$orderId || !$paymentId || !$signature) {
+        flash('error', 'Missing payment details. If money was deducted, contact support — we will activate manually.');
+        redirect('/checkout/failed');
+    }
+
+    $secret = setting('razorpay_key_secret');
+    $expected = hash_hmac('sha256', $orderId . '|' . $paymentId, $secret);
+
+    $pmt = DB::one('SELECT * FROM payments WHERE gateway_order_id = ? AND user_id = ?', [$orderId, Auth::id()]);
+    if (!$pmt) {
+        flash('error', 'Payment record not found.');
+        redirect('/checkout/failed');
+    }
+
+    if (!hash_equals($expected, $signature)) {
+        DB::update('payments', [
+            'gateway_payment_id' => $paymentId,
+            'gateway_signature'  => $signature,
+            'status'             => 'failed',
+        ], ['id' => $pmt['id']]);
+        flash('error', 'Payment signature mismatch — payment marked failed for safety. If money was deducted, contact support.');
+        redirect('/checkout/failed');
+    }
+
+    // Idempotent: if already paid (webhook fired first), don't double-activate
+    if ($pmt['status'] === 'paid' && $pmt['subscription_id']) {
+        redirect('/checkout/success?p=' . (int)$pmt['id']);
+    }
+
+    $pkg = DB::one('SELECT * FROM packages WHERE id = ?', [$pmt['package_id']]);
+    $subId = DB::insert('subscriptions', [
+        'user_id'    => $pmt['user_id'],
+        'package_id' => $pmt['package_id'],
+        'starts_at'  => date('Y-m-d H:i:s'),
+        'ends_at'    => date('Y-m-d H:i:s', strtotime('+' . (int)$pkg['duration_days'] . ' days')),
+        'status'     => 'active',
+        'payment_ref'=> $paymentId,
+        'amount'     => $pmt['amount'],
+    ]);
+
+    DB::update('payments', [
+        'gateway_payment_id' => $paymentId,
+        'gateway_signature'  => $signature,
+        'status'             => 'paid',
+        'subscription_id'    => $subId,
+    ], ['id' => $pmt['id']]);
+
+    redirect('/checkout/success?p=' . (int)$pmt['id']);
+});
+
+$r->get('/checkout/success', function () {
+    Auth::require();
+    $pid = (int)($_GET['p'] ?? 0);
+    $pmt = DB::one('SELECT p.*, pk.name AS package_name, pk.duration_days
+                    FROM payments p LEFT JOIN packages pk ON pk.id = p.package_id
+                    WHERE p.id = ? AND p.user_id = ?', [$pid, Auth::id()]);
+    view('checkout/success', ['pmt' => $pmt]);
+});
+
+$r->get('/checkout/failed', function () {
+    Auth::require();
+    view('checkout/failed');
+});
+
+// ------------------- RAZORPAY WEBHOOK -------------------
+$r->post('/razorpay/webhook', function () {
+    $secret = setting('razorpay_webhook_secret');
+    if (!$secret) { http_response_code(400); echo 'webhook secret not configured'; return; }
+
+    $body = file_get_contents('php://input');
+    $sig  = $_SERVER['HTTP_X_RAZORPAY_SIGNATURE'] ?? '';
+    $expected = hash_hmac('sha256', $body, $secret);
+    if (!hash_equals($expected, $sig)) {
+        http_response_code(401); echo 'invalid signature'; return;
+    }
+
+    $event = json_decode($body, true);
+    $type  = $event['event'] ?? '';
+
+    if ($type === 'payment.captured') {
+        $p = $event['payload']['payment']['entity'] ?? [];
+        $orderId   = $p['order_id'] ?? '';
+        $paymentId = $p['id'] ?? '';
+        $pmt = DB::one('SELECT * FROM payments WHERE gateway_order_id = ?', [$orderId]);
+        if ($pmt && $pmt['status'] !== 'paid') {
+            $pkg = DB::one('SELECT * FROM packages WHERE id = ?', [$pmt['package_id']]);
+            $subId = DB::insert('subscriptions', [
+                'user_id'    => $pmt['user_id'],
+                'package_id' => $pmt['package_id'],
+                'starts_at'  => date('Y-m-d H:i:s'),
+                'ends_at'    => date('Y-m-d H:i:s', strtotime('+' . (int)$pkg['duration_days'] . ' days')),
+                'status'     => 'active',
+                'payment_ref'=> $paymentId,
+                'amount'     => $pmt['amount'],
+            ]);
+            DB::update('payments', [
+                'gateway_payment_id' => $paymentId,
+                'status'             => 'paid',
+                'subscription_id'    => $subId,
+            ], ['id' => $pmt['id']]);
+        }
+    } elseif ($type === 'payment.failed') {
+        $p = $event['payload']['payment']['entity'] ?? [];
+        $orderId = $p['order_id'] ?? '';
+        DB::q('UPDATE payments SET status = "failed", gateway_payment_id = ? WHERE gateway_order_id = ? AND status = "created"',
+              [$p['id'] ?? '', $orderId]);
+    }
+
+    http_response_code(200); echo 'ok';
 });
 
 // ------------------- HAPPY STORIES -------------------
