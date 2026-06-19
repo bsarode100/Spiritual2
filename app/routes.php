@@ -23,9 +23,11 @@ $r->get('/page/{slug}', function ($a) {
     view('page', ['page' => $page]);
 });
 
-$r->get('/about',   function () { $page = DB::one("SELECT * FROM pages WHERE slug='about'");   view('page', ['page' => $page]); });
-$r->get('/privacy', function () { $page = DB::one("SELECT * FROM pages WHERE slug='privacy'"); view('page', ['page' => $page]); });
-$r->get('/terms',   function () { $page = DB::one("SELECT * FROM pages WHERE slug='terms'");   view('page', ['page' => $page]); });
+$r->get('/about',          function () { $page = DB::one("SELECT * FROM pages WHERE slug='about'");          view('page', ['page' => $page]); });
+$r->get('/privacy',        function () { $page = DB::one("SELECT * FROM pages WHERE slug='privacy'");        view('page', ['page' => $page]); });
+$r->get('/terms',          function () { $page = DB::one("SELECT * FROM pages WHERE slug='terms'");          view('page', ['page' => $page]); });
+$r->get('/refund-policy',  function () { $page = DB::one("SELECT * FROM pages WHERE slug='refund-policy'");  view('page', ['page' => $page]); });
+$r->get('/cookies',        function () { $page = DB::one("SELECT * FROM pages WHERE slug='cookie-policy'");  view('page', ['page' => $page]); });
 
 // ------------------- PAYMENT DETAILS (public) -------------------
 $r->get('/payment-details', function () {
@@ -323,6 +325,11 @@ $r->post('/register', function () {
         flash('error', 'Please fill all fields. Password must be at least 6 characters.');
         redirect('/register');
     }
+    // Legal consent — client-side checkbox can be bypassed, so re-check here.
+    if (empty($_POST['agree'])) {
+        flash('error', 'Please accept the Terms, Privacy Policy, Refund Policy and Cookie Policy to continue.');
+        redirect('/register');
+    }
     if (DB::val('SELECT 1 FROM users WHERE email = ?', [$email])) {
         flash('error', 'An account with this email already exists.');
         redirect('/register');
@@ -353,7 +360,7 @@ $r->post('/logout', function () {
 // also allow GET for convenience
 $r->get('/logout', function () { Auth::logout(); redirect('/'); });
 
-// ------------------- FORGOT / RESET PASSWORD -------------------
+// ------------------- FORGOT / RESET PASSWORD (Email OTP) -------------------
 $r->get('/forgot-password', function () {
     if (Auth::check()) redirect('/dashboard');
     view('auth/forgot', [], 'auth');
@@ -361,92 +368,160 @@ $r->get('/forgot-password', function () {
 
 $r->post('/forgot-password', function () {
     $email = trim($_POST['email'] ?? '');
-    // Always show the same response to avoid leaking which emails are registered.
-    $generic = 'If an account exists for that email, we have sent a password reset link. Please check your inbox (and spam folder).';
+    $generic = 'If an account exists for that email, we have sent a 6-digit code. Please check your inbox (and spam folder).';
 
     if (filter_var($email, FILTER_VALIDATE_EMAIL)) {
         $u = DB::one('SELECT id, name, email FROM users WHERE email = ? AND status != "blocked"', [$email]);
         if ($u) {
-            // Rate-limit: max 3 active (unused, unexpired) tokens per user.
-            $active = (int) DB::val(
-                'SELECT COUNT(*) FROM password_resets WHERE user_id = ? AND used_at IS NULL AND expires_at > NOW()',
-                [$u['id']]
-            );
-            if ($active < 3) {
-                $token = bin2hex(random_bytes(32));      // 64 hex chars, sent in URL
-                $hash  = hash('sha256', $token);          // only the hash is stored
-                $ip    = $_SERVER['REMOTE_ADDR'] ?? null;
-                DB::insert('password_resets', [
-                    'user_id'      => $u['id'],
-                    'token_hash'   => $hash,
-                    'expires_at'   => date('Y-m-d H:i:s', strtotime('+60 minutes')),
-                    'requested_ip' => $ip,
-                ]);
-                send_password_reset_email($u, $token);
-            }
+            issue_password_otp($u);
         }
     }
+    // Carry the email into the verify step regardless, so the response is identical
+    // whether the email exists or not — avoids leaking which emails are registered.
+    $_SESSION['otp_email'] = $email;
     flash('success', $generic);
-    redirect('/forgot-password');
+    redirect('/verify-otp');
 });
 
-$r->get('/reset-password/{token}', function ($a) {
-    $row = find_valid_reset_token($a['token']);
+$r->get('/verify-otp', function () {
+    if (Auth::check()) redirect('/dashboard');
+    if (empty($_SESSION['otp_email'])) redirect('/forgot-password');
+    view('auth/verify_otp', ['email' => $_SESSION['otp_email']], 'auth');
+});
+
+$r->post('/verify-otp', function () {
+    if (empty($_SESSION['otp_email'])) redirect('/forgot-password');
+    $email = $_SESSION['otp_email'];
+    $otp   = preg_replace('/\D/', '', $_POST['otp'] ?? '');
+
+    if (strlen($otp) !== 6) {
+        flash('error', 'Please enter the 6-digit code from your email.');
+        redirect('/verify-otp');
+    }
+
+    $u = DB::one('SELECT id, name, email FROM users WHERE email = ? AND status != "blocked"', [$email]);
+    if (!$u) {
+        // Burn a moment of time even when the user doesn't exist, then show the same generic error
+        // a real wrong-code attempt would show — avoids being a probe oracle.
+        usleep(200000);
+        flash('error', 'Invalid or expired code. Please request a new one.');
+        redirect('/verify-otp');
+    }
+
+    $row = DB::one(
+        'SELECT * FROM password_resets
+         WHERE user_id = ? AND used_at IS NULL AND expires_at > NOW()
+         ORDER BY id DESC LIMIT 1',
+        [$u['id']]
+    );
+
     if (!$row) {
-        flash('error', 'This reset link is invalid or has expired. Please request a new one.');
+        flash('error', 'Invalid or expired code. Please request a new one.');
+        redirect('/verify-otp');
+    }
+    if ((int) $row['attempts'] >= 5) {
+        DB::update('password_resets', ['used_at' => date('Y-m-d H:i:s')], ['id' => $row['id']]);
+        flash('error', 'Too many wrong attempts. Please request a new code.');
         redirect('/forgot-password');
     }
-    view('auth/reset', ['token' => $a['token']], 'auth');
+
+    if (!hash_equals($row['otp_hash'], hash('sha256', $otp))) {
+        DB::q('UPDATE password_resets SET attempts = attempts + 1 WHERE id = ?', [$row['id']]);
+        flash('error', 'Invalid code. ' . (4 - (int) $row['attempts']) . ' attempts left.');
+        redirect('/verify-otp');
+    }
+
+    // Success: consume the OTP and authorize a short reset window via session.
+    DB::update('password_resets', ['used_at' => date('Y-m-d H:i:s')], ['id' => $row['id']]);
+    DB::q('UPDATE password_resets SET used_at = NOW() WHERE user_id = ? AND used_at IS NULL', [$u['id']]);
+    $_SESSION['reset_authorized_user_id'] = (int) $u['id'];
+    $_SESSION['reset_authorized_until']   = time() + 600; // 10 minutes to choose a password
+    unset($_SESSION['otp_email']);
+    redirect('/reset-password');
 });
 
-$r->post('/reset-password/{token}', function ($a) {
-    $row = find_valid_reset_token($a['token']);
-    if (!$row) {
-        flash('error', 'This reset link is invalid or has expired. Please request a new one.');
+$r->post('/resend-otp', function () {
+    if (empty($_SESSION['otp_email'])) redirect('/forgot-password');
+    $last = $_SESSION['otp_last_sent'] ?? 0;
+    if (time() - $last < 60) {
+        flash('error', 'Please wait a minute before requesting another code.');
+        redirect('/verify-otp');
+    }
+    $u = DB::one('SELECT id, name, email FROM users WHERE email = ? AND status != "blocked"', [$_SESSION['otp_email']]);
+    if ($u) issue_password_otp($u);
+    $_SESSION['otp_last_sent'] = time();
+    flash('success', 'If your email is registered, a fresh code has been sent.');
+    redirect('/verify-otp');
+});
+
+$r->get('/reset-password', function () {
+    if (!reset_session_valid()) {
+        flash('error', 'Your verification has expired. Please start again.');
+        redirect('/forgot-password');
+    }
+    view('auth/reset', [], 'auth');
+});
+
+$r->post('/reset-password', function () {
+    if (!reset_session_valid()) {
+        flash('error', 'Your verification has expired. Please start again.');
         redirect('/forgot-password');
     }
     $pass    = $_POST['password'] ?? '';
     $confirm = $_POST['password_confirm'] ?? '';
     if (strlen($pass) < 6) {
         flash('error', 'Password must be at least 6 characters.');
-        redirect('/reset-password/' . $a['token']);
+        redirect('/reset-password');
     }
     if ($pass !== $confirm) {
         flash('error', 'Passwords do not match.');
-        redirect('/reset-password/' . $a['token']);
+        redirect('/reset-password');
     }
 
-    DB::update('users', ['password_hash' => password_hash($pass, PASSWORD_BCRYPT)], ['id' => $row['user_id']]);
-    DB::update('password_resets', ['used_at' => date('Y-m-d H:i:s')], ['id' => $row['id']]);
-    // Invalidate any other outstanding tokens for this user — a successful reset closes the window.
-    DB::q('UPDATE password_resets SET used_at = NOW() WHERE user_id = ? AND used_at IS NULL', [$row['user_id']]);
+    $uid = (int) $_SESSION['reset_authorized_user_id'];
+    DB::update('users', ['password_hash' => password_hash($pass, PASSWORD_BCRYPT)], ['id' => $uid]);
+    unset($_SESSION['reset_authorized_user_id'], $_SESSION['reset_authorized_until'], $_SESSION['otp_last_sent']);
 
     flash('success', 'Password updated. Please sign in with your new password.');
     redirect('/login');
 });
 
-// Helper: look up an unused, unexpired token by its plain value. Returns the row or null.
-function find_valid_reset_token(string $token): ?array {
-    if (!preg_match('/^[a-f0-9]{64}$/', $token)) return null;
-    $hash = hash('sha256', $token);
-    return DB::one(
-        'SELECT * FROM password_resets WHERE token_hash = ? AND used_at IS NULL AND expires_at > NOW() LIMIT 1',
-        [$hash]
+// Issues a fresh OTP for the user, stores its hash, and sends the email.
+// Rate-limit: max 3 active (unused, unexpired) OTPs per user.
+function issue_password_otp(array $user): void {
+    $active = (int) DB::val(
+        'SELECT COUNT(*) FROM password_resets WHERE user_id = ? AND used_at IS NULL AND expires_at > NOW()',
+        [$user['id']]
     );
+    if ($active >= 3) return;
+
+    $otp  = str_pad((string) random_int(0, 999999), 6, '0', STR_PAD_LEFT);
+    $hash = hash('sha256', $otp);
+    DB::insert('password_resets', [
+        'user_id'      => $user['id'],
+        'otp_hash'     => $hash,
+        'expires_at'   => date('Y-m-d H:i:s', strtotime('+10 minutes')),
+        'requested_ip' => $_SERVER['REMOTE_ADDR'] ?? null,
+    ]);
+    send_password_reset_email($user, $otp);
 }
 
-// Helper: send the reset email via PHP mail(). Best-effort — fails silently if mail() is unavailable.
-function send_password_reset_email(array $user, string $token): void {
-    $appUrl  = rtrim($GLOBALS['CFG']['app']['url'] ?? '', '/');
+function reset_session_valid(): bool {
+    return !empty($_SESSION['reset_authorized_user_id'])
+        && !empty($_SESSION['reset_authorized_until'])
+        && time() < (int) $_SESSION['reset_authorized_until'];
+}
+
+// Helper: send the OTP email via PHP mail(). Best-effort — fails silently if mail() is unavailable.
+function send_password_reset_email(array $user, string $otp): void {
     $siteName = setting('site_name', 'Spiritual Matrimony');
     $supportEmail = setting('contact_email', 'no-reply@' . ($_SERVER['SERVER_NAME'] ?? 'localhost'));
-    $link = $appUrl . '/reset-password/' . $token;
 
-    $subject = "Reset your {$siteName} password";
+    $subject = "Your {$siteName} password reset code";
     $body = "Namaste {$user['name']},\n\n"
-          . "We received a request to reset the password for your {$siteName} account.\n\n"
-          . "Reset link (valid for 60 minutes, single-use):\n"
-          . $link . "\n\n"
+          . "Your password reset code is:\n\n"
+          . "    {$otp}\n\n"
+          . "This code is valid for 10 minutes and can be used only once. Do not share it with anyone — our team will never ask for it.\n\n"
           . "If you did not request this, simply ignore this email — your password will not change.\n\n"
           . "With sincerity,\n"
           . $siteName . " team\n";

@@ -1,6 +1,6 @@
 <div class="text-center mb-4">
     <h1 style="margin-bottom: .2em;">Forgot password?</h1>
-    <p style="color: var(--c-muted);">Enter your registered email and we'll send a reset link.</p>
+    <p style="color: var(--c-muted);">Enter your registered email and we'll send a 6-digit code.</p>
 </div>
 
 <form method="post" action="/forgot-password">
@@ -9,7 +9,7 @@
         <label>Email address</label>
         <input type="email" name="email" required autofocus placeholder="you@example.com">
     </div>
-    <button class="btn btn-primary btn-block btn-lg">Send reset link</button>
+    <button class="btn btn-primary btn-block btn-lg">Send 6-digit code</button>
 </form>
 
 <div class="small-link">

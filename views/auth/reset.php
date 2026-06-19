@@ -1,10 +1,9 @@
-<?php /** @var string $token */ ?>
 <div class="text-center mb-4">
     <h1 style="margin-bottom: .2em;">Set a new password</h1>
     <p style="color: var(--c-muted);">Choose a password you'll remember — at least 6 characters.</p>
 </div>
 
-<form method="post" action="/reset-password/<?= e($token) ?>">
+<form method="post" action="/reset-password">
     <?= csrf_field() ?>
     <div class="field">
         <label>New password</label>
