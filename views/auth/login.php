@@ -17,6 +17,11 @@
         <input type="password" name="password" required>
     </div>
     <button class="btn btn-primary btn-block btn-lg">Sign In</button>
+    <p style="margin-top: 1rem; font-size: .78rem; color: var(--c-ink-soft); line-height: 1.5; text-align: center;">
+        By signing in, you agree to our
+        <a href="/page/terms-and-condition" target="_blank" rel="noopener">Terms &amp; Conditions</a>
+        and <a href="/page/privacy-policy" target="_blank" rel="noopener">Privacy Policy</a>.
+    </p>
 </form>
 
 <div class="small-link">

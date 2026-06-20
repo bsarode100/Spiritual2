@@ -30,7 +30,13 @@
         </div>
 
         <button id="retry" class="btn btn-gold btn-lg" style="display:none;">Open Razorpay</button>
-        <p style="margin-top: 1.5rem;"><a href="/packages" style="color: var(--c-ink-soft);">← Cancel and go back</a></p>
+        <p style="margin-top: 1.5rem; font-size: .78rem; color: var(--c-ink-soft); line-height: 1.5;">
+            By proceeding with this payment you accept our
+            <a href="/page/terms-and-condition" target="_blank" rel="noopener">Terms &amp; Conditions</a>,
+            <a href="/refund-policy" target="_blank" rel="noopener">Refund &amp; Cancellation Policy</a>
+            and <a href="/page/privacy-policy" target="_blank" rel="noopener">Privacy Policy</a>.
+        </p>
+        <p style="margin-top: 1rem;"><a href="/packages" style="color: var(--c-ink-soft);">← Cancel and go back</a></p>
     </div>
 </div>
 

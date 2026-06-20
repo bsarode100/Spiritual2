@@ -26,6 +26,10 @@
                 <div class="field full"><label>Message</label><textarea name="message" rows="6" required></textarea></div>
             </div>
             <button class="btn btn-primary btn-lg">Send Message</button>
+            <p style="margin-top: 1rem; font-size: .8rem; color: var(--c-ink-soft);">
+                Your details are handled per our
+                <a href="/page/privacy-policy">Privacy Policy</a>. We will never share them with other members.
+            </p>
         </form>
     </div>
 </div></section>
