@@ -144,11 +144,13 @@ function send_transactional_mail(string $to, string $subject, string $body, ?str
     $from = ($cfg['from'] ?? '') ?: setting('contact_email', 'no-reply@' . ($_SERVER['SERVER_NAME'] ?? 'localhost'));
     $fromName = ($cfg['from_name'] ?? '') ?: $siteName;
     $replyTo = $replyTo ?: $from;
+    $GLOBALS['last_mail_error'] = null;
 
     if (strtolower((string)($cfg['mailer'] ?? 'mail')) === 'smtp' && !empty($cfg['host'])) {
         try {
             return smtp_send_mail($cfg, $from, $fromName, $to, $subject, $body, $replyTo);
         } catch (Throwable $e) {
+            $GLOBALS['last_mail_error'] = $e->getMessage();
             error_log('SMTP mail failed: ' . $e->getMessage());
             return false;
         }
@@ -161,7 +163,11 @@ function send_transactional_mail(string $to, string $subject, string $body, ?str
         'Content-Type: text/plain; charset=UTF-8',
         'X-Mailer: ' . $siteName,
     ];
-    return @mail($to, $subject, $body, implode("\r\n", $headers));
+    $sent = @mail($to, $subject, $body, implode("\r\n", $headers));
+    if (!$sent) {
+        $GLOBALS['last_mail_error'] = 'PHP mail() returned false.';
+    }
+    return $sent;
 }
 
 function smtp_send_mail(array $cfg, string $from, string $fromName, string $to, string $subject, string $body, string $replyTo): bool {

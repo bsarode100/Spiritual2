@@ -100,9 +100,10 @@ $r->post('/admin/test-mail', $admin(function () {
         "This is a test email from {$siteName}.\n\nIf you received this, SMTP email delivery is working.\n",
         setting('contact_email', $GLOBALS['CFG']['mail']['from'] ?? null)
     );
+    $error = $GLOBALS['last_mail_error'] ?? 'Unknown mail error.';
     flash($sent ? 'success' : 'error', $sent
         ? 'Test email sent to your admin email.'
-        : 'Test email failed. Check SMTP env values and server logs.');
+        : 'Test email failed: ' . $error);
     redirect('/admin');
 }));
 
