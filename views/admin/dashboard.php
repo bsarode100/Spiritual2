@@ -4,7 +4,13 @@
         <span class="eyebrow">Overview</span>
         <h1>Dashboard</h1>
     </div>
-    <span style="color: var(--c-muted);"><?= date('l, F j, Y') ?></span>
+    <div style="display: flex; align-items: center; gap: .75rem; flex-wrap: wrap;">
+        <form method="post" action="/admin/test-mail" style="margin: 0;">
+            <?= csrf_field() ?>
+            <button class="btn btn-ghost btn-sm">Send test email</button>
+        </form>
+        <span style="color: var(--c-muted);"><?= date('l, F j, Y') ?></span>
+    </div>
 </div>
 
 <div class="stat-cards mb-4">

@@ -344,7 +344,11 @@ $r->post('/register', function () {
         'created_at'      => time(),
     ];
     $_SESSION['signup_otp_email'] = $email;
-    issue_signup_otp($_SESSION['pending_signup']);
+    if (!issue_signup_otp($_SESSION['pending_signup'])) {
+        clear_signup_otp_session();
+        flash('error', 'Could not send the verification email. Please check SMTP settings or contact support.');
+        redirect('/register');
+    }
     $_SESSION['signup_otp_last_sent'] = time();
     flash('success', 'We sent a 6-digit code to your email. Enter it to create your account.');
     redirect('/verify-signup-otp');
@@ -432,7 +436,10 @@ $r->post('/resend-signup-otp', function () {
         flash('error', 'An account with this email already exists. Please sign in.');
         redirect('/login');
     }
-    issue_signup_otp($_SESSION['pending_signup']);
+    if (!issue_signup_otp($_SESSION['pending_signup'])) {
+        flash('error', 'Could not send the verification email. Please check SMTP settings or contact support.');
+        redirect('/verify-signup-otp');
+    }
     $_SESSION['signup_otp_last_sent'] = time();
     flash('success', 'A fresh signup code has been sent.');
     redirect('/verify-signup-otp');
@@ -457,8 +464,9 @@ $r->post('/forgot-password', function () {
 
     if (filter_var($email, FILTER_VALIDATE_EMAIL)) {
         $u = DB::one('SELECT id, name, email FROM users WHERE email = ? AND status != "blocked"', [$email]);
-        if ($u) {
-            issue_password_otp($u);
+        if ($u && !issue_password_otp($u)) {
+            flash('error', 'Could not send the verification email. Please check SMTP settings or contact support.');
+            redirect('/forgot-password');
         }
     }
     // Carry the email into the verify step regardless, so the response is identical
@@ -533,7 +541,10 @@ $r->post('/resend-otp', function () {
         redirect('/verify-otp');
     }
     $u = DB::one('SELECT id, name, email FROM users WHERE email = ? AND status != "blocked"', [$_SESSION['otp_email']]);
-    if ($u) issue_password_otp($u);
+    if ($u && !issue_password_otp($u)) {
+        flash('error', 'Could not send the verification email. Please check SMTP settings or contact support.');
+        redirect('/verify-otp');
+    }
     $_SESSION['otp_last_sent'] = time();
     flash('success', 'If your email is registered, a fresh code has been sent.');
     redirect('/verify-otp');
@@ -597,32 +608,29 @@ $r->post('/reset-password', function () {
 });
 
 // Issues a fresh OTP for the user, stores its hash, and sends the email.
-// Rate-limit: max 3 active (unused, unexpired) OTPs per user.
-function issue_password_otp(array $user): void {
-    $active = (int) DB::val(
-        'SELECT COUNT(*) FROM password_resets WHERE user_id = ? AND otp_hash IS NOT NULL AND used_at IS NULL AND expires_at > NOW()',
-        [$user['id']]
-    );
-    if ($active >= 3) return;
-
+function issue_password_otp(array $user): bool {
     $otp  = str_pad((string) random_int(0, 999999), 6, '0', STR_PAD_LEFT);
     $hash = hash('sha256', $otp);
+    DB::q(
+        'UPDATE password_resets SET used_at = NOW()
+         WHERE user_id = ? AND otp_hash IS NOT NULL AND used_at IS NULL',
+        [$user['id']]
+    );
     DB::insert('password_resets', [
         'user_id'      => $user['id'],
         'otp_hash'     => $hash,
         'expires_at'   => date('Y-m-d H:i:s', strtotime('+10 minutes')),
         'requested_ip' => $_SERVER['REMOTE_ADDR'] ?? null,
     ]);
-    send_password_reset_email($user, $otp);
+    return send_password_reset_email($user, $otp);
 }
 
-function issue_signup_otp(array $pending): void {
-    $active = (int) DB::val(
-        'SELECT COUNT(*) FROM signup_otps WHERE email = ? AND used_at IS NULL AND expires_at > NOW()',
+function issue_signup_otp(array $pending): bool {
+    DB::q(
+        'UPDATE signup_otps SET used_at = NOW()
+         WHERE email = ? AND used_at IS NULL',
         [$pending['email']]
     );
-    if ($active >= 3) return;
-
     $otp = str_pad((string) random_int(0, 999999), 6, '0', STR_PAD_LEFT);
     DB::insert('signup_otps', [
         'email'        => $pending['email'],
@@ -630,7 +638,7 @@ function issue_signup_otp(array $pending): void {
         'expires_at'   => date('Y-m-d H:i:s', strtotime('+10 minutes')),
         'requested_ip' => $_SERVER['REMOTE_ADDR'] ?? null,
     ]);
-    send_signup_otp_email($pending, $otp);
+    return send_signup_otp_email($pending, $otp);
 }
 
 function latest_signup_otp(string $email): ?array {
@@ -653,9 +661,9 @@ function reset_session_valid(): bool {
 }
 
 // Helper: send the OTP email via PHP mail(). Best-effort — fails silently if mail() is unavailable.
-function send_password_reset_email(array $user, string $otp): void {
+function send_password_reset_email(array $user, string $otp): bool {
     $siteName = setting('site_name', 'Spiritual Matrimony');
-    $supportEmail = setting('contact_email', 'no-reply@' . ($_SERVER['SERVER_NAME'] ?? 'localhost'));
+    $replyTo = setting('contact_email', $GLOBALS['CFG']['mail']['from'] ?? null);
 
     $subject = "Your {$siteName} password reset code";
     $body = "Namaste {$user['name']},\n\n"
@@ -666,19 +674,12 @@ function send_password_reset_email(array $user, string $otp): void {
           . "With sincerity,\n"
           . $siteName . " team\n";
 
-    $headers = [
-        'From: ' . $siteName . ' <' . $supportEmail . '>',
-        'Reply-To: ' . $supportEmail,
-        'MIME-Version: 1.0',
-        'Content-Type: text/plain; charset=UTF-8',
-        'X-Mailer: ' . $siteName,
-    ];
-    @mail($user['email'], $subject, $body, implode("\r\n", $headers));
+    return send_transactional_mail($user['email'], $subject, $body, $replyTo);
 }
 
-function send_signup_otp_email(array $pending, string $otp): void {
+function send_signup_otp_email(array $pending, string $otp): bool {
     $siteName = setting('site_name', 'Spiritual Matrimony');
-    $supportEmail = setting('contact_email', 'no-reply@' . ($_SERVER['SERVER_NAME'] ?? 'localhost'));
+    $replyTo = setting('contact_email', $GLOBALS['CFG']['mail']['from'] ?? null);
 
     $subject = "Your {$siteName} signup code";
     $body = "Namaste {$pending['name']},\n\n"
@@ -689,14 +690,7 @@ function send_signup_otp_email(array $pending, string $otp): void {
           . "With sincerity,\n"
           . $siteName . " team\n";
 
-    $headers = [
-        'From: ' . $siteName . ' <' . $supportEmail . '>',
-        'Reply-To: ' . $supportEmail,
-        'MIME-Version: 1.0',
-        'Content-Type: text/plain; charset=UTF-8',
-        'X-Mailer: ' . $siteName,
-    ];
-    @mail($pending['email'], $subject, $body, implode("\r\n", $headers));
+    return send_transactional_mail($pending['email'], $subject, $body, $replyTo);
 }
 
 // ------------------- MEMBER DASHBOARD -------------------

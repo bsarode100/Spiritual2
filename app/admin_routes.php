@@ -85,6 +85,27 @@ $r->post('/admin/users/{id}/reset-link', $admin(function ($a) {
     redirect('/admin/users/' . (int)$a['id']);
 }));
 
+$r->post('/admin/test-mail', $admin(function () {
+    $u = Auth::user();
+    $to = $u['email'] ?? '';
+    if (!$to || !filter_var($to, FILTER_VALIDATE_EMAIL)) {
+        flash('error', 'Your admin account does not have a valid email address.');
+        redirect('/admin');
+    }
+
+    $siteName = setting('site_name', 'Spiritual Matrimony');
+    $sent = send_transactional_mail(
+        $to,
+        "Test email from {$siteName}",
+        "This is a test email from {$siteName}.\n\nIf you received this, SMTP email delivery is working.\n",
+        setting('contact_email', $GLOBALS['CFG']['mail']['from'] ?? null)
+    );
+    flash($sent ? 'success' : 'error', $sent
+        ? 'Test email sent to your admin email.'
+        : 'Test email failed. Check SMTP env values and server logs.');
+    redirect('/admin');
+}));
+
 // ---------- BLOG ----------
 $r->get('/admin/blog', $admin(function () {
     $rows = DB::all('SELECT * FROM blog_posts ORDER BY id DESC');

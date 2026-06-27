@@ -19,6 +19,17 @@ return [
         'password' => getenv('DB_PASSWORD') ?: 'spiritual',
         'charset'  => 'utf8mb4',
     ],
+    'mail' => [
+        'mailer'     => getenv('MAIL_MAILER') ?: 'mail',
+        'host'       => getenv('MAIL_HOST') ?: '',
+        'port'       => (int)(getenv('MAIL_PORT') ?: 587),
+        'username'   => getenv('MAIL_USERNAME') ?: '',
+        'password'   => getenv('MAIL_PASSWORD') ?: '',
+        'encryption' => getenv('MAIL_ENCRYPTION') ?: 'tls',
+        'from'       => getenv('MAIL_FROM_ADDRESS') ?: '',
+        'from_name'  => getenv('MAIL_FROM_NAME') ?: (getenv('APP_NAME') ?: 'Spiritual Matrimony'),
+        'timeout'    => (int)(getenv('MAIL_TIMEOUT') ?: 15),
+    ],
     'uploads' => [
         'avatar_dir' => __DIR__ . '/../public/uploads/avatars',
         'blog_dir'   => __DIR__ . '/../public/uploads/blog',
