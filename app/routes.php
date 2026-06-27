@@ -334,23 +334,108 @@ $r->post('/register', function () {
         flash('error', 'An account with this email already exists.');
         redirect('/register');
     }
-    $uid = DB::insert('users', [
+    $_SESSION['pending_signup'] = [
         'name'          => $name,
         'email'         => $email,
         'phone'         => $phone,
         'password_hash' => password_hash($pass, PASSWORD_BCRYPT),
+        'gender'          => $gender,
+        'dob'             => $dob,
+        'created_at'      => time(),
+    ];
+    $_SESSION['signup_otp_email'] = $email;
+    issue_signup_otp($_SESSION['pending_signup']);
+    $_SESSION['signup_otp_last_sent'] = time();
+    flash('success', 'We sent a 6-digit code to your email. Enter it to create your account.');
+    redirect('/verify-signup-otp');
+});
+
+$r->get('/verify-signup-otp', function () {
+    if (Auth::check()) redirect('/dashboard');
+    if (empty($_SESSION['pending_signup']['email'])) redirect('/register');
+    view('auth/verify_otp', [
+        'email' => $_SESSION['pending_signup']['email'],
+        'mode' => 'signup',
+    ], 'auth');
+});
+
+$r->post('/verify-signup-otp', function () {
+    if (empty($_SESSION['pending_signup']['email'])) redirect('/register');
+    $pending = $_SESSION['pending_signup'];
+    $email   = $pending['email'];
+    $otp     = preg_replace('/\D/', '', $_POST['otp'] ?? '');
+
+    if (strlen($otp) !== 6) {
+        flash('error', 'Please enter the 6-digit code from your email.');
+        redirect('/verify-signup-otp');
+    }
+    if (time() - (int)($pending['created_at'] ?? 0) > 1800) {
+        clear_signup_otp_session();
+        flash('error', 'Your signup verification expired. Please register again.');
+        redirect('/register');
+    }
+    if (DB::val('SELECT 1 FROM users WHERE email = ?', [$email])) {
+        clear_signup_otp_session();
+        flash('error', 'An account with this email already exists. Please sign in.');
+        redirect('/login');
+    }
+
+    $row = latest_signup_otp($email);
+    if (!$row) {
+        flash('error', 'Invalid or expired code. Please request a new one.');
+        redirect('/verify-signup-otp');
+    }
+    if ((int) $row['attempts'] >= 5) {
+        DB::update('signup_otps', ['used_at' => date('Y-m-d H:i:s')], ['id' => $row['id']]);
+        flash('error', 'Too many wrong attempts. Please request a new code.');
+        redirect('/verify-signup-otp');
+    }
+    if (!hash_equals($row['otp_hash'], hash('sha256', $otp))) {
+        DB::q('UPDATE signup_otps SET attempts = attempts + 1 WHERE id = ?', [$row['id']]);
+        flash('error', 'Invalid code. ' . (4 - (int) $row['attempts']) . ' attempts left.');
+        redirect('/verify-signup-otp');
+    }
+
+    DB::update('signup_otps', ['used_at' => date('Y-m-d H:i:s')], ['id' => $row['id']]);
+    DB::q('UPDATE signup_otps SET used_at = NOW() WHERE email = ? AND used_at IS NULL', [$email]);
+
+    $uid = DB::insert('users', [
+        'name'          => $pending['name'],
+        'email'         => $email,
+        'phone'         => $pending['phone'],
+        'password_hash' => $pending['password_hash'],
         'role'          => 'member',
         'status'        => 'active',
     ]);
     DB::insert('profiles', [
-        'user_id'         => $uid,
-        'gender'          => $gender,
-        'dob'             => $dob,
-        'profile_complete'=> 0,
+        'user_id'          => $uid,
+        'gender'           => $pending['gender'],
+        'dob'              => $pending['dob'],
+        'profile_complete' => 0,
     ]);
+
+    clear_signup_otp_session();
     Auth::login($uid);
     flash('success', 'Welcome! Complete your profile so others can find you.');
     redirect('/profile/edit');
+});
+
+$r->post('/resend-signup-otp', function () {
+    if (empty($_SESSION['pending_signup']['email'])) redirect('/register');
+    $last = $_SESSION['signup_otp_last_sent'] ?? 0;
+    if (time() - $last < 60) {
+        flash('error', 'Please wait a minute before requesting another code.');
+        redirect('/verify-signup-otp');
+    }
+    if (DB::val('SELECT 1 FROM users WHERE email = ?', [$_SESSION['pending_signup']['email']])) {
+        clear_signup_otp_session();
+        flash('error', 'An account with this email already exists. Please sign in.');
+        redirect('/login');
+    }
+    issue_signup_otp($_SESSION['pending_signup']);
+    $_SESSION['signup_otp_last_sent'] = time();
+    flash('success', 'A fresh signup code has been sent.');
+    redirect('/verify-signup-otp');
 });
 
 $r->post('/logout', function () {
@@ -410,7 +495,7 @@ $r->post('/verify-otp', function () {
 
     $row = DB::one(
         'SELECT * FROM password_resets
-         WHERE user_id = ? AND used_at IS NULL AND expires_at > NOW()
+         WHERE user_id = ? AND otp_hash IS NOT NULL AND used_at IS NULL AND expires_at > NOW()
          ORDER BY id DESC LIMIT 1',
         [$u['id']]
     );
@@ -454,6 +539,31 @@ $r->post('/resend-otp', function () {
     redirect('/verify-otp');
 });
 
+$r->get('/reset-password/{token}', function ($a) {
+    if (Auth::check()) redirect('/dashboard');
+    $token = $a['token'] ?? '';
+    if (!preg_match('/^[a-f0-9]{64}$/i', $token)) {
+        flash('error', 'Invalid or expired reset link. Please request a new one.');
+        redirect('/forgot-password');
+    }
+
+    $row = DB::one(
+        'SELECT * FROM password_resets
+         WHERE token_hash = ? AND used_at IS NULL AND expires_at > NOW()
+         ORDER BY id DESC LIMIT 1',
+        [hash('sha256', $token)]
+    );
+    if (!$row) {
+        flash('error', 'Invalid or expired reset link. Please request a new one.');
+        redirect('/forgot-password');
+    }
+
+    DB::update('password_resets', ['used_at' => date('Y-m-d H:i:s')], ['id' => $row['id']]);
+    $_SESSION['reset_authorized_user_id'] = (int) $row['user_id'];
+    $_SESSION['reset_authorized_until'] = time() + 600;
+    redirect('/reset-password');
+});
+
 $r->get('/reset-password', function () {
     if (!reset_session_valid()) {
         flash('error', 'Your verification has expired. Please start again.');
@@ -490,7 +600,7 @@ $r->post('/reset-password', function () {
 // Rate-limit: max 3 active (unused, unexpired) OTPs per user.
 function issue_password_otp(array $user): void {
     $active = (int) DB::val(
-        'SELECT COUNT(*) FROM password_resets WHERE user_id = ? AND used_at IS NULL AND expires_at > NOW()',
+        'SELECT COUNT(*) FROM password_resets WHERE user_id = ? AND otp_hash IS NOT NULL AND used_at IS NULL AND expires_at > NOW()',
         [$user['id']]
     );
     if ($active >= 3) return;
@@ -504,6 +614,36 @@ function issue_password_otp(array $user): void {
         'requested_ip' => $_SERVER['REMOTE_ADDR'] ?? null,
     ]);
     send_password_reset_email($user, $otp);
+}
+
+function issue_signup_otp(array $pending): void {
+    $active = (int) DB::val(
+        'SELECT COUNT(*) FROM signup_otps WHERE email = ? AND used_at IS NULL AND expires_at > NOW()',
+        [$pending['email']]
+    );
+    if ($active >= 3) return;
+
+    $otp = str_pad((string) random_int(0, 999999), 6, '0', STR_PAD_LEFT);
+    DB::insert('signup_otps', [
+        'email'        => $pending['email'],
+        'otp_hash'     => hash('sha256', $otp),
+        'expires_at'   => date('Y-m-d H:i:s', strtotime('+10 minutes')),
+        'requested_ip' => $_SERVER['REMOTE_ADDR'] ?? null,
+    ]);
+    send_signup_otp_email($pending, $otp);
+}
+
+function latest_signup_otp(string $email): ?array {
+    return DB::one(
+        'SELECT * FROM signup_otps
+         WHERE email = ? AND used_at IS NULL AND expires_at > NOW()
+         ORDER BY id DESC LIMIT 1',
+        [$email]
+    );
+}
+
+function clear_signup_otp_session(): void {
+    unset($_SESSION['pending_signup'], $_SESSION['signup_otp_email'], $_SESSION['signup_otp_last_sent']);
 }
 
 function reset_session_valid(): bool {
@@ -534,6 +674,29 @@ function send_password_reset_email(array $user, string $otp): void {
         'X-Mailer: ' . $siteName,
     ];
     @mail($user['email'], $subject, $body, implode("\r\n", $headers));
+}
+
+function send_signup_otp_email(array $pending, string $otp): void {
+    $siteName = setting('site_name', 'Spiritual Matrimony');
+    $supportEmail = setting('contact_email', 'no-reply@' . ($_SERVER['SERVER_NAME'] ?? 'localhost'));
+
+    $subject = "Your {$siteName} signup code";
+    $body = "Namaste {$pending['name']},\n\n"
+          . "Your signup verification code is:\n\n"
+          . "    {$otp}\n\n"
+          . "This code is valid for 10 minutes and can be used only once. Do not share it with anyone.\n\n"
+          . "If you did not request this, you can ignore this email.\n\n"
+          . "With sincerity,\n"
+          . $siteName . " team\n";
+
+    $headers = [
+        'From: ' . $siteName . ' <' . $supportEmail . '>',
+        'Reply-To: ' . $supportEmail,
+        'MIME-Version: 1.0',
+        'Content-Type: text/plain; charset=UTF-8',
+        'X-Mailer: ' . $siteName,
+    ];
+    @mail($pending['email'], $subject, $body, implode("\r\n", $headers));
 }
 
 // ------------------- MEMBER DASHBOARD -------------------

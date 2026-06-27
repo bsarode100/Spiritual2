@@ -252,7 +252,8 @@ DROP TABLE IF EXISTS `password_resets`;
 CREATE TABLE `password_resets` (
   `id`           BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
   `user_id`      BIGINT UNSIGNED NOT NULL,
-  `otp_hash`     CHAR(64) NOT NULL,
+  `otp_hash`     CHAR(64) DEFAULT NULL,
+  `token_hash`   CHAR(64) DEFAULT NULL,
   `attempts`     TINYINT UNSIGNED NOT NULL DEFAULT 0,
   `expires_at`   DATETIME NOT NULL,
   `used_at`      DATETIME DEFAULT NULL,
@@ -260,8 +261,25 @@ CREATE TABLE `password_resets` (
   `created_at`   DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   KEY `password_resets_user_idx` (`user_id`),
+  UNIQUE KEY `password_resets_token_unique` (`token_hash`),
   KEY `password_resets_active_idx` (`user_id`, `used_at`, `expires_at`),
   CONSTRAINT `password_resets_user_fk` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ---------- SIGNUP OTPs ----------
+DROP TABLE IF EXISTS `signup_otps`;
+CREATE TABLE `signup_otps` (
+  `id`           BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `email`        VARCHAR(190) NOT NULL,
+  `otp_hash`     CHAR(64) NOT NULL,
+  `attempts`     TINYINT UNSIGNED NOT NULL DEFAULT 0,
+  `expires_at`   DATETIME NOT NULL,
+  `used_at`      DATETIME DEFAULT NULL,
+  `requested_ip` VARCHAR(45) DEFAULT NULL,
+  `created_at`   DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `signup_otps_email_idx` (`email`),
+  KEY `signup_otps_active_idx` (`email`, `used_at`, `expires_at`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ---------- PAYMENTS (Razorpay) ----------

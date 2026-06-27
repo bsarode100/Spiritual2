@@ -46,7 +46,7 @@
             and <a href="/cookies" target="_blank" rel="noopener">Cookie Policy</a>.
         </span>
     </label>
-    <button class="btn btn-primary btn-block btn-lg">Create My Account</button>
+    <button class="btn btn-primary btn-block btn-lg">Send Verification Code</button>
 </form>
 
 <div class="small-link">

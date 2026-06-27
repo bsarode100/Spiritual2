@@ -49,14 +49,43 @@ try {
     DB::pdo()->exec("CREATE TABLE IF NOT EXISTS `password_resets` (
         `id`           BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
         `user_id`      BIGINT UNSIGNED NOT NULL,
-        `token_hash`   CHAR(64) NOT NULL,
+        `otp_hash`     CHAR(64) DEFAULT NULL,
+        `token_hash`   CHAR(64) DEFAULT NULL,
+        `attempts`     TINYINT UNSIGNED NOT NULL DEFAULT 0,
         `expires_at`   DATETIME NOT NULL,
         `used_at`      DATETIME DEFAULT NULL,
         `requested_ip` VARCHAR(45) DEFAULT NULL,
         `created_at`   DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
         PRIMARY KEY (`id`),
+        KEY `password_resets_user_idx` (`user_id`),
         UNIQUE KEY `password_resets_token_unique` (`token_hash`),
-        KEY `password_resets_user_idx` (`user_id`)
+        KEY `password_resets_active_idx` (`user_id`, `used_at`, `expires_at`)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+
+    foreach ([
+        "ALTER TABLE `password_resets` ADD COLUMN `otp_hash` CHAR(64) NULL AFTER `user_id`",
+        "ALTER TABLE `password_resets` MODIFY `otp_hash` CHAR(64) NULL",
+        "ALTER TABLE `password_resets` ADD COLUMN `token_hash` CHAR(64) NULL AFTER `otp_hash`",
+        "ALTER TABLE `password_resets` MODIFY `token_hash` CHAR(64) NULL",
+        "ALTER TABLE `password_resets` ADD COLUMN `attempts` TINYINT UNSIGNED NOT NULL DEFAULT 0 AFTER `token_hash`",
+        "ALTER TABLE `password_resets` ADD KEY `password_resets_active_idx` (`user_id`, `used_at`, `expires_at`)",
+        "ALTER TABLE `password_resets` ADD UNIQUE KEY `password_resets_token_unique` (`token_hash`)",
+    ] as $stmt) {
+        try { DB::pdo()->exec($stmt); } catch (Throwable $e) { /* already migrated */ }
+    }
+
+    DB::pdo()->exec("CREATE TABLE IF NOT EXISTS `signup_otps` (
+        `id`           BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+        `email`        VARCHAR(190) NOT NULL,
+        `otp_hash`     CHAR(64) NOT NULL,
+        `attempts`     TINYINT UNSIGNED NOT NULL DEFAULT 0,
+        `expires_at`   DATETIME NOT NULL,
+        `used_at`      DATETIME DEFAULT NULL,
+        `requested_ip` VARCHAR(45) DEFAULT NULL,
+        `created_at`   DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        PRIMARY KEY (`id`),
+        KEY `signup_otps_email_idx` (`email`),
+        KEY `signup_otps_active_idx` (`email`, `used_at`, `expires_at`)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
 
     DB::pdo()->exec("CREATE TABLE IF NOT EXISTS `payments` (
