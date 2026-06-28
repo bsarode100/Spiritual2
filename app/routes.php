@@ -875,16 +875,13 @@ $r->get('/member/{id}', function ($a) {
                     FROM users u JOIN profiles p ON p.user_id = u.id
                    WHERE u.id = ? AND u.role = 'member' AND u.status = 'active' AND p.profile_complete = 1", [$targetId]);
     if (!$u) { http_response_code(404); view('errors/404'); return; }
-    $viewer = DB::one('SELECT * FROM profiles WHERE user_id = ?', [Auth::id()]);
     $sp = DB::one('SELECT * FROM spiritual_details WHERE user_id = ?', [$targetId]);
     $photos = DB::all('SELECT * FROM photos WHERE user_id = ? ORDER BY is_primary DESC', [$targetId]);
     DB::q('UPDATE profiles SET views = views + 1 WHERE user_id = ?', [$targetId]);
     $interest = interest_between(Auth::id(), $targetId);
     $shortlisted = (bool) DB::val('SELECT 1 FROM shortlists WHERE user_id = ? AND target_user_id = ?', [Auth::id(), $targetId]);
-    $viewerComplete = (bool) ($viewer['profile_complete'] ?? false);
-    $compatible = !$viewer || empty($viewer['gender']) || $viewer['gender'] !== $u['gender'];
     $canMessage = $interest && $interest['status'] === 'accepted';
-    view('member/show', compact('u','sp','photos','interest','shortlisted','viewerComplete','compatible','canMessage'));
+    view('member/show', compact('u','sp','photos','interest','shortlisted','canMessage'));
 });
 
 // ------------------- INTERESTS -------------------
@@ -902,10 +899,6 @@ $r->post('/interest/send/{id}', function ($a) {
     if (!$target || !(int)($target['profile_complete'] ?? 0)) {
         flash('error', 'This profile is not available for interests right now.');
         redirect('/browse');
-    }
-    if (!$me || !(int)($me['profile_complete'] ?? 0)) {
-        flash('error', 'Complete your profile before expressing interest.');
-        redirect('/profile/edit');
     }
     if (!empty($me['gender']) && !empty($target['gender']) && $me['gender'] === $target['gender']) {
         flash('error', 'You can express interest only in compatible profiles.');

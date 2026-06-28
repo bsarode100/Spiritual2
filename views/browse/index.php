@@ -48,7 +48,12 @@
                             <?php if ($m['guru']): ?><span class="tag tag-gold"><?= e($m['guru']) ?></span><?php endif; ?>
                         </div>
                         <p class="profile-about"><?= e($m['about_me'] ?? '') ?></p>
-                        <a href="/member/<?= (int)$m['id'] ?>" class="btn btn-primary btn-sm">View Profile</a>
+                        <div class="profile-card-actions">
+                            <a href="/member/<?= (int)$m['id'] ?>" class="btn btn-ghost btn-sm">View Profile</a>
+                            <form method="post" action="/interest/send/<?= (int)$m['id'] ?>">
+                                <?= csrf_field() ?><button class="btn btn-primary btn-sm">Express Interest</button>
+                            </form>
+                        </div>
                     </div>
                 </article>
             <?php endforeach; ?>

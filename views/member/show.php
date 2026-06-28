@@ -1,4 +1,4 @@
-<?php /** @var array $u, $sp, $photos; @var array|null $interest; @var bool $shortlisted, $viewerComplete, $compatible, $canMessage */ $age = age_from_dob($u['dob']); ?>
+<?php /** @var array $u, $sp, $photos; @var array|null $interest; @var bool $shortlisted, $canMessage */ $age = age_from_dob($u['dob']); ?>
 <section class="section-tight">
 <div class="container">
     <a href="/browse" class="btn btn-ghost btn-sm mb-3">← Back to browse</a>
@@ -30,37 +30,21 @@
             <?php endif; ?>
 
             <div class="actions">
-                <?php if (isset($viewerComplete, $compatible, $canMessage)): ?>
-                    <?php if (!$viewerComplete): ?>
-                        <a href="/profile/edit" class="btn btn-primary">Complete Profile</a>
-                    <?php elseif (!$compatible): ?>
-                        <span class="pill gold" style="padding: .8rem 1.4rem;">Not a compatible match</span>
-                    <?php elseif ($canMessage): ?>
-                        <a href="/messages/<?= (int)$u['id'] ?>" class="btn btn-primary">Send a Message</a>
-                    <?php elseif ($interest && $interest['status'] === 'sent' && (int)$interest['receiver_id'] === Auth::id()): ?>
-                        <form method="post" action="/interest/<?= (int)$interest['id'] ?>/accept" style="display:inline;">
-                            <?= csrf_field() ?><button class="btn btn-primary">Accept Interest</button>
-                        </form>
-                        <form method="post" action="/interest/<?= (int)$interest['id'] ?>/decline" style="display:inline;">
-                            <?= csrf_field() ?><button class="btn btn-ghost">Decline</button>
-                        </form>
-                    <?php elseif (!$interest || $interest['status'] === 'cancelled' || $interest['status'] === 'declined'): ?>
-                        <form method="post" action="/interest/send/<?= (int)$u['id'] ?>" style="display:inline;">
-                            <?= csrf_field() ?><button class="btn btn-primary">Express Interest</button>
-                        </form>
-                    <?php elseif ($interest['status'] === 'sent'): ?>
-                        <span class="pill gold" style="padding: .8rem 1.4rem;">Interest sent - awaiting response</span>
-                    <?php endif; ?>
-                <?php else: ?>
-                <?php if (!$interest || $interest['status'] === 'cancelled' || $interest['status'] === 'declined'): ?>
+                <?php if ($canMessage): ?>
+                    <a href="/messages/<?= (int)$u['id'] ?>" class="btn btn-primary">Send a Message</a>
+                <?php elseif ($interest && $interest['status'] === 'sent' && (int)$interest['receiver_id'] === Auth::id()): ?>
+                    <form method="post" action="/interest/<?= (int)$interest['id'] ?>/accept" style="display:inline;">
+                        <?= csrf_field() ?><button class="btn btn-primary">Accept Interest</button>
+                    </form>
+                    <form method="post" action="/interest/<?= (int)$interest['id'] ?>/decline" style="display:inline;">
+                        <?= csrf_field() ?><button class="btn btn-ghost">Decline</button>
+                    </form>
+                <?php elseif (!$interest || $interest['status'] === 'cancelled' || $interest['status'] === 'declined'): ?>
                     <form method="post" action="/interest/send/<?= (int)$u['id'] ?>" style="display:inline;">
-                        <?= csrf_field() ?><button class="btn btn-primary">💌 Express Interest</button>
+                        <?= csrf_field() ?><button class="btn btn-primary">Express Interest</button>
                     </form>
                 <?php elseif ($interest['status'] === 'sent'): ?>
-                    <span class="pill gold" style="padding: .8rem 1.4rem;">Interest sent · awaiting response</span>
-                <?php elseif ($interest['status'] === 'accepted'): ?>
-                    <a href="/messages/<?= (int)$u['id'] ?>" class="btn btn-primary">💬 Send a Message</a>
-                <?php endif; ?>
+                    <span class="pill gold" style="padding: .8rem 1.4rem;">Interest sent - awaiting response</span>
                 <?php endif; ?>
 
                 <form method="post" action="/shortlist/<?= (int)$u['id'] ?>" style="display:inline;">

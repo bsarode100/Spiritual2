@@ -68,7 +68,12 @@
                             <h3><?= e($m['name']) ?><?php if ($age): ?>, <?= $age ?><?php endif; ?></h3>
                             <div class="profile-meta"><?= e($m['profession'] ?: 'Seeker') ?> · <?= e($m['city']) ?></div>
                             <p class="profile-about"><?= e($m['about_me'] ?? '') ?></p>
-                            <a href="/member/<?= (int)$m['id'] ?>" class="btn btn-ghost btn-sm">View Profile</a>
+                            <div class="profile-card-actions">
+                                <a href="/member/<?= (int)$m['id'] ?>" class="btn btn-ghost btn-sm">View Profile</a>
+                                <form method="post" action="/interest/send/<?= (int)$m['id'] ?>">
+                                    <?= csrf_field() ?><button class="btn btn-primary btn-sm">Express Interest</button>
+                                </form>
+                            </div>
                         </div>
                     </article>
                 <?php endforeach; ?>

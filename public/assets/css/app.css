@@ -416,6 +416,8 @@ p { margin: 0 0 1em; color: var(--c-ink-soft); }
 .tag-gold { background: rgba(212, 160, 23, .15); color: var(--c-maroon); }
 .profile-about { font-size: .92rem; color: var(--c-ink-soft); margin: .6rem 0 1.2rem;
     display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.profile-card-actions { display: flex; flex-wrap: wrap; gap: .55rem; align-items: center; }
+.profile-card-actions form { margin: 0; }
 
 @media (max-width: 880px) { .profiles-grid { grid-template-columns: 1fr 1fr; gap: 1rem; } }
 @media (max-width: 520px) { .profiles-grid { grid-template-columns: 1fr; } }
