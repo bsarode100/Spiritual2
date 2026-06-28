@@ -1,4 +1,4 @@
-<?php /** @var array $other, $msgs */ $me = Auth::id(); ?>
+<?php /** @var array $other, $msgs, $interest */ $me = Auth::id(); ?>
 <section class="section-tight"><div class="container">
     <a href="/messages" class="btn btn-ghost btn-sm mb-3">← All Messages</a>
 

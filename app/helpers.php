@@ -102,6 +102,57 @@ function cm_to_feet(?int $cm): ?string {
     return "{$ft}' {$in}\"";
 }
 
+function opposite_gender(?string $gender): ?string {
+    return match ($gender) {
+        'male' => 'female',
+        'female' => 'male',
+        default => null,
+    };
+}
+
+function active_member_profile(int $userId): ?array {
+    return DB::one(
+        "SELECT u.id, u.name, u.email, u.phone, u.role, u.status,
+                p.gender, p.dob, p.city, p.state, p.country, p.profile_complete
+           FROM users u
+           JOIN profiles p ON p.user_id = u.id
+          WHERE u.id = ? AND u.role = 'member' AND u.status = 'active'",
+        [$userId]
+    );
+}
+
+function interest_between(int $viewerId, int $otherId): ?array {
+    return DB::one(
+        "SELECT *
+           FROM interests
+          WHERE (sender_id = ? AND receiver_id = ?)
+             OR (sender_id = ? AND receiver_id = ?)
+          ORDER BY FIELD(status, 'accepted', 'sent', 'declined', 'cancelled'),
+                   (receiver_id = ?) DESC,
+                   updated_at DESC,
+                   id DESC
+          LIMIT 1",
+        [$viewerId, $otherId, $otherId, $viewerId, $viewerId]
+    );
+}
+
+function accepted_interest_between(int $userId, int $otherId): ?array {
+    return DB::one(
+        "SELECT *
+           FROM interests
+          WHERE status = 'accepted'
+            AND ((sender_id = ? AND receiver_id = ?)
+              OR (sender_id = ? AND receiver_id = ?))
+          ORDER BY updated_at DESC, id DESC
+          LIMIT 1",
+        [$userId, $otherId, $otherId, $userId]
+    );
+}
+
+function can_message_member(int $userId, int $otherId): bool {
+    return $userId !== $otherId && (bool) accepted_interest_between($userId, $otherId);
+}
+
 function primary_photo(int $userId): ?string {
     $p = DB::val('SELECT path FROM photos WHERE user_id = ? ORDER BY is_primary DESC, id ASC LIMIT 1', [$userId]);
     return $p ?: null;

@@ -46,7 +46,13 @@
                             <?= e($i['profession']) ?> · <?= e($i['city']) ?> · sent <?= date('M j, Y', strtotime($i['created_at'])) ?>
                         </div>
                     </div>
-                    <span class="pill <?= $i['status']==='accepted'?'green':($i['status']==='declined'?'red':'gold') ?>"><?= e($i['status']) ?></span>
+                    <div class="flex gap-1">
+                        <?php if ($i['status'] === 'accepted'): ?>
+                            <a href="/messages/<?= (int)$i['receiver_id'] ?>" class="btn btn-primary btn-sm">Message</a>
+                        <?php else: ?>
+                            <span class="pill <?= $i['status']==='declined'?'red':'gold' ?>"><?= e($i['status']) ?></span>
+                        <?php endif; ?>
+                    </div>
                 </div>
             <?php endforeach; ?>
         </div>

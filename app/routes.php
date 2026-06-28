@@ -703,13 +703,20 @@ $r->get('/dashboard', function () {
         'shortlisted'        => DB::val('SELECT COUNT(*) FROM shortlists WHERE user_id = ?', [$uid]),
         'profile_views'      => DB::val('SELECT views FROM profiles WHERE user_id = ?', [$uid]),
     ];
+    $me = DB::one('SELECT * FROM profiles WHERE user_id = ?', [$uid]);
+    $opp = opposite_gender($me['gender'] ?? null);
+    $matchWhere = "u.id != :uid AND u.status = 'active' AND u.role = 'member' AND p.profile_complete = 1";
+    $matchParams = ['uid' => $uid];
+    if ($opp) {
+        $matchWhere .= ' AND p.gender = :gender';
+        $matchParams['gender'] = $opp;
+    }
     $matches = DB::all("SELECT u.*, p.gender, p.dob, p.city, p.profession, p.about_me, p.height_cm, s.spiritual_path
                         FROM users u
                         JOIN profiles p ON p.user_id = u.id
                    LEFT JOIN spiritual_details s ON s.user_id = u.id
-                       WHERE u.id != ? AND u.status = 'active' AND p.profile_complete = 1
-                         AND p.gender != (SELECT gender FROM profiles WHERE user_id = ?)
-                    ORDER BY u.created_at DESC LIMIT 6", [$uid,$uid]);
+                       WHERE {$matchWhere}
+                    ORDER BY u.created_at DESC LIMIT 6", $matchParams);
     $recent_interests = DB::all("SELECT i.*, u.name, u.id AS uid FROM interests i JOIN users u ON u.id = i.sender_id
                                  WHERE i.receiver_id = ? ORDER BY i.created_at DESC LIMIT 5", [$uid]);
     view('member/dashboard', compact('stats','matches','recent_interests'));
@@ -739,7 +746,13 @@ $r->post('/profile/edit', function () {
     $complete = 1;
     foreach ($required as $rq) { if (empty($data[$rq])) $complete = 0; }
     $data['profile_complete'] = $complete;
-    DB::update('profiles', $data, ['user_id' => $uid]);
+    $profileExists = DB::val('SELECT id FROM profiles WHERE user_id = ?', [$uid]);
+    if ($profileExists) {
+        DB::update('profiles', $data, ['user_id' => $uid]);
+    } else {
+        $data['user_id'] = $uid;
+        DB::insert('profiles', $data);
+    }
 
     // also update user name
     if (!empty($_POST['name'])) {
@@ -815,9 +828,14 @@ $r->post('/profile/photos/{id}/delete', function ($a) {
 $r->get('/browse', function () {
     Auth::require();
     $me  = DB::one('SELECT * FROM profiles WHERE user_id = ?', [Auth::id()]);
-    $opp = $me && $me['gender'] === 'male' ? 'female' : 'male';
-    $where  = ["u.status = 'active'", "u.role = 'member'", 'u.id != :me', 'p.profile_complete = 1', 'p.gender = :g'];
-    $params = ['me' => Auth::id(), 'g' => $opp];
+    $opp = opposite_gender($me['gender'] ?? null);
+    $where  = ["u.status = 'active'", "u.role = 'member'", 'u.id != :me', 'p.profile_complete = 1'];
+    $params = ['me' => Auth::id()];
+
+    if ($opp) {
+        $where[] = 'p.gender = :g';
+        $params['g'] = $opp;
+    }
 
     if (!empty($_GET['city']))     { $where[] = 'p.city LIKE :city';   $params['city']   = '%' . $_GET['city'] . '%'; }
     if (!empty($_GET['religion'])) { $where[] = 'p.religion = :rel';   $params['rel']    = $_GET['religion']; }
@@ -848,67 +866,139 @@ $r->get('/browse', function () {
 // ------------------- MEMBER PROFILE VIEW -------------------
 $r->get('/member/{id}', function ($a) {
     Auth::require();
+    $targetId = (int) $a['id'];
+    if ($targetId === Auth::id()) {
+        redirect('/profile/edit');
+    }
     // p.* first, then u.* — so duplicate keys (id, created_at, updated_at) resolve to the users row.
     $u = DB::one("SELECT p.*, u.id, u.name, u.email, u.phone, u.role, u.status, u.created_at, u.updated_at
-                    FROM users u JOIN profiles p ON p.user_id = u.id WHERE u.id = ?", [$a['id']]);
-    if (!$u || $u['role'] !== 'member') { http_response_code(404); view('errors/404'); return; }
-    $sp = DB::one('SELECT * FROM spiritual_details WHERE user_id = ?', [$a['id']]);
-    $photos = DB::all('SELECT * FROM photos WHERE user_id = ? ORDER BY is_primary DESC', [$a['id']]);
-    DB::q('UPDATE profiles SET views = views + 1 WHERE user_id = ?', [$a['id']]);
-    $interest = DB::one('SELECT * FROM interests WHERE sender_id = ? AND receiver_id = ?', [Auth::id(), $a['id']]);
-    $shortlisted = (bool) DB::val('SELECT 1 FROM shortlists WHERE user_id = ? AND target_user_id = ?', [Auth::id(), $a['id']]);
-    view('member/show', compact('u','sp','photos','interest','shortlisted'));
+                    FROM users u JOIN profiles p ON p.user_id = u.id
+                   WHERE u.id = ? AND u.role = 'member' AND u.status = 'active' AND p.profile_complete = 1", [$targetId]);
+    if (!$u) { http_response_code(404); view('errors/404'); return; }
+    $viewer = DB::one('SELECT * FROM profiles WHERE user_id = ?', [Auth::id()]);
+    $sp = DB::one('SELECT * FROM spiritual_details WHERE user_id = ?', [$targetId]);
+    $photos = DB::all('SELECT * FROM photos WHERE user_id = ? ORDER BY is_primary DESC', [$targetId]);
+    DB::q('UPDATE profiles SET views = views + 1 WHERE user_id = ?', [$targetId]);
+    $interest = interest_between(Auth::id(), $targetId);
+    $shortlisted = (bool) DB::val('SELECT 1 FROM shortlists WHERE user_id = ? AND target_user_id = ?', [Auth::id(), $targetId]);
+    $viewerComplete = (bool) ($viewer['profile_complete'] ?? false);
+    $compatible = !$viewer || empty($viewer['gender']) || $viewer['gender'] !== $u['gender'];
+    $canMessage = $interest && $interest['status'] === 'accepted';
+    view('member/show', compact('u','sp','photos','interest','shortlisted','viewerComplete','compatible','canMessage'));
 });
 
 // ------------------- INTERESTS -------------------
 $r->post('/interest/send/{id}', function ($a) {
     Auth::require();
-    if ($a['id'] == Auth::id()) redirect('/browse');
-    $exists = DB::val('SELECT id FROM interests WHERE sender_id = ? AND receiver_id = ?', [Auth::id(), $a['id']]);
-    if (!$exists) {
-        DB::insert('interests', ['sender_id' => Auth::id(), 'receiver_id' => $a['id'], 'status' => 'sent']);
+    $uid = Auth::id();
+    $targetId = (int) $a['id'];
+    if ($targetId === $uid) {
+        flash('error', 'You cannot express interest in your own profile.');
+        redirect('/browse');
+    }
+
+    $me = active_member_profile($uid);
+    $target = active_member_profile($targetId);
+    if (!$target || !(int)($target['profile_complete'] ?? 0)) {
+        flash('error', 'This profile is not available for interests right now.');
+        redirect('/browse');
+    }
+    if (!$me || !(int)($me['profile_complete'] ?? 0)) {
+        flash('error', 'Complete your profile before expressing interest.');
+        redirect('/profile/edit');
+    }
+    if (!empty($me['gender']) && !empty($target['gender']) && $me['gender'] === $target['gender']) {
+        flash('error', 'You can express interest only in compatible profiles.');
+        redirect('/member/' . $targetId);
+    }
+
+    $accepted = accepted_interest_between($uid, $targetId);
+    if ($accepted) {
+        flash('success', 'You are already connected. You can message each other now.');
+        redirect('/messages/' . $targetId);
+    }
+
+    $outbound = DB::one('SELECT * FROM interests WHERE sender_id = ? AND receiver_id = ? ORDER BY id DESC LIMIT 1', [$uid, $targetId]);
+    $inbound = DB::one('SELECT * FROM interests WHERE sender_id = ? AND receiver_id = ? ORDER BY id DESC LIMIT 1', [$targetId, $uid]);
+
+    if ($inbound && $inbound['status'] === 'sent') {
+        DB::update('interests', ['status' => 'accepted'], ['id' => $inbound['id']]);
+        flash('success', 'Interest accepted. You can now message each other.');
+        redirect('/messages/' . $targetId);
+    }
+    if ($outbound && $outbound['status'] === 'sent') {
+        flash('success', 'Interest already sent.');
+        redirect('/member/' . $targetId);
+    }
+    if ($outbound && in_array($outbound['status'], ['declined', 'cancelled'], true)) {
+        DB::update('interests', ['status' => 'sent'], ['id' => $outbound['id']]);
+    } elseif ($inbound && in_array($inbound['status'], ['declined', 'cancelled'], true)) {
+        DB::q(
+            "UPDATE interests
+                SET sender_id = ?, receiver_id = ?, status = 'sent'
+              WHERE id = ?",
+            [$uid, $targetId, $inbound['id']]
+        );
+    } else {
+        DB::insert('interests', ['sender_id' => $uid, 'receiver_id' => $targetId, 'status' => 'sent']);
     }
     flash('success', 'Interest sent.');
-    redirect('/member/' . $a['id']);
+    redirect('/member/' . $targetId);
 });
 
 $r->post('/interest/{id}/accept', function ($a) {
     Auth::require();
-    DB::q("UPDATE interests SET status='accepted' WHERE id = ? AND receiver_id = ?", [$a['id'], Auth::id()]);
-    flash('success', 'Interest accepted — you can now message each other.');
-    redirect('/interests');
+    $interest = DB::one("SELECT * FROM interests WHERE id = ? AND receiver_id = ? AND status = 'sent'", [$a['id'], Auth::id()]);
+    if (!$interest) {
+        flash('error', 'That interest is no longer pending.');
+        redirect('/interests');
+    }
+    DB::update('interests', ['status' => 'accepted'], ['id' => $interest['id']]);
+    flash('success', 'Interest accepted. You can now message each other.');
+    redirect('/messages/' . (int)$interest['sender_id']);
 });
 
 $r->post('/interest/{id}/decline', function ($a) {
     Auth::require();
-    DB::q("UPDATE interests SET status='declined' WHERE id = ? AND receiver_id = ?", [$a['id'], Auth::id()]);
+    DB::q("UPDATE interests SET status='declined' WHERE id = ? AND receiver_id = ? AND status = 'sent'", [$a['id'], Auth::id()]);
     redirect('/interests');
 });
 
 $r->get('/interests', function () {
     Auth::require();
     $received = DB::all("SELECT i.*, u.name, p.dob, p.city, p.profession
-                         FROM interests i JOIN users u ON u.id = i.sender_id
-                    LEFT JOIN profiles p ON p.user_id = u.id
-                        WHERE i.receiver_id = ? ORDER BY i.created_at DESC", [Auth::id()]);
+                         FROM interests i
+                         JOIN users u ON u.id = i.sender_id
+                         JOIN profiles p ON p.user_id = u.id
+                        WHERE i.receiver_id = ?
+                          AND u.role = 'member' AND u.status = 'active'
+                     ORDER BY i.created_at DESC", [Auth::id()]);
     $sent     = DB::all("SELECT i.*, u.name, p.dob, p.city, p.profession
-                         FROM interests i JOIN users u ON u.id = i.receiver_id
-                    LEFT JOIN profiles p ON p.user_id = u.id
-                        WHERE i.sender_id = ? ORDER BY i.created_at DESC", [Auth::id()]);
+                         FROM interests i
+                         JOIN users u ON u.id = i.receiver_id
+                         JOIN profiles p ON p.user_id = u.id
+                        WHERE i.sender_id = ?
+                          AND u.role = 'member' AND u.status = 'active'
+                     ORDER BY i.created_at DESC", [Auth::id()]);
     view('member/interests', compact('received','sent'));
 });
 
 // ------------------- SHORTLIST -------------------
 $r->post('/shortlist/{id}', function ($a) {
     Auth::require();
-    if ($a['id'] == Auth::id()) redirect('/browse');
-    $exists = DB::val('SELECT id FROM shortlists WHERE user_id = ? AND target_user_id = ?', [Auth::id(), $a['id']]);
+    $targetId = (int) $a['id'];
+    if ($targetId === Auth::id()) redirect('/browse');
+    if (!active_member_profile($targetId)) {
+        flash('error', 'This profile is not available.');
+        redirect('/browse');
+    }
+    $exists = DB::val('SELECT id FROM shortlists WHERE user_id = ? AND target_user_id = ?', [Auth::id(), $targetId]);
     if ($exists) {
         DB::q('DELETE FROM shortlists WHERE id = ?', [$exists]);
     } else {
-        DB::insert('shortlists', ['user_id' => Auth::id(), 'target_user_id' => $a['id']]);
+        DB::insert('shortlists', ['user_id' => Auth::id(), 'target_user_id' => $targetId]);
     }
-    redirect('/member/' . $a['id']);
+    redirect('/member/' . $targetId);
 });
 
 $r->get('/shortlist', function () {
@@ -926,41 +1016,70 @@ $r->get('/shortlist', function () {
 $r->get('/messages', function () {
     Auth::require();
     $uid = Auth::id();
-    $threads = DB::all("SELECT DISTINCT
-                          CASE WHEN m.sender_id = :u THEN m.receiver_id ELSE m.sender_id END AS other_id,
+    $threads = DB::all("SELECT
+                          CASE WHEN i.sender_id = :u_case THEN i.receiver_id ELSE i.sender_id END AS other_id,
                           u.name AS other_name,
+                          p.city AS other_city,
+                          p.profession AS other_profession,
                           (SELECT body FROM messages mx
-                            WHERE (mx.sender_id = :u AND mx.receiver_id = u.id)
-                               OR (mx.sender_id = u.id AND mx.receiver_id = :u)
-                            ORDER BY mx.created_at DESC LIMIT 1) AS last_msg,
+                            WHERE (mx.sender_id = :u_body_sender AND mx.receiver_id = u.id)
+                               OR (mx.sender_id = u.id AND mx.receiver_id = :u_body_receiver)
+                            ORDER BY mx.created_at DESC, mx.id DESC LIMIT 1) AS last_msg,
                           (SELECT created_at FROM messages mx
-                            WHERE (mx.sender_id = :u AND mx.receiver_id = u.id)
-                               OR (mx.sender_id = u.id AND mx.receiver_id = :u)
-                            ORDER BY mx.created_at DESC LIMIT 1) AS last_at
-                        FROM messages m
-                        JOIN users u ON u.id = (CASE WHEN m.sender_id = :u THEN m.receiver_id ELSE m.sender_id END)
-                        WHERE m.sender_id = :u OR m.receiver_id = :u
-                        ORDER BY last_at DESC", ['u' => $uid]);
+                            WHERE (mx.sender_id = :u_time_sender AND mx.receiver_id = u.id)
+                               OR (mx.sender_id = u.id AND mx.receiver_id = :u_time_receiver)
+                            ORDER BY mx.created_at DESC, mx.id DESC LIMIT 1) AS last_at,
+                          i.updated_at AS connected_at
+                        FROM interests i
+                        JOIN users u ON u.id = (CASE WHEN i.sender_id = :u_join THEN i.receiver_id ELSE i.sender_id END)
+                        JOIN profiles p ON p.user_id = u.id
+                        WHERE i.status = 'accepted'
+                          AND (i.sender_id = :u_sender OR i.receiver_id = :u_receiver)
+                          AND u.role = 'member' AND u.status = 'active'
+                        ORDER BY COALESCE(last_at, i.updated_at) DESC", [
+        'u_case' => $uid,
+        'u_body_sender' => $uid,
+        'u_body_receiver' => $uid,
+        'u_time_sender' => $uid,
+        'u_time_receiver' => $uid,
+        'u_join' => $uid,
+        'u_sender' => $uid,
+        'u_receiver' => $uid,
+    ]);
     view('messages/index', ['threads' => $threads]);
 });
 
 $r->get('/messages/{id}', function ($a) {
     Auth::require();
-    $other = DB::one('SELECT * FROM users WHERE id = ?', [$a['id']]);
+    $otherId = (int) $a['id'];
+    $other = active_member_profile($otherId);
     if (!$other) { http_response_code(404); view('errors/404'); return; }
+    $interest = accepted_interest_between(Auth::id(), $otherId);
+    if (!$interest) {
+        flash('error', 'Messaging opens after one of you accepts an interest.');
+        redirect('/member/' . $otherId);
+    }
     $msgs = DB::all('SELECT * FROM messages WHERE (sender_id = ? AND receiver_id = ?) OR (sender_id = ? AND receiver_id = ?) ORDER BY created_at ASC',
-        [Auth::id(), $a['id'], $a['id'], Auth::id()]);
-    DB::q('UPDATE messages SET read_at = NOW() WHERE receiver_id = ? AND sender_id = ? AND read_at IS NULL', [Auth::id(), $a['id']]);
-    view('messages/show', ['other' => $other, 'msgs' => $msgs]);
+        [Auth::id(), $otherId, $otherId, Auth::id()]);
+    DB::q('UPDATE messages SET read_at = NOW() WHERE receiver_id = ? AND sender_id = ? AND read_at IS NULL', [Auth::id(), $otherId]);
+    view('messages/show', ['other' => $other, 'msgs' => $msgs, 'interest' => $interest]);
 });
 
 $r->post('/messages/{id}', function ($a) {
     Auth::require();
+    $otherId = (int) $a['id'];
+    if (!active_member_profile($otherId)) {
+        http_response_code(404); view('errors/404'); return;
+    }
+    if (!can_message_member(Auth::id(), $otherId)) {
+        flash('error', 'Messaging opens after one of you accepts an interest.');
+        redirect('/member/' . $otherId);
+    }
     $body = trim($_POST['body'] ?? '');
     if ($body !== '') {
-        DB::insert('messages', ['sender_id' => Auth::id(), 'receiver_id' => $a['id'], 'body' => $body]);
+        DB::insert('messages', ['sender_id' => Auth::id(), 'receiver_id' => $otherId, 'body' => $body]);
     }
-    redirect('/messages/' . $a['id']);
+    redirect('/messages/' . $otherId);
 });
 
 // ------------------- ACCOUNT SETTINGS -------------------

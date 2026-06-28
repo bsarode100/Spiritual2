@@ -16,8 +16,9 @@
             <?php foreach ($threads as $t): ?>
                 <a href="/messages/<?= (int)$t['other_id'] ?>" class="msg-thread" style="border-bottom: 1px solid var(--c-line);">
                     <h4><?= e($t['other_name']) ?></h4>
-                    <p><?= e(mb_substr($t['last_msg'] ?? '', 0, 80)) ?></p>
-                    <div style="color: var(--c-muted); font-size: .76rem; margin-top: .3rem;"><?= date('M j · g:i a', strtotime($t['last_at'])) ?></div>
+                    <p><?= e($t['last_msg'] ? mb_substr($t['last_msg'], 0, 80) : 'Connected - start the conversation') ?></p>
+                    <?php $threadTime = $t['last_at'] ?: $t['connected_at']; ?>
+                    <div style="color: var(--c-muted); font-size: .76rem; margin-top: .3rem;"><?= date('M j - g:i a', strtotime($threadTime)) ?></div>
                 </a>
             <?php endforeach; ?>
         </div>
