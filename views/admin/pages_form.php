@@ -5,7 +5,7 @@ $title  = $isNew ? '' : $page['title'];
 $slug   = $isNew ? '' : $page['slug'];
 $body   = $isNew ? '' : $page['body'];
 $pub    = $isNew ? 1 : (int)$page['published'];
-$protected = ['about','privacy','terms','contact'];
+$protected = ['about','privacy','terms','contact','refund-policy','cookie-policy'];
 $canDelete = !$isNew && !in_array($slug, $protected, true);
 ?>
 <div class="admin-head">

@@ -42,6 +42,19 @@ try {
     $mem   = password_hash('member@123', PASSWORD_BCRYPT);
     DB::q("UPDATE users SET password_hash = ? WHERE role = 'admin'", [$admin]);
     DB::q("UPDATE users SET password_hash = ? WHERE role = 'member'", [$mem]);
+
+    // Load the long-form policy content (privacy, terms, refund, cookies).
+    // Kept in a separate file so the admin can re-seed defaults from /admin/pages
+    // by running this one file again. Uses ON DUPLICATE KEY UPDATE — idempotent.
+    $seedFile = __DIR__ . '/../sql/pages_seed.sql';
+    if (is_file($seedFile)) {
+        foreach (preg_split('/;\s*\n/', file_get_contents($seedFile)) as $stmt) {
+            $stmt = trim($stmt);
+            if ($stmt !== '' && !str_starts_with($stmt, '--')) {
+                try { DB::pdo()->exec($stmt); } catch (PDOException $e) { /* skip */ }
+            }
+        }
+    }
 }
 
 // Lightweight idempotent migrations for existing installs (additive only).

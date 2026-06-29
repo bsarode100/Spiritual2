@@ -318,8 +318,9 @@ $r->post('/admin/pages/{id}', $admin(function ($a) {
 
 $r->post('/admin/pages/{id}/delete', $admin(function ($a) {
     $p = DB::one('SELECT slug FROM pages WHERE id = ?', [$a['id']]);
-    // Protect the four pages with hard-coded short URLs (/about, /privacy, /terms, /contact)
-    $protected = ['about','privacy','terms','contact'];
+    // Protect the pages with hard-coded short URLs
+    // (/about, /privacy, /terms, /contact, /refund-policy, /cookies)
+    $protected = ['about','privacy','terms','contact','refund-policy','cookie-policy'];
     if ($p && in_array($p['slug'], $protected, true)) {
         flash('error', "The '{$p['slug']}' page is built-in and cannot be deleted (you can unpublish it instead).");
     } else {
