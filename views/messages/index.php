@@ -15,10 +15,15 @@
         <div class="admin-card" style="padding: 0;">
             <?php foreach ($threads as $t): ?>
                 <a href="/messages/<?= (int)$t['other_id'] ?>" class="msg-thread" style="border-bottom: 1px solid var(--c-line);">
-                    <h4><?= e($t['other_name']) ?></h4>
-                    <p><?= e($t['last_msg'] ? mb_substr($t['last_msg'], 0, 80) : 'Connected - start the conversation') ?></p>
+                    <div class="flex-between" style="gap: .8rem;">
+                        <h4><?= e($t['other_name']) ?></h4>
+                        <?php if ((int)$t['unread'] > 0): ?>
+                            <span class="pill red" style="font-size: .72rem; padding: .15rem .55rem;"><?= (int)$t['unread'] ?> new</span>
+                        <?php endif; ?>
+                    </div>
+                    <p><?= e($t['last_msg'] ? mb_substr($t['last_msg'], 0, 80) : 'Connected — start the conversation') ?></p>
                     <?php $threadTime = $t['last_at'] ?: $t['connected_at']; ?>
-                    <div style="color: var(--c-muted); font-size: .76rem; margin-top: .3rem;"><?= date('M j - g:i a', strtotime($threadTime)) ?></div>
+                    <div style="color: var(--c-muted); font-size: .76rem; margin-top: .3rem;"><?= date('M j · g:i a', strtotime($threadTime)) ?></div>
                 </a>
             <?php endforeach; ?>
         </div>

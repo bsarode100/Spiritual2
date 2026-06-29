@@ -42,13 +42,33 @@
             <?php if ($recent_interests): ?>
             <div class="admin-card mb-4">
                 <h3 style="margin-bottom: 1rem;">New interests for you</h3>
-                <?php foreach ($recent_interests as $i): ?>
-                    <div class="flex-between" style="padding: .8rem 0; border-bottom: 1px solid var(--c-line);">
+                <?php foreach ($recent_interests as $i): $age = age_from_dob($i['dob'] ?? null); ?>
+                    <div class="flex-between" style="padding: .8rem 0; border-bottom: 1px solid var(--c-line); flex-wrap: wrap; gap: .6rem;">
                         <div>
-                            <strong><?= e($i['name']) ?></strong> sent you an interest
-                            <div style="color: var(--c-muted); font-size: .85rem;"><?= e(date('M j', strtotime($i['created_at']))) ?> · <span class="pill <?= $i['status']==='accepted'?'green':($i['status']==='declined'?'red':'gold') ?>"><?= e($i['status']) ?></span></div>
+                            <strong><a href="/member/<?= (int)$i['uid'] ?>"><?= e($i['name']) ?></a></strong><?php if ($age): ?>, <?= $age ?><?php endif; ?> sent you an interest
+                            <div style="color: var(--c-muted); font-size: .85rem;">
+                                <?php $meta = array_filter([$i['profession'] ?? null, $i['city'] ?? null]); ?>
+                                <?php if ($meta): ?><?= e(implode(' · ', $meta)) ?> · <?php endif; ?>
+                                <?= e(date('M j', strtotime($i['created_at']))) ?> ·
+                                <span class="pill <?= $i['status']==='accepted'?'green':($i['status']==='declined'?'red':'gold') ?>"><?= e($i['status']) ?></span>
+                            </div>
                         </div>
-                        <a href="/member/<?= (int)$i['uid'] ?>" class="btn btn-ghost btn-sm">View</a>
+                        <div class="flex gap-1">
+                            <?php if ($i['status'] === 'sent'): ?>
+                                <form method="post" action="/interest/<?= (int)$i['id'] ?>/accept" style="display:inline;">
+                                    <?= csrf_field() ?><button class="btn btn-primary btn-sm">Accept</button>
+                                </form>
+                                <form method="post" action="/interest/<?= (int)$i['id'] ?>/decline" style="display:inline;">
+                                    <?= csrf_field() ?><button class="btn btn-ghost btn-sm">Decline</button>
+                                </form>
+                                <a href="/member/<?= (int)$i['uid'] ?>" class="btn btn-ghost btn-sm">View</a>
+                            <?php elseif ($i['status'] === 'accepted'): ?>
+                                <a href="/messages/<?= (int)$i['uid'] ?>" class="btn btn-primary btn-sm">Message</a>
+                                <a href="/member/<?= (int)$i['uid'] ?>" class="btn btn-ghost btn-sm">View</a>
+                            <?php else: ?>
+                                <a href="/member/<?= (int)$i['uid'] ?>" class="btn btn-ghost btn-sm">View</a>
+                            <?php endif; ?>
+                        </div>
                     </div>
                 <?php endforeach; ?>
                 <div class="mt-2"><a href="/interests">See all interests →</a></div>

@@ -717,8 +717,13 @@ $r->get('/dashboard', function () {
                    LEFT JOIN spiritual_details s ON s.user_id = u.id
                        WHERE {$matchWhere}
                     ORDER BY u.created_at DESC LIMIT 6", $matchParams);
-    $recent_interests = DB::all("SELECT i.*, u.name, u.id AS uid FROM interests i JOIN users u ON u.id = i.sender_id
-                                 WHERE i.receiver_id = ? ORDER BY i.created_at DESC LIMIT 5", [$uid]);
+    $recent_interests = DB::all("SELECT i.*, u.name, u.id AS uid, p.city, p.profession, p.dob
+                                   FROM interests i
+                                   JOIN users u ON u.id = i.sender_id
+                              LEFT JOIN profiles p ON p.user_id = u.id
+                                  WHERE i.receiver_id = ?
+                                    AND u.role = 'member' AND u.status = 'active'
+                               ORDER BY i.created_at DESC LIMIT 5", [$uid]);
     view('member/dashboard', compact('stats','matches','recent_interests'));
 });
 
@@ -871,17 +876,21 @@ $r->get('/member/{id}', function ($a) {
         redirect('/profile/edit');
     }
     // p.* first, then u.* — so duplicate keys (id, created_at, updated_at) resolve to the users row.
+    // We intentionally do NOT filter on profile_complete here: when someone receives an
+    // interest from a member who is still finishing their bio, the receiver should still
+    // be able to land on the page (with a soft "still preparing" notice) instead of a 404.
     $u = DB::one("SELECT p.*, u.id, u.name, u.email, u.phone, u.role, u.status, u.created_at, u.updated_at
                     FROM users u JOIN profiles p ON p.user_id = u.id
-                   WHERE u.id = ? AND u.role = 'member' AND u.status = 'active' AND p.profile_complete = 1", [$targetId]);
+                   WHERE u.id = ? AND u.role = 'member' AND u.status = 'active'", [$targetId]);
     if (!$u) { http_response_code(404); view('errors/404'); return; }
+    $isComplete = (int)($u['profile_complete'] ?? 0) === 1;
     $sp = DB::one('SELECT * FROM spiritual_details WHERE user_id = ?', [$targetId]);
     $photos = DB::all('SELECT * FROM photos WHERE user_id = ? ORDER BY is_primary DESC', [$targetId]);
     DB::q('UPDATE profiles SET views = views + 1 WHERE user_id = ?', [$targetId]);
     $interest = interest_between(Auth::id(), $targetId);
     $shortlisted = (bool) DB::val('SELECT 1 FROM shortlists WHERE user_id = ? AND target_user_id = ?', [Auth::id(), $targetId]);
     $canMessage = $interest && $interest['status'] === 'accepted';
-    view('member/show', compact('u','sp','photos','interest','shortlisted','canMessage'));
+    view('member/show', compact('u','sp','photos','interest','shortlisted','canMessage','isComplete'));
 });
 
 // ------------------- INTERESTS -------------------
@@ -895,6 +904,12 @@ $r->post('/interest/send/{id}', function ($a) {
     }
 
     $me = active_member_profile($uid);
+    if (!$me || !(int)($me['profile_complete'] ?? 0)) {
+        // Without a complete bio the other person has nothing to read when they
+        // try to view us back — block early so we never create a half-baked match.
+        flash('error', 'Please complete your profile before expressing interest.');
+        redirect('/profile/edit');
+    }
     $target = active_member_profile($targetId);
     if (!$target || !(int)($target['profile_complete'] ?? 0)) {
         flash('error', 'This profile is not available for interests right now.');
@@ -1008,45 +1023,20 @@ $r->get('/shortlist', function () {
 // ------------------- MESSAGES -------------------
 $r->get('/messages', function () {
     Auth::require();
-    $uid = Auth::id();
-    $threads = DB::all("SELECT
-                          CASE WHEN i.sender_id = :u_case THEN i.receiver_id ELSE i.sender_id END AS other_id,
-                          u.name AS other_name,
-                          p.city AS other_city,
-                          p.profession AS other_profession,
-                          (SELECT body FROM messages mx
-                            WHERE (mx.sender_id = :u_body_sender AND mx.receiver_id = u.id)
-                               OR (mx.sender_id = u.id AND mx.receiver_id = :u_body_receiver)
-                            ORDER BY mx.created_at DESC, mx.id DESC LIMIT 1) AS last_msg,
-                          (SELECT created_at FROM messages mx
-                            WHERE (mx.sender_id = :u_time_sender AND mx.receiver_id = u.id)
-                               OR (mx.sender_id = u.id AND mx.receiver_id = :u_time_receiver)
-                            ORDER BY mx.created_at DESC, mx.id DESC LIMIT 1) AS last_at,
-                          i.updated_at AS connected_at
-                        FROM interests i
-                        JOIN users u ON u.id = (CASE WHEN i.sender_id = :u_join THEN i.receiver_id ELSE i.sender_id END)
-                        JOIN profiles p ON p.user_id = u.id
-                        WHERE i.status = 'accepted'
-                          AND (i.sender_id = :u_sender OR i.receiver_id = :u_receiver)
-                          AND u.role = 'member' AND u.status = 'active'
-                        ORDER BY COALESCE(last_at, i.updated_at) DESC", [
-        'u_case' => $uid,
-        'u_body_sender' => $uid,
-        'u_body_receiver' => $uid,
-        'u_time_sender' => $uid,
-        'u_time_receiver' => $uid,
-        'u_join' => $uid,
-        'u_sender' => $uid,
-        'u_receiver' => $uid,
-    ]);
-    view('messages/index', ['threads' => $threads]);
+    view('messages/index', ['threads' => message_threads(Auth::id())]);
 });
 
 $r->get('/messages/{id}', function ($a) {
     Auth::require();
     $otherId = (int) $a['id'];
     $other = active_member_profile($otherId);
-    if (!$other) { http_response_code(404); view('errors/404'); return; }
+    if (!$other) {
+        // Sender's account may be paused, blocked or missing a profile row — don't dead-end
+        // on a 404 here, which is exactly what made "Accept" feel broken: the connection was
+        // saved fine, we just had nowhere to land them.
+        flash('error', 'That member is no longer available for chat.');
+        redirect('/messages');
+    }
     $interest = accepted_interest_between(Auth::id(), $otherId);
     if (!$interest) {
         flash('error', 'Messaging opens after one of you accepts an interest.');
@@ -1055,14 +1045,16 @@ $r->get('/messages/{id}', function ($a) {
     $msgs = DB::all('SELECT * FROM messages WHERE (sender_id = ? AND receiver_id = ?) OR (sender_id = ? AND receiver_id = ?) ORDER BY created_at ASC',
         [Auth::id(), $otherId, $otherId, Auth::id()]);
     DB::q('UPDATE messages SET read_at = NOW() WHERE receiver_id = ? AND sender_id = ? AND read_at IS NULL', [Auth::id(), $otherId]);
-    view('messages/show', ['other' => $other, 'msgs' => $msgs, 'interest' => $interest]);
+    $threads = message_threads(Auth::id());
+    view('messages/show', ['other' => $other, 'msgs' => $msgs, 'interest' => $interest, 'threads' => $threads]);
 });
 
 $r->post('/messages/{id}', function ($a) {
     Auth::require();
     $otherId = (int) $a['id'];
     if (!active_member_profile($otherId)) {
-        http_response_code(404); view('errors/404'); return;
+        flash('error', 'That member is no longer available for chat.');
+        redirect('/messages');
     }
     if (!can_message_member(Auth::id(), $otherId)) {
         flash('error', 'Messaging opens after one of you accepts an interest.');

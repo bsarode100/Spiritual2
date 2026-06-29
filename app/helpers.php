@@ -153,6 +153,47 @@ function can_message_member(int $userId, int $otherId): bool {
     return $userId !== $otherId && (bool) accepted_interest_between($userId, $otherId);
 }
 
+// All accepted-connection threads for a user, newest activity first, with last
+// message preview and unread count from the other side. Shared by the inbox
+// page and the in-chat sidebar so both stay consistent.
+function message_threads(int $userId): array {
+    return DB::all("SELECT
+                      CASE WHEN i.sender_id = :u_case THEN i.receiver_id ELSE i.sender_id END AS other_id,
+                      u.name AS other_name,
+                      p.city AS other_city,
+                      p.profession AS other_profession,
+                      (SELECT body FROM messages mx
+                        WHERE (mx.sender_id = :u_body_sender AND mx.receiver_id = u.id)
+                           OR (mx.sender_id = u.id AND mx.receiver_id = :u_body_receiver)
+                        ORDER BY mx.created_at DESC, mx.id DESC LIMIT 1) AS last_msg,
+                      (SELECT created_at FROM messages mx
+                        WHERE (mx.sender_id = :u_time_sender AND mx.receiver_id = u.id)
+                           OR (mx.sender_id = u.id AND mx.receiver_id = :u_time_receiver)
+                        ORDER BY mx.created_at DESC, mx.id DESC LIMIT 1) AS last_at,
+                      (SELECT COUNT(*) FROM messages mu
+                        WHERE mu.sender_id = u.id
+                          AND mu.receiver_id = :u_unread
+                          AND mu.read_at IS NULL) AS unread,
+                      i.updated_at AS connected_at
+                    FROM interests i
+                    JOIN users u ON u.id = (CASE WHEN i.sender_id = :u_join THEN i.receiver_id ELSE i.sender_id END)
+                    JOIN profiles p ON p.user_id = u.id
+                    WHERE i.status = 'accepted'
+                      AND (i.sender_id = :u_sender OR i.receiver_id = :u_receiver)
+                      AND u.role = 'member' AND u.status = 'active'
+                    ORDER BY COALESCE(last_at, i.updated_at) DESC", [
+        'u_case' => $userId,
+        'u_body_sender' => $userId,
+        'u_body_receiver' => $userId,
+        'u_time_sender' => $userId,
+        'u_time_receiver' => $userId,
+        'u_unread' => $userId,
+        'u_join' => $userId,
+        'u_sender' => $userId,
+        'u_receiver' => $userId,
+    ]);
+}
+
 function primary_photo(int $userId): ?string {
     $p = DB::val('SELECT path FROM photos WHERE user_id = ? ORDER BY is_primary DESC, id ASC LIMIT 1', [$userId]);
     return $p ?: null;
