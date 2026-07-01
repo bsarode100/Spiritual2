@@ -705,18 +705,21 @@ $r->get('/dashboard', function () {
     ];
     $me = DB::one('SELECT * FROM profiles WHERE user_id = ?', [$uid]);
     $opp = opposite_gender($me['gender'] ?? null);
-    $matchWhere = "u.id != :uid AND u.status = 'active' AND u.role = 'member' AND p.profile_complete = 1";
+    // We intentionally do NOT filter by profile_complete: seekers should discover each
+    // other as soon as they register. Cards show an "in progress" badge for incomplete
+    // profiles, and actions (view/contact) prompt the viewer to finish their own bio first.
+    $matchWhere = "u.id != :uid AND u.status = 'active' AND u.role = 'member'";
     $matchParams = ['uid' => $uid];
     if ($opp) {
         $matchWhere .= ' AND p.gender = :gender';
         $matchParams['gender'] = $opp;
     }
-    $matches = DB::all("SELECT u.*, p.gender, p.dob, p.city, p.profession, p.about_me, p.height_cm, s.spiritual_path
+    $matches = DB::all("SELECT u.*, p.gender, p.dob, p.city, p.profession, p.about_me, p.height_cm, p.profile_complete, s.spiritual_path
                         FROM users u
                         JOIN profiles p ON p.user_id = u.id
                    LEFT JOIN spiritual_details s ON s.user_id = u.id
                        WHERE {$matchWhere}
-                    ORDER BY u.created_at DESC LIMIT 6", $matchParams);
+                    ORDER BY p.profile_complete DESC, u.created_at DESC LIMIT 6", $matchParams);
     $recent_interests = DB::all("SELECT i.*, u.name, u.id AS uid, p.city, p.profession, p.dob
                                    FROM interests i
                                    JOIN users u ON u.id = i.sender_id
@@ -834,7 +837,9 @@ $r->get('/browse', function () {
     Auth::require();
     $me  = DB::one('SELECT * FROM profiles WHERE user_id = ?', [Auth::id()]);
     $opp = opposite_gender($me['gender'] ?? null);
-    $where  = ["u.status = 'active'", "u.role = 'member'", 'u.id != :me', 'p.profile_complete = 1'];
+    // Show every active member — even those still finishing their bio. Cards flag
+    // "in progress" profiles and gated actions ask the viewer to complete their own first.
+    $where  = ["u.status = 'active'", "u.role = 'member'", 'u.id != :me'];
     $params = ['me' => Auth::id()];
 
     if ($opp) {
@@ -857,12 +862,13 @@ $r->get('/browse', function () {
     $pg = paginate($total, $per, $page);
 
     $rows = DB::all("SELECT u.id, u.name, p.dob, p.gender, p.city, p.state, p.country, p.height_cm,
-                            p.profession, p.education, p.about_me, p.religion, p.community, s.spiritual_path, s.guru
+                            p.profession, p.education, p.about_me, p.religion, p.community, p.profile_complete,
+                            s.spiritual_path, s.guru
                        FROM users u
                        JOIN profiles p ON p.user_id = u.id
                   LEFT JOIN spiritual_details s ON s.user_id = u.id
                       WHERE " . implode(' AND ', $where) . "
-                   ORDER BY u.created_at DESC
+                   ORDER BY p.profile_complete DESC, u.created_at DESC
                       LIMIT {$pg['limit']} OFFSET {$pg['offset']}", $params);
 
     view('browse/index', ['rows' => $rows, 'page' => $pg, 'total' => $total]);
@@ -873,6 +879,14 @@ $r->get('/member/{id}', function ($a) {
     Auth::require();
     $targetId = (int) $a['id'];
     if ($targetId === Auth::id()) {
+        redirect('/profile/edit');
+    }
+    // Viewer must finish their own bio before opening someone else's — otherwise the
+    // other seeker has nothing to read back if they get curious. Browse can be
+    // explored freely; the gate only kicks in when someone tries to *engage*.
+    $viewer = active_member_profile(Auth::id());
+    if (!$viewer || !(int)($viewer['profile_complete'] ?? 0)) {
+        flash('error', 'Please complete your profile first so other seekers can learn about you too.');
         redirect('/profile/edit');
     }
     // p.* first, then u.* — so duplicate keys (id, created_at, updated_at) resolve to the users row.

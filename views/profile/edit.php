@@ -9,14 +9,19 @@
         <a href="/dashboard" class="btn btn-ghost btn-sm">← Dashboard</a>
     </div>
 
+    <p style="color: var(--c-muted); font-size: .95rem; margin-bottom: 1rem;">
+        Fields marked with <span style="color: var(--c-maroon); font-weight: 700;">*</span>
+        are required — you'll need them to view other seekers and express interest.
+    </p>
+
     <form method="post" action="/profile/edit" class="admin-card mb-4">
         <?= csrf_field() ?>
         <h3 id="basic">Basic Information</h3>
         <div class="form-grid">
-            <div class="field"><label>Full Name</label><input type="text" name="name" value="<?= e($me['name']) ?>" required></div>
-            <div class="field"><label>Date of Birth</label><input type="date" name="dob" value="<?= e($profile['dob'] ?? '') ?>" required></div>
-            <div class="field"><label>Gender</label>
-                <select name="gender">
+            <div class="field"><label>Full Name <span style="color: var(--c-maroon);">*</span></label><input type="text" name="name" value="<?= e($me['name']) ?>" required></div>
+            <div class="field"><label>Date of Birth <span style="color: var(--c-maroon);">*</span></label><input type="date" name="dob" value="<?= e($profile['dob'] ?? '') ?>" required></div>
+            <div class="field"><label>Gender <span style="color: var(--c-maroon);">*</span></label>
+                <select name="gender" required>
                     <option value="female" <?= ($profile['gender'] ?? '')==='female' ? 'selected' : '' ?>>Female</option>
                     <option value="male" <?= ($profile['gender'] ?? '')==='male' ? 'selected' : '' ?>>Male</option>
                 </select>
@@ -54,7 +59,7 @@
         <div class="form-grid-3">
             <div class="field"><label>Country</label><input type="text" name="country" value="<?= e($profile['country'] ?? 'India') ?>"></div>
             <div class="field"><label>State</label><input type="text" name="state" value="<?= e($profile['state'] ?? '') ?>"></div>
-            <div class="field"><label>City</label><input type="text" name="city" value="<?= e($profile['city'] ?? '') ?>" required></div>
+            <div class="field"><label>City <span style="color: var(--c-maroon);">*</span></label><input type="text" name="city" value="<?= e($profile['city'] ?? '') ?>" required></div>
         </div>
 
         <h3 class="mt-4">Education &amp; Career</h3>
@@ -72,7 +77,7 @@
         </div>
 
         <h3 class="mt-4">About</h3>
-        <div class="field"><label>About me</label><textarea name="about_me" rows="5" required><?= e($profile['about_me'] ?? '') ?></textarea></div>
+        <div class="field"><label>About me <span style="color: var(--c-maroon);">*</span></label><textarea name="about_me" rows="5" required><?= e($profile['about_me'] ?? '') ?></textarea></div>
         <div class="field"><label>Partner preference</label><textarea name="partner_pref" rows="4"><?= e($profile['partner_pref'] ?? '') ?></textarea></div>
 
         <button class="btn btn-primary btn-lg">Save Profile</button>

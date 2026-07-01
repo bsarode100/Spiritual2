@@ -41,7 +41,10 @@
                     </div>
                     <div class="profile-body">
                         <h3><?= e($m['name']) ?><?php if ($age): ?>, <?= $age ?><?php endif; ?></h3>
-                        <div class="profile-meta"><?= e($m['profession'] ?: 'Seeker') ?> · <?= e($m['city']) ?></div>
+                        <?php if (empty($m['profile_complete'])): ?>
+                            <span class="pill gold" style="font-size: .75rem; margin-bottom: .35rem;">Profile in progress</span>
+                        <?php endif; ?>
+                        <div class="profile-meta"><?= e($m['profession'] ?: 'Seeker') ?> · <?= e($m['city'] ?: '—') ?></div>
                         <div class="profile-tags">
                             <?php if ($m['height_cm']): ?><span class="tag"><?= cm_to_feet((int)$m['height_cm']) ?></span><?php endif; ?>
                             <?php if ($m['community']): ?><span class="tag"><?= e($m['community']) ?></span><?php endif; ?>

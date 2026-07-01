@@ -86,7 +86,10 @@
                         </div>
                         <div class="profile-body">
                             <h3><?= e($m['name']) ?><?php if ($age): ?>, <?= $age ?><?php endif; ?></h3>
-                            <div class="profile-meta"><?= e($m['profession'] ?: 'Seeker') ?> · <?= e($m['city']) ?></div>
+                            <?php if (empty($m['profile_complete'])): ?>
+                                <span class="pill gold" style="font-size: .75rem; margin-bottom: .35rem;">Profile in progress</span>
+                            <?php endif; ?>
+                            <div class="profile-meta"><?= e($m['profession'] ?: 'Seeker') ?> · <?= e($m['city'] ?: '—') ?></div>
                             <p class="profile-about"><?= e($m['about_me'] ?? '') ?></p>
                             <div class="profile-card-actions">
                                 <a href="/member/<?= (int)$m['id'] ?>" class="btn btn-ghost btn-sm">View Profile</a>
