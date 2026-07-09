@@ -1,8 +1,12 @@
 <?php /** @var array $other, $msgs, $interest, $threads */ $me = Auth::id(); ?>
 <section class="section-tight"><div class="container">
-    <div class="flex-between mb-3">
+    <div class="flex-between mb-3" style="flex-wrap: wrap; gap: .5rem;">
         <a href="/messages" class="btn btn-ghost btn-sm">← All Messages</a>
-        <a href="/member/<?= (int)$other['id'] ?>" class="btn btn-ghost btn-sm">View Profile</a>
+        <div class="flex gap-1" style="flex-wrap: wrap;">
+            <a href="/browse" class="btn btn-ghost btn-sm">🔍 Browse Profiles</a>
+            <a href="/member/<?= (int)$other['id'] ?>" class="btn btn-ghost btn-sm">View Profile</a>
+            <a href="/dashboard" class="btn btn-ghost btn-sm">🏠 Dashboard</a>
+        </div>
     </div>
 
     <div class="msg-grid">
@@ -62,6 +66,15 @@
                 <input type="text" name="body" placeholder="Type a message..." required autocomplete="off" maxlength="2000">
                 <button class="btn btn-primary">Send</button>
             </form>
+        </div>
+    </div>
+
+    <div class="admin-card text-center mt-4" style="padding: 1.4rem;">
+        <p style="color: var(--c-muted); margin: 0 0 .8rem;">Want to meet more seekers on the same path?</p>
+        <div class="flex gap-1" style="justify-content: center; flex-wrap: wrap;">
+            <a href="/browse" class="btn btn-primary btn-sm">🔍 Browse New Profiles</a>
+            <a href="/interests" class="btn btn-ghost btn-sm">💌 My Interests</a>
+            <a href="/dashboard" class="btn btn-ghost btn-sm">🏠 Dashboard</a>
         </div>
     </div>
 </div></section>

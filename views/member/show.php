@@ -1,7 +1,13 @@
 <?php /** @var array $u, $sp, $photos; @var array|null $interest; @var bool $shortlisted, $canMessage */ $age = age_from_dob($u['dob']); ?>
 <section class="section-tight">
 <div class="container">
-    <a href="/browse" class="btn btn-ghost btn-sm mb-3">← Back to browse</a>
+    <div class="flex-between mb-3" style="flex-wrap: wrap; gap: .5rem;">
+        <a href="/browse" class="btn btn-ghost btn-sm">← Back to browse</a>
+        <div class="flex gap-1" style="flex-wrap: wrap;">
+            <a href="/browse" class="btn btn-ghost btn-sm">🔍 Browse Profiles</a>
+            <a href="/dashboard" class="btn btn-ghost btn-sm">🏠 Dashboard</a>
+        </div>
+    </div>
 
     <div class="profile-hero">
         <?php if ($photos):
@@ -107,6 +113,17 @@
             <?php endif; ?>
         </div>
         <?php endif; ?>
+    </div>
+
+    <div class="admin-card text-center mt-4" style="padding: 2rem;">
+        <p style="font-family: var(--f-display); font-size: 1.3rem; margin: 0 0 .4rem; color: var(--c-maroon);">Keep exploring</p>
+        <p style="color: var(--c-muted); margin: 0 0 1rem;">Every seeker is unique — take a look at more profiles that share your path.</p>
+        <div class="flex gap-1" style="justify-content: center; flex-wrap: wrap;">
+            <a href="/browse" class="btn btn-primary">🔍 See New Profiles</a>
+            <a href="/dashboard" class="btn btn-ghost">🏠 Dashboard</a>
+            <a href="/shortlist" class="btn btn-ghost">⭐ My Shortlist</a>
+            <a href="/interests" class="btn btn-ghost">💌 My Interests</a>
+        </div>
     </div>
 </div>
 </section>

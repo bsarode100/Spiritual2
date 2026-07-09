@@ -111,9 +111,11 @@ function opposite_gender(?string $gender): ?string {
 }
 
 function active_member_profile(int $userId): ?array {
+    // profession is read by views/messages/show.php in the chat header — keep it here
+    // so the meta line ("Software Engineer · Pune") renders instead of a lonely divider.
     return DB::one(
         "SELECT u.id, u.name, u.email, u.phone, u.role, u.status,
-                p.gender, p.dob, p.city, p.state, p.country, p.profile_complete
+                p.gender, p.dob, p.city, p.state, p.country, p.profession, p.profile_complete
            FROM users u
            JOIN profiles p ON p.user_id = u.id
           WHERE u.id = ? AND u.role = 'member' AND u.status = 'active'",

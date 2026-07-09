@@ -26,8 +26,14 @@ $r->get('/page/{slug}', function ($a) {
 $r->get('/about',          function () { $page = DB::one("SELECT * FROM pages WHERE slug='about'");          view('page', ['page' => $page]); });
 $r->get('/privacy',        function () { $page = DB::one("SELECT * FROM pages WHERE slug='privacy'");        view('page', ['page' => $page]); });
 $r->get('/terms',          function () { $page = DB::one("SELECT * FROM pages WHERE slug='terms'");          view('page', ['page' => $page]); });
-$r->get('/refund-policy',  function () { $page = DB::one("SELECT * FROM pages WHERE slug='refund-policy'");  view('page', ['page' => $page]); });
-$r->get('/cookies',        function () { $page = DB::one("SELECT * FROM pages WHERE slug='cookie-policy'");  view('page', ['page' => $page]); });
+// Legacy shortcuts — kept alive as 301 redirects so old bookmarks and outbound
+// links still land on the canonical /page/{slug} version the admin now edits.
+$r->get('/refund-policy',  function () { header('Location: /page/refund-policy', true, 301); exit; });
+$r->get('/cookies',        function () { header('Location: /page/cookie-policy', true, 301); exit; });
+// Handle old URL variants people may have shared or that other views mistakenly linked to.
+$r->get('/page/privacy-policy',      function () { header('Location: /page/privacy',       true, 301); exit; });
+$r->get('/page/terms-and-condition', function () { header('Location: /page/terms',         true, 301); exit; });
+$r->get('/page/cookies',             function () { header('Location: /page/cookie-policy', true, 301); exit; });
 
 // ------------------- PAYMENT DETAILS (public) -------------------
 $r->get('/payment-details', function () {
@@ -404,12 +410,13 @@ $r->post('/verify-signup-otp', function () {
     DB::q('UPDATE signup_otps SET used_at = NOW() WHERE email = ? AND used_at IS NULL', [$email]);
 
     $uid = DB::insert('users', [
-        'name'          => $pending['name'],
-        'email'         => $email,
-        'phone'         => $pending['phone'],
-        'password_hash' => $pending['password_hash'],
-        'role'          => 'member',
-        'status'        => 'active',
+        'name'              => $pending['name'],
+        'email'             => $email,
+        'phone'             => $pending['phone'],
+        'password_hash'     => $pending['password_hash'],
+        'role'              => 'member',
+        'status'            => 'active',
+        'email_verified_at' => date('Y-m-d H:i:s'),
     ]);
     DB::insert('profiles', [
         'user_id'          => $uid,
@@ -1075,9 +1082,16 @@ $r->post('/messages/{id}', function ($a) {
         redirect('/member/' . $otherId);
     }
     $body = trim($_POST['body'] ?? '');
-    if ($body !== '') {
-        DB::insert('messages', ['sender_id' => Auth::id(), 'receiver_id' => $otherId, 'body' => $body]);
+    if ($body === '') {
+        flash('error', 'Please type something before sending.');
+        redirect('/messages/' . $otherId);
     }
+    // Match the HTML maxlength but re-enforce here so a scripted client cannot
+    // silently drop a novel into the messages table.
+    if (mb_strlen($body) > 2000) {
+        $body = mb_substr($body, 0, 2000);
+    }
+    DB::insert('messages', ['sender_id' => Auth::id(), 'receiver_id' => $otherId, 'body' => $body]);
     redirect('/messages/' . $otherId);
 });
 

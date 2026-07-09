@@ -1,8 +1,11 @@
 <?php /** @var array $rows */ ?>
 <section class="section-tight"><div class="container">
-    <div class="flex-between mb-4">
+    <div class="flex-between mb-4" style="flex-wrap: wrap; gap: .5rem;">
         <div><span class="eyebrow">Saved for later</span><h1 style="margin:0;">Shortlist</h1></div>
-        <a href="/dashboard" class="btn btn-ghost btn-sm">← Dashboard</a>
+        <div class="flex gap-1" style="flex-wrap: wrap;">
+            <a href="/browse" class="btn btn-ghost btn-sm">🔍 Browse Profiles</a>
+            <a href="/dashboard" class="btn btn-ghost btn-sm">🏠 Dashboard</a>
+        </div>
     </div>
     <?php if (!$rows): ?>
         <div class="admin-card text-center" style="padding: 3rem;">

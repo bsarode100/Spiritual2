@@ -40,10 +40,10 @@
         <input type="checkbox" name="agree" value="1" required style="margin-top: .25rem;">
         <span>
             I am at least 18 years old and I have read and agree to the
-            <a href="/page/terms-and-condition" target="_blank" rel="noopener">Terms &amp; Conditions</a>,
-            <a href="/page/privacy-policy" target="_blank" rel="noopener">Privacy Policy</a>,
-            <a href="/refund-policy" target="_blank" rel="noopener">Refund Policy</a>
-            and <a href="/cookies" target="_blank" rel="noopener">Cookie Policy</a>.
+            <a href="/page/terms" target="_blank" rel="noopener">Terms &amp; Conditions</a>,
+            <a href="/page/privacy" target="_blank" rel="noopener">Privacy Policy</a>,
+            <a href="/page/refund-policy" target="_blank" rel="noopener">Refund Policy</a>
+            and <a href="/page/cookie-policy" target="_blank" rel="noopener">Cookie Policy</a>.
         </span>
     </label>
     <button class="btn btn-primary btn-block btn-lg">Send Verification Code</button>

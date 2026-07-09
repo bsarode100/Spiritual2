@@ -1,8 +1,12 @@
 <?php /** @var array $received, $sent */ ?>
 <section class="section-tight"><div class="container">
-    <div class="flex-between mb-4">
+    <div class="flex-between mb-4" style="flex-wrap: wrap; gap: .5rem;">
         <div><span class="eyebrow">Connections</span><h1 style="margin:0;">Interests</h1></div>
-        <a href="/dashboard" class="btn btn-ghost btn-sm">← Dashboard</a>
+        <div class="flex gap-1" style="flex-wrap: wrap;">
+            <a href="/browse" class="btn btn-ghost btn-sm">🔍 Browse Profiles</a>
+            <a href="/messages" class="btn btn-ghost btn-sm">💬 Messages</a>
+            <a href="/dashboard" class="btn btn-ghost btn-sm">🏠 Dashboard</a>
+        </div>
     </div>
 
     <h2 style="font-size: 1.4rem;">Received <span style="color: var(--c-muted); font-size: 1rem;">(<?= count($received) ?>)</span></h2>

@@ -39,10 +39,10 @@
                     <li><a href="/about">Our Story</a></li>
                     <li><a href="/contact">Contact</a></li>
                     <li><a href="/payment-details">Payment Details</a></li>
-                    <li><a href="/page/privacy-policy">Privacy Policy</a></li>
-                    <li><a href="/page/terms-and-condition">Terms &amp; Conditions</a></li>
-                    <li><a href="/refund-policy">Refund &amp; Cancellation</a></li>
-                    <li><a href="/cookies">Cookie Policy</a></li>
+                    <li><a href="/page/privacy">Privacy Policy</a></li>
+                    <li><a href="/page/terms">Terms &amp; Conditions</a></li>
+                    <li><a href="/page/refund-policy">Refund &amp; Cancellation</a></li>
+                    <li><a href="/page/cookie-policy">Cookie Policy</a></li>
                 </ul>
             </div>
             <div>
