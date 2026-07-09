@@ -6,5 +6,5 @@
     </div>
 </section>
 <section class="section"><div class="container">
-    <div class="prose"><?= $page['body'] /* trusted HTML from admin */ ?></div>
+    <div class="prose"><?= format_page_body($page['body']) ?></div>
 </div></section>

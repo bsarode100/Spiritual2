@@ -83,7 +83,56 @@ function setting(string $key, ?string $default = null): ?string {
             $cache[$r['setting_key']] = $r['setting_value'];
         }
     }
-    return $cache[$key] ?? $default;
+    // An empty stored value ("") means "not configured yet" from the admin's point of
+    // view — falling through to the default keeps the footer copyright / contact chips
+    // from rendering as "© 2026 ." or a blank mailto: link.
+    $val = $cache[$key] ?? null;
+    return ($val === null || $val === '') ? $default : $val;
+}
+
+// Renders a CMS page body. If the admin pasted structured HTML we trust it and pass
+// through unchanged. Otherwise the body is plain text (or Markdown-ish paste with
+// escape artifacts like "1\.") — we clean the escapes, wrap paragraphs, and promote
+// short "N. Heading" lines to <h3> so the page has visible hierarchy instead of one
+// wall of text.
+function format_page_body(string $body): string {
+    if (preg_match('/<(?:p|h[1-6]|ul|ol|li|div|table|section|article|blockquote)\b/i', $body)) {
+        return $body;
+    }
+    $body = str_replace(["\r\n", "\r"], "\n", $body);
+    // Strip Markdown-style backslash escapes on list/heading numerals.
+    $body = preg_replace('/(\d+)\\\\\./', '$1.', $body);
+    $paragraphs = preg_split('/\n{2,}/', trim($body));
+    $out = [];
+    foreach ($paragraphs as $para) {
+        $para = trim($para);
+        if ($para === '') continue;
+        $lines = explode("\n", $para);
+
+        // "1. Purpose of the Platform" as a single short line → treat as a section heading.
+        if (count($lines) === 1 && preg_match('/^\d+\.\s+.{1,120}$/', $para)) {
+            $out[] = '<h3>' . e($para) . '</h3>';
+            continue;
+        }
+
+        // Bullet-style block ("- item" / "* item" on each line) → <ul>.
+        $allBullets = true;
+        foreach ($lines as $ln) {
+            if (!preg_match('/^\s*[-*]\s+\S/', $ln)) { $allBullets = false; break; }
+        }
+        if ($allBullets) {
+            $items = '';
+            foreach ($lines as $ln) {
+                $items .= '<li>' . e(preg_replace('/^\s*[-*]\s+/', '', $ln)) . '</li>';
+            }
+            $out[] = '<ul>' . $items . '</ul>';
+            continue;
+        }
+
+        // Regular paragraph — keep intra-paragraph line breaks as <br>.
+        $out[] = '<p>' . nl2br(e($para), false) . '</p>';
+    }
+    return implode("\n", $out);
 }
 
 function age_from_dob(?string $dob): ?int {
