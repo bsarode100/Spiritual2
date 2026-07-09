@@ -96,6 +96,20 @@ function setting(string $key, ?string $default = null): ?string {
 // short "N. Heading" lines to <h3> so the page has visible hierarchy instead of one
 // wall of text.
 function format_page_body(string $body): string {
+    // A common admin mistake is pasting an entire exported HTML document — <!DOCTYPE>,
+    // <html>, <head> and all — into the body field. The nested </body> then closes the
+    // real page's body prematurely and pushes the site footer out of the render tree.
+    // Unwrap to just the inner <body> content, and drop any embedded <style>/<script>
+    // that could stomp the site's own CSS.
+    if (preg_match('/<body\b[^>]*>(.*?)<\/body>/is', $body, $m)) {
+        $body = $m[1];
+    }
+    $body = preg_replace('/<!DOCTYPE[^>]*>/i', '', $body) ?? $body;
+    $body = preg_replace('/<\/?(?:html|head|body|meta|link|title)\b[^>]*>/i', '', $body) ?? $body;
+    $body = preg_replace('/<style\b[^>]*>.*?<\/style>/is', '', $body) ?? $body;
+    $body = preg_replace('/<script\b[^>]*>.*?<\/script>/is', '', $body) ?? $body;
+    $body = trim($body);
+
     if (preg_match('/<(?:p|h[1-6]|ul|ol|li|div|table|section|article|blockquote)\b/i', $body)) {
         return $body;
     }
