@@ -34,7 +34,12 @@ return [
         'avatar_dir' => __DIR__ . '/../public/uploads/avatars',
         'blog_dir'   => __DIR__ . '/../public/uploads/blog',
         'site_dir'   => __DIR__ . '/../public/uploads/site',
+        // Verification documents (govt IDs, live selfies) hold PII — kept OUTSIDE
+        // public/ and only ever streamed through authenticated routes, never a URL.
+        'verify_dir' => __DIR__ . '/../storage/verification',
         'max_bytes'  => 4 * 1024 * 1024, // 4 MB
         'allowed'    => ['jpg','jpeg','png','webp'],
+        // Live selfie video from getUserMedia (webm) or a phone camera capture (mp4)
+        'verify_video_max_bytes' => 15 * 1024 * 1024, // 15 MB ≈ 10s clip
     ],
 ];

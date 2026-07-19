@@ -19,6 +19,11 @@
 
         <div class="nav-cta">
             <?php if (Auth::check()): ?>
+                <?php if (!Auth::isAdmin()): $navBadge = membership_badge(Auth::id()); ?>
+                    <?php if ($navBadge): ?>
+                        <a href="/packages" class="nav-badge" title="<?= e($navBadge) ?> member"><?= e($navBadge) ?></a>
+                    <?php endif; ?>
+                <?php endif; ?>
                 <a href="<?= Auth::isAdmin() ? '/admin' : '/dashboard' ?>" class="btn btn-ghost btn-sm"><?= Auth::isAdmin() ? 'Admin' : 'Dashboard' ?></a>
                 <a href="/logout" class="btn btn-primary btn-sm">Sign Out</a>
             <?php else: ?>

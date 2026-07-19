@@ -17,7 +17,10 @@
             <?php foreach ($received as $i): $age = age_from_dob($i['dob']); ?>
                 <div class="flex-between" style="padding: 1rem 0; border-bottom: 1px solid var(--c-line);">
                     <div>
-                        <h4 style="margin: 0 0 .25rem;"><a href="/member/<?= (int)$i['sender_id'] ?>"><?= e($i['name']) ?></a><?php if ($age): ?>, <?= $age ?><?php endif; ?></h4>
+                        <h4 style="margin: 0 0 .25rem;">
+                            <a href="/member/<?= (int)$i['sender_id'] ?>"><?= e($i['name']) ?></a><?php if ($age): ?>, <?= $age ?><?php endif; ?>
+                            <?= verified_badge($i['verified_tier'] ?? null, 'sm') ?>
+                        </h4>
                         <div style="color: var(--c-muted); font-size: .9rem;">
                             <?= e($i['profession']) ?> · <?= e($i['city']) ?> · <?= date('M j, Y', strtotime($i['created_at'])) ?>
                         </div>
@@ -45,7 +48,10 @@
             <?php foreach ($sent as $i): $age = age_from_dob($i['dob']); ?>
                 <div class="flex-between" style="padding: 1rem 0; border-bottom: 1px solid var(--c-line);">
                     <div>
-                        <h4 style="margin: 0 0 .25rem;"><a href="/member/<?= (int)$i['receiver_id'] ?>"><?= e($i['name']) ?></a><?php if ($age): ?>, <?= $age ?><?php endif; ?></h4>
+                        <h4 style="margin: 0 0 .25rem;">
+                            <a href="/member/<?= (int)$i['receiver_id'] ?>"><?= e($i['name']) ?></a><?php if ($age): ?>, <?= $age ?><?php endif; ?>
+                            <?= verified_badge($i['verified_tier'] ?? null, 'sm') ?>
+                        </h4>
                         <div style="color: var(--c-muted); font-size: .9rem;">
                             <?= e($i['profession']) ?> · <?= e($i['city']) ?> · sent <?= date('M j, Y', strtotime($i['created_at'])) ?>
                         </div>

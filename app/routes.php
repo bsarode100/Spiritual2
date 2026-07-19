@@ -4,12 +4,16 @@
 
 // ------------------- HOME -------------------
 $r->get('/', function () {
-    $featured = DB::all("SELECT u.*, p.gender, p.dob, p.city, p.state, p.country, p.profession, p.about_me, p.education, p.height_cm, s.spiritual_path
+    $priorityJoin = profile_priority_join_sql();
+    $prioritySelect = profile_priority_select_sql();
+    $featured = DB::all("SELECT u.*, p.gender, p.dob, p.city, p.state, p.country, p.profession, p.about_me, p.education, p.height_cm, p.verified_tier, s.spiritual_path,
+                                {$prioritySelect}
                           FROM users u
                           JOIN profiles p ON p.user_id = u.id
                      LEFT JOIN spiritual_details s ON s.user_id = u.id
+                     {$priorityJoin}
                          WHERE u.role = 'member' AND u.status = 'active' AND p.profile_complete = 1
-                      ORDER BY u.created_at DESC LIMIT 6");
+                      ORDER BY " . profile_priority_order_sql('u.created_at DESC') . " LIMIT 6");
     $stories  = DB::all("SELECT * FROM happy_stories ORDER BY is_featured DESC, id DESC LIMIT 3");
     $packages = DB::all("SELECT * FROM packages WHERE is_active = 1 ORDER BY display_order, id");
     $posts    = DB::all("SELECT * FROM blog_posts WHERE published = 1 ORDER BY published_at DESC LIMIT 3");
@@ -92,17 +96,208 @@ $r->get('/packages', function () {
     $rzp_enabled = setting('razorpay_enabled') === '1'
                 && setting('razorpay_key_id') !== ''
                 && setting('razorpay_key_secret') !== '';
-    view('packages/index', ['packages' => $packages, 'rzp_enabled' => $rzp_enabled]);
+    $me = Auth::check() ? membership_summary(Auth::id()) : null;
+    view('packages/index', ['packages' => $packages, 'rzp_enabled' => $rzp_enabled, 'me' => $me]);
+});
+
+// ------------------- ADD-ONS -------------------
+$r->get('/addons', function () {
+    $addons = DB::all('SELECT * FROM addons WHERE is_active = 1 ORDER BY display_order, id');
+    $rzp_enabled = setting('razorpay_enabled') === '1'
+                && setting('razorpay_key_id') !== ''
+                && setting('razorpay_key_secret') !== '';
+    view('addons/index', ['addons' => $addons, 'rzp_enabled' => $rzp_enabled]);
+});
+
+// ------------------- VERIFICATION -------------------
+$r->get('/verification', function () {
+    $identity = (int) setting('verify_identity_price', '299');
+    $selfie   = (int) setting('verify_selfie_price', '499');
+    $me = null; $existing = null;
+    if (Auth::check()) {
+        $me = membership_summary(Auth::id());
+        $existing = DB::one("SELECT * FROM verification_requests WHERE user_id = ? ORDER BY id DESC LIMIT 1", [Auth::id()]);
+    }
+    view('verification/index', ['identity_price' => $identity, 'selfie_price' => $selfie, 'me' => $me, 'existing' => $existing]);
+});
+
+$r->post('/verification/start', function () {
+    Auth::require();
+    $uid = Auth::id();
+
+    // One request in flight at a time; approved members don't need to pay again
+    // unless they're upgrading identity -> selfie.
+    $open = DB::one("SELECT * FROM verification_requests
+                      WHERE user_id = ? AND status IN ('pending_payment','pending_upload','pending_review')
+                      ORDER BY id DESC LIMIT 1", [$uid]);
+    if ($open) {
+        if ($open['status'] === 'pending_payment') { redirect('/checkout/verification/' . (int)$open['id']); }
+        flash('error', 'You already have a verification request in progress.');
+        redirect('/verification');
+    }
+
+    $tier = ($_POST['tier'] ?? '') === 'selfie' ? 'selfie' : 'identity';
+    $current = DB::val('SELECT verified_tier FROM profiles WHERE user_id = ?', [$uid]) ?: 'none';
+    if ($current === 'selfie' || $current === $tier) {
+        flash('success', 'Your profile is already ' . $current . ' verified.');
+        redirect('/verification');
+    }
+
+    $amount = $tier === 'selfie'
+        ? (int) setting('verify_selfie_price', '499')
+        : (int) setting('verify_identity_price', '299');
+    $vid = DB::insert('verification_requests', [
+        'user_id' => $uid,
+        'tier'    => $tier,
+        'amount'  => $amount,
+        'status'  => $amount > 0 ? 'pending_payment' : 'pending_upload',
+    ]);
+    if ($amount > 0) {
+        redirect('/checkout/verification/' . (int)$vid);
+    }
+    flash('success', 'Verification started — please submit your documents below.');
+    redirect('/verification');
+});
+
+// Document submission — govt ID (+ live selfie photo/video for the selfie tier).
+// Allowed while awaiting upload, and again after a rejection (resubmission).
+$r->post('/verification/{id}/documents', function ($a) {
+    Auth::require();
+    $uid = Auth::id();
+    $req = DB::one('SELECT * FROM verification_requests WHERE id = ? AND user_id = ?', [(int)$a['id'], $uid]);
+    if (!$req || !in_array($req['status'], ['pending_upload', 'rejected'], true)) {
+        flash('error', 'This verification request is not open for document submission.');
+        redirect('/verification');
+    }
+
+    $cfg = $GLOBALS['CFG']['uploads'];
+    $dir = $cfg['verify_dir'] . '/' . $uid;
+
+    $idDocTypes = ['aadhaar','pan','passport','driving_licence','voter_id'];
+    $idDocType = in_array($_POST['id_doc_type'] ?? '', $idDocTypes, true) ? $_POST['id_doc_type'] : null;
+    if (!$idDocType) { flash('error', 'Please select which government ID you are submitting.'); redirect('/verification'); }
+
+    if (empty($_FILES['id_doc']['name']) || $_FILES['id_doc']['error'] !== UPLOAD_ERR_OK) {
+        flash('error', 'Please attach a clear photo or PDF of your government ID.');
+        redirect('/verification');
+    }
+    $idPath = store_verification_upload($_FILES['id_doc'], $dir, 'id',
+        ['image/jpeg' => 'jpg', 'image/png' => 'png', 'image/webp' => 'webp', 'application/pdf' => 'pdf'],
+        (int)$cfg['max_bytes']);
+    if (!$idPath) { flash('error', 'Government ID must be a JPG, PNG, WEBP or PDF under 4MB.'); redirect('/verification'); }
+
+    $selfiePath = null; $selfieIsVideo = 0;
+    if ($req['tier'] === 'selfie') {
+        if (empty($_FILES['selfie']['name']) || $_FILES['selfie']['error'] !== UPLOAD_ERR_OK) {
+            flash('error', 'Please capture a live selfie photo or short video.');
+            redirect('/verification');
+        }
+        $selfiePath = store_verification_upload($_FILES['selfie'], $dir, 'selfie',
+            ['image/jpeg' => 'jpg', 'image/png' => 'png', 'image/webp' => 'webp', 'video/webm' => 'webm', 'video/mp4' => 'mp4'],
+            (int)$cfg['verify_video_max_bytes']);
+        if (!$selfiePath) { flash('error', 'Selfie must be a JPG/PNG/WEBP photo or a WEBM/MP4 clip under 15MB.'); redirect('/verification'); }
+        $selfieIsVideo = (int) (bool) preg_match('/\.(webm|mp4)$/', $selfiePath);
+    }
+
+    // Replace any previous submission's files (resubmission after rejection).
+    foreach (['id_doc_path' => $idPath, 'selfie_path' => $selfiePath] as $col => $new) {
+        if ($new && !empty($req[$col]) && $req[$col] !== $new) {
+            @unlink($cfg['verify_dir'] . '/' . $req[$col]);
+        }
+    }
+
+    DB::update('verification_requests', [
+        'id_doc_type'     => $idDocType,
+        'id_doc_path'     => $idPath,
+        'selfie_path'     => $selfiePath,
+        'selfie_is_video' => $selfieIsVideo,
+        'status'          => 'pending_review',
+        'reject_reason'   => null,
+        'submitted_at'    => date('Y-m-d H:i:s'),
+    ], ['id' => $req['id']]);
+
+    flash('success', 'Documents submitted. Our team will review them within 24–48 hours.');
+    redirect('/verification');
+});
+
+// Stream a verification document to its owner (admins use /admin/verification/{id}/media/{kind}).
+// Documents live outside public/ so this authenticated route is the only way in.
+$r->get('/verification/{id}/media/{kind}', function ($a) {
+    Auth::require();
+    $req = DB::one('SELECT * FROM verification_requests WHERE id = ? AND user_id = ?', [(int)$a['id'], Auth::id()]);
+    stream_verification_media($req, $a['kind']);
+});
+
+// ------------------- BOOST (consume plan boost) -------------------
+$r->post('/boost', function () {
+    Auth::require();
+    if (!consume_plan_boost(Auth::id())) {
+        flash('error', 'You have no plan boosts left this month. Upgrade or buy the Profile Boost add-on.');
+        redirect('/addons');
+    }
+    flash('success', 'Profile boosted for 7 days — you will appear higher in search results.');
+    redirect('/dashboard');
+});
+
+// ------------------- UNLOCK CONTACT -------------------
+$r->post('/member/{id}/unlock-contact', function ($a) {
+    Auth::require();
+    $me = Auth::id();
+    $targetId = (int) $a['id'];
+    if ($me === $targetId) redirect('/member/' . $targetId);
+    $plan = current_plan($me);
+    if (!plan_can($plan, 'view_contacts')) {
+        flash('error', 'Contact details are a premium feature. Upgrade to unlock.');
+        redirect('/packages');
+    }
+    // Already unlocked? just bounce back.
+    $sub = current_subscription($me);
+    $already = contact_unlocked($me, $targetId);
+    if (!$already) {
+        $left = contacts_left($me, $plan, $sub);
+        if ($left !== null && $left <= 0) {
+            flash('error', 'You have reached your contact unlock limit. Upgrade your plan to view more contact details.');
+            redirect('/packages');
+        }
+        DB::insert('contact_views', [
+            'viewer_user_id' => $me,
+            'viewed_user_id' => $targetId,
+            'subscription_id'=> $sub['id'] ?? null,
+        ]);
+    }
+    redirect('/member/' . $targetId);
 });
 
 // ------------------- CHECKOUT (Razorpay) -------------------
-$r->get('/checkout/{id}', function ($a) {
+// One entrypoint per purchase kind so notes/receipts stay honest.
+$r->get('/checkout/{id}', function ($a) { checkout_start('package', (int)$a['id']); });
+$r->get('/checkout/addon/{id}', function ($a) { checkout_start('addon', (int)$a['id']); });
+$r->get('/checkout/verification/{id}', function ($a) { checkout_start('verification', (int)$a['id']); });
+
+function checkout_start(string $kind, int $itemId): void {
     Auth::require();
-    $pkg = DB::one('SELECT * FROM packages WHERE id = ? AND is_active = 1', [$a['id']]);
-    if (!$pkg) { http_response_code(404); view('errors/404'); return; }
-    if ((float)$pkg['price'] <= 0) {
-        flash('success', 'You are already on the free plan.');
-        redirect('/dashboard');
+
+    // Resolve the item + amount for this purchase kind.
+    $item = null; $amount = 0.0; $label = ''; $notes = ['user_id' => (string) Auth::id(), 'kind' => $kind, 'item_id' => (string)$itemId];
+    if ($kind === 'package') {
+        $item = DB::one('SELECT * FROM packages WHERE id = ? AND is_active = 1', [$itemId]);
+        if (!$item) { http_response_code(404); view('errors/404'); return; }
+        if ((float)$item['price'] <= 0) {
+            flash('success', 'You are already on the free plan.');
+            redirect('/dashboard');
+        }
+        $amount = (float) $item['price'];
+        $label = $item['name'];
+    } elseif ($kind === 'addon') {
+        $item = DB::one('SELECT * FROM addons WHERE id = ? AND is_active = 1', [$itemId]);
+        if (!$item) { http_response_code(404); view('errors/404'); return; }
+        $amount = (float) $item['price'];
+        $label = $item['name'];
+    } else { // verification
+        $item = DB::one('SELECT * FROM verification_requests WHERE id = ? AND user_id = ?', [$itemId, Auth::id()]);
+        if (!$item) { http_response_code(404); view('errors/404'); return; }
+        $amount = (float) $item['amount'];
+        $label = $item['tier'] === 'selfie' ? 'Selfie + Identity Verification' : 'Identity Verification';
     }
 
     $enabled = setting('razorpay_enabled') === '1';
@@ -113,17 +308,13 @@ $r->get('/checkout/{id}', function ($a) {
         redirect('/payment-details');
     }
 
-    // Create Razorpay order
-    $amountPaise = (int) round((float)$pkg['price'] * 100);
+    $amountPaise = (int) round($amount * 100);
     $receipt = 'spm_' . Auth::id() . '_' . time();
     $payload = [
         'amount'   => $amountPaise,
-        'currency' => $pkg['currency'] ?: 'INR',
+        'currency' => 'INR',
         'receipt'  => $receipt,
-        'notes'    => [
-            'user_id'    => (string) Auth::id(),
-            'package_id' => (string) $pkg['id'],
-        ],
+        'notes'    => $notes,
     ];
 
     $ch = curl_init('https://api.razorpay.com/v1/orders');
@@ -141,32 +332,40 @@ $r->get('/checkout/{id}', function ($a) {
 
     if ($http !== 200 || !$resp) {
         flash('error', 'Could not start checkout. Please try again or use UPI/bank transfer.');
-        redirect('/packages');
+        redirect($kind === 'package' ? '/packages' : ($kind === 'addon' ? '/addons' : '/verification'));
     }
     $order = json_decode($resp, true);
     if (empty($order['id'])) {
         flash('error', 'Razorpay order creation failed. Please try again.');
-        redirect('/packages');
+        redirect($kind === 'package' ? '/packages' : ($kind === 'addon' ? '/addons' : '/verification'));
     }
 
     DB::insert('payments', [
         'user_id'          => Auth::id(),
-        'package_id'       => (int)$pkg['id'],
+        'package_id'       => $kind === 'package' ? (int)$item['id'] : null,
+        'purchase_type'    => $kind,
+        'item_id'          => (int)($item['id'] ?? 0),
         'gateway'          => 'razorpay',
         'gateway_order_id' => $order['id'],
-        'amount'           => $pkg['price'],
-        'currency'         => $pkg['currency'] ?: 'INR',
+        'amount'           => $amount,
+        'currency'         => 'INR',
         'status'           => 'created',
         'notes'            => json_encode($payload['notes']),
     ]);
 
     view('checkout/razorpay', [
-        'pkg'      => $pkg,
+        'pkg'      => [
+            'name' => $label,
+            'price' => $amount,
+            'currency' => 'INR',
+            'duration_days' => (int)($item['duration_days'] ?? 0),
+            'tagline' => $item['tagline'] ?? ($kind === 'verification' ? 'Independent trust verification' : ''),
+        ],
         'order'    => $order,
         'key_id'   => $keyId,
         'user'     => Auth::user(),
     ], null);
-});
+}
 
 $r->post('/checkout/verify', function () {
     Auth::require();
@@ -198,31 +397,44 @@ $r->post('/checkout/verify', function () {
         redirect('/checkout/failed');
     }
 
-    // Idempotent: if already paid (webhook fired first), don't double-activate
-    if ($pmt['status'] === 'paid' && $pmt['subscription_id']) {
+    // Idempotent: if webhook fired first, don't double-activate.
+    if ($pmt['status'] === 'paid') {
         redirect('/checkout/success?p=' . (int)$pmt['id']);
     }
 
-    $pkg = DB::one('SELECT * FROM packages WHERE id = ?', [$pmt['package_id']]);
-    $subId = DB::insert('subscriptions', [
-        'user_id'    => $pmt['user_id'],
-        'package_id' => $pmt['package_id'],
-        'starts_at'  => date('Y-m-d H:i:s'),
-        'ends_at'    => date('Y-m-d H:i:s', strtotime('+' . (int)$pkg['duration_days'] . ' days')),
-        'status'     => 'active',
-        'payment_ref'=> $paymentId,
-        'amount'     => $pmt['amount'],
-    ]);
+    // Fulfil the right kind of purchase.
+    grant_purchase_by_payment($pmt, $paymentId);
 
     DB::update('payments', [
         'gateway_payment_id' => $paymentId,
         'gateway_signature'  => $signature,
         'status'             => 'paid',
-        'subscription_id'    => $subId,
     ], ['id' => $pmt['id']]);
 
     redirect('/checkout/success?p=' . (int)$pmt['id']);
 });
+
+// Fulfilment fan-out — kept here so /razorpay/webhook and /checkout/verify
+// agree on what "paid" means for each purchase type.
+function grant_purchase_by_payment(array $pmt, string $paymentId): void {
+    $kind = $pmt['purchase_type'] ?? 'package';
+    if ($kind === 'package') {
+        $pkg = DB::one('SELECT * FROM packages WHERE id = ?', [$pmt['package_id']]);
+        if ($pkg) {
+            $subId = activate_membership((int)$pmt['user_id'], $pkg, $paymentId, (float)$pmt['amount'], (int)$pmt['id']);
+            DB::update('payments', ['subscription_id' => $subId], ['id' => $pmt['id']]);
+        }
+    } elseif ($kind === 'addon') {
+        $addon = DB::one('SELECT * FROM addons WHERE id = ?', [$pmt['item_id']]);
+        if ($addon) activate_addon((int)$pmt['user_id'], $addon, (int)$pmt['id']);
+    } elseif ($kind === 'verification') {
+        // Paid — now waiting on the member to submit their govt ID / live selfie.
+        DB::update('verification_requests', [
+            'status'     => 'pending_upload',
+            'payment_id' => $pmt['id'],
+        ], ['id' => $pmt['item_id']]);
+    }
+}
 
 $r->get('/checkout/success', function () {
     Auth::require();
@@ -230,6 +442,16 @@ $r->get('/checkout/success', function () {
     $pmt = DB::one('SELECT p.*, pk.name AS package_name, pk.duration_days
                     FROM payments p LEFT JOIN packages pk ON pk.id = p.package_id
                     WHERE p.id = ? AND p.user_id = ?', [$pid, Auth::id()]);
+    // Enrich the success view with the right label + follow-up CTA for addons / verification.
+    if ($pmt) {
+        if (($pmt['purchase_type'] ?? 'package') === 'addon') {
+            $addon = DB::one('SELECT * FROM addons WHERE id = ?', [$pmt['item_id']]);
+            if ($addon) { $pmt['package_name'] = $addon['name']; $pmt['duration_days'] = (int)$addon['duration_days']; }
+        } elseif (($pmt['purchase_type'] ?? 'package') === 'verification') {
+            $v = DB::one('SELECT * FROM verification_requests WHERE id = ?', [$pmt['item_id']]);
+            if ($v) { $pmt['package_name'] = $v['tier'] === 'selfie' ? 'Selfie + Identity Verification' : 'Identity Verification'; $pmt['duration_days'] = 0; }
+        }
+    }
     view('checkout/success', ['pmt' => $pmt]);
 });
 
@@ -259,20 +481,10 @@ $r->post('/razorpay/webhook', function () {
         $paymentId = $p['id'] ?? '';
         $pmt = DB::one('SELECT * FROM payments WHERE gateway_order_id = ?', [$orderId]);
         if ($pmt && $pmt['status'] !== 'paid') {
-            $pkg = DB::one('SELECT * FROM packages WHERE id = ?', [$pmt['package_id']]);
-            $subId = DB::insert('subscriptions', [
-                'user_id'    => $pmt['user_id'],
-                'package_id' => $pmt['package_id'],
-                'starts_at'  => date('Y-m-d H:i:s'),
-                'ends_at'    => date('Y-m-d H:i:s', strtotime('+' . (int)$pkg['duration_days'] . ' days')),
-                'status'     => 'active',
-                'payment_ref'=> $paymentId,
-                'amount'     => $pmt['amount'],
-            ]);
+            grant_purchase_by_payment($pmt, $paymentId);
             DB::update('payments', [
                 'gateway_payment_id' => $paymentId,
                 'status'             => 'paid',
-                'subscription_id'    => $subId,
             ], ['id' => $pmt['id']]);
         }
     } elseif ($type === 'payment.failed') {
@@ -708,8 +920,10 @@ $r->get('/dashboard', function () {
         'interests_received' => DB::val('SELECT COUNT(*) FROM interests WHERE receiver_id = ? AND status = "sent"', [$uid]),
         'interests_accepted' => DB::val('SELECT COUNT(*) FROM interests WHERE (sender_id = ? OR receiver_id = ?) AND status = "accepted"', [$uid,$uid]),
         'shortlisted'        => DB::val('SELECT COUNT(*) FROM shortlists WHERE user_id = ?', [$uid]),
-        'profile_views'      => DB::val('SELECT views FROM profiles WHERE user_id = ?', [$uid]),
+        'profile_views'      => DB::val('SELECT views FROM profiles WHERE user_id = ?', [$uid]) ?: 0,
+        'shortlisted_me'     => DB::val('SELECT COUNT(*) FROM shortlists WHERE target_user_id = ?', [$uid]),
     ];
+    $membership = membership_summary($uid);
     $me = DB::one('SELECT * FROM profiles WHERE user_id = ?', [$uid]);
     $opp = opposite_gender($me['gender'] ?? null);
     // We intentionally do NOT filter by profile_complete: seekers should discover each
@@ -721,12 +935,16 @@ $r->get('/dashboard', function () {
         $matchWhere .= ' AND p.gender = :gender';
         $matchParams['gender'] = $opp;
     }
-    $matches = DB::all("SELECT u.*, p.gender, p.dob, p.city, p.profession, p.about_me, p.height_cm, p.profile_complete, s.spiritual_path
+    $priorityJoin = profile_priority_join_sql();
+    $prioritySelect = profile_priority_select_sql();
+    $matches = DB::all("SELECT u.*, p.gender, p.dob, p.city, p.profession, p.about_me, p.height_cm, p.profile_complete, p.verified_tier, s.spiritual_path,
+                               {$prioritySelect}
                         FROM users u
                         JOIN profiles p ON p.user_id = u.id
                    LEFT JOIN spiritual_details s ON s.user_id = u.id
+                   {$priorityJoin}
                        WHERE {$matchWhere}
-                    ORDER BY p.profile_complete DESC, u.created_at DESC LIMIT 6", $matchParams);
+                    ORDER BY " . profile_priority_order_sql('u.created_at DESC') . " LIMIT 6", $matchParams);
     $recent_interests = DB::all("SELECT i.*, u.name, u.id AS uid, p.city, p.profession, p.dob
                                    FROM interests i
                                    JOIN users u ON u.id = i.sender_id
@@ -734,7 +952,78 @@ $r->get('/dashboard', function () {
                                   WHERE i.receiver_id = ?
                                     AND u.role = 'member' AND u.status = 'active'
                                ORDER BY i.created_at DESC LIMIT 5", [$uid]);
-    view('member/dashboard', compact('stats','matches','recent_interests'));
+    view('member/dashboard', compact('stats','matches','recent_interests','membership'));
+});
+
+// ------------------- BILLING (member payment history) -------------------
+$r->get('/billing', function () {
+    Auth::require();
+    $uid = Auth::id();
+    $membership = membership_summary($uid);
+    $payments = DB::all("SELECT p.*,
+                                COALESCE(
+                                    pk.name,
+                                    ad.name,
+                                    CASE
+                                        WHEN vr.tier = 'selfie'   THEN 'Selfie + Identity Verification'
+                                        WHEN vr.tier = 'identity' THEN 'Identity Verification'
+                                        ELSE 'Purchase'
+                                    END
+                                ) AS item_name
+                           FROM payments p
+                      LEFT JOIN packages pk ON pk.id = p.package_id
+                      LEFT JOIN addons   ad ON ad.id = p.item_id AND p.purchase_type = 'addon'
+                      LEFT JOIN verification_requests vr ON vr.id = p.item_id AND p.purchase_type = 'verification'
+                          WHERE p.user_id = ?
+                       ORDER BY p.created_at DESC
+                          LIMIT 200", [$uid]);
+    $subs = DB::all("SELECT s.*, pk.name AS package_name, pk.slug AS package_slug
+                       FROM subscriptions s
+                       JOIN packages pk ON pk.id = s.package_id
+                      WHERE s.user_id = ?
+                   ORDER BY s.starts_at DESC LIMIT 50", [$uid]);
+    view('member/billing', compact('payments','subs','membership'));
+});
+
+$r->get('/visitors', function () {
+    Auth::require();
+    $plan = current_plan(Auth::id());
+    if (!plan_can($plan, 'see_who_viewed')) {
+        flash('error', 'Profile visitors are available from Starter Premium and higher.');
+        redirect('/packages');
+    }
+    $rows = DB::all("SELECT u.id, u.name, p.dob, p.city, p.profession, p.verified_tier,
+                            MAX(v.created_at) AS last_viewed_at,
+                            COUNT(*) AS view_count
+                       FROM profile_views_log v
+                       JOIN users u ON u.id = v.viewer_user_id
+                       JOIN profiles p ON p.user_id = u.id
+                      WHERE v.viewed_user_id = ?
+                        AND v.viewer_user_id != ?
+                        AND u.role = 'member' AND u.status = 'active'
+                   GROUP BY u.id, u.name, p.dob, p.city, p.profession, p.verified_tier
+                   ORDER BY last_viewed_at DESC
+                      LIMIT 100", [Auth::id(), Auth::id()]);
+    view('member/visitors', ['rows' => $rows]);
+});
+
+$r->get('/shortlisted-by', function () {
+    Auth::require();
+    $plan = current_plan(Auth::id());
+    if (!plan_can($plan, 'see_who_shortlisted')) {
+        flash('error', 'Who shortlisted you is available from Divine Plus and higher.');
+        redirect('/packages');
+    }
+    $rows = DB::all("SELECT u.id, u.name, p.dob, p.city, p.profession, p.about_me, p.verified_tier,
+                            sh.created_at AS shortlisted_at
+                       FROM shortlists sh
+                       JOIN users u ON u.id = sh.user_id
+                       JOIN profiles p ON p.user_id = u.id
+                      WHERE sh.target_user_id = ?
+                        AND u.role = 'member' AND u.status = 'active'
+                   ORDER BY sh.created_at DESC
+                      LIMIT 100", [Auth::id()]);
+    view('member/shortlisted_by', ['rows' => $rows]);
 });
 
 // ------------------- PROFILE EDIT -------------------
@@ -744,7 +1033,12 @@ $r->get('/profile/edit', function () {
     $profile = DB::one('SELECT * FROM profiles WHERE user_id = ?', [$uid]);
     $spiritual = DB::one('SELECT * FROM spiritual_details WHERE user_id = ?', [$uid]);
     $horoscope = DB::one('SELECT * FROM horoscopes WHERE user_id = ?', [$uid]);
-    view('profile/edit', compact('profile','spiritual','horoscope'));
+    // Always compute missing fields, not just when bounced from Express Interest.
+    // Users who save a partial profile and browse away otherwise have no signal
+    // that Express Interest is still gated on them.
+    $missing = profile_missing_fields($uid);
+    $photoCount = (int) DB::val('SELECT COUNT(*) FROM photos WHERE user_id = ?', [$uid]);
+    view('profile/edit', compact('profile','spiritual','horoscope','missing','photoCount'));
 });
 
 $r->post('/profile/edit', function () {
@@ -756,11 +1050,6 @@ $r->post('/profile/edit', function () {
     foreach ($allowed as $k) {
         if (isset($_POST[$k])) $data[$k] = $_POST[$k] === '' ? null : $_POST[$k];
     }
-    // mark complete if required fields exist
-    $required = ['gender','dob','city','about_me'];
-    $complete = 1;
-    foreach ($required as $rq) { if (empty($data[$rq])) $complete = 0; }
-    $data['profile_complete'] = $complete;
     $profileExists = DB::val('SELECT id FROM profiles WHERE user_id = ?', [$uid]);
     if ($profileExists) {
         DB::update('profiles', $data, ['user_id' => $uid]);
@@ -774,7 +1063,10 @@ $r->post('/profile/edit', function () {
         DB::update('users', ['name' => trim($_POST['name'])], ['id' => $uid]);
     }
 
-    flash('success', 'Profile saved.');
+    // Completeness now depends on photos too, so recompute after the write.
+    recompute_profile_complete($uid);
+
+    flash('success', profile_save_flash($uid, 'Profile saved'));
     redirect('/profile/edit');
 });
 
@@ -782,9 +1074,17 @@ $r->post('/profile/edit', function () {
 $r->post('/profile/spiritual', function () {
     Auth::require();
     $uid = Auth::id();
-    $fields = ['spiritual_path','guru','ishta_devata','daily_sadhana','favorite_scripture','fasting_practice','pilgrimage_done','mantra'];
+    $fields = [
+        'spiritual_path','guru','ishta_devata','daily_sadhana','favorite_scripture','fasting_practice','pilgrimage_done','mantra',
+        'spiritual_organization','temple_visit_frequency','vegetarian','vegan','no_smoking','no_alcohol',
+        'scripture_preference','festival_participation','spiritual_lifestyle',
+    ];
     $data = ['user_id' => $uid];
-    foreach ($fields as $k) $data[$k] = $_POST[$k] ?? null;
+    foreach ($fields as $k) {
+        $data[$k] = in_array($k, ['vegetarian','vegan','no_smoking','no_alcohol'], true)
+            ? (isset($_POST[$k]) ? 1 : 0)
+            : ($_POST[$k] ?? null);
+    }
 
     $exists = DB::val('SELECT id FROM spiritual_details WHERE user_id = ?', [$uid]);
     if ($exists) {
@@ -793,20 +1093,34 @@ $r->post('/profile/spiritual', function () {
     } else {
         DB::insert('spiritual_details', $data);
     }
-    flash('success', 'Spiritual details saved.');
+    flash('success', profile_save_flash($uid, 'Spiritual details saved'));
     redirect('/profile/edit#spiritual');
 });
 
 // ------------------- PHOTOS -------------------
 $r->get('/profile/photos', function () {
     Auth::require();
-    $photos = DB::all('SELECT * FROM photos WHERE user_id = ? ORDER BY is_primary DESC, id', [Auth::id()]);
-    view('profile/photos', ['photos' => $photos]);
+    $uid = Auth::id();
+    $photos = DB::all('SELECT * FROM photos WHERE user_id = ? ORDER BY is_primary DESC, id', [$uid]);
+    // Also compute what's missing on the bio side, so a user sitting on the
+    // gallery page sees the full "what still blocks Express Interest" picture,
+    // not just their photo count.
+    $missing = profile_missing_fields($uid);
+    $photoLimit = profile_photo_limit($uid);
+    $plan = current_plan($uid);
+    view('profile/photos', compact('photos','missing','photoLimit','plan'));
 });
 
 $r->post('/profile/photos', function () {
     Auth::require();
     $cfg = $GLOBALS['CFG']['uploads'];
+    $uid = Auth::id();
+    $existing = (int) DB::val('SELECT COUNT(*) FROM photos WHERE user_id = ?', [$uid]);
+    $photoLimit = profile_photo_limit($uid);
+    if ($photoLimit !== null && $existing >= $photoLimit) {
+        flash('error','Your current plan allows at most ' . $photoLimit . ' photos. Upgrade for unlimited profile photos.');
+        redirect('/profile/photos');
+    }
     if (empty($_FILES['photo']['name'])) { flash('error','Choose a photo.'); redirect('/profile/photos'); }
     $f = $_FILES['photo'];
     if ($f['error'] !== UPLOAD_ERR_OK) { flash('error','Upload failed.'); redirect('/profile/photos'); }
@@ -814,11 +1128,13 @@ $r->post('/profile/photos', function () {
     $ext = strtolower(pathinfo($f['name'], PATHINFO_EXTENSION));
     if (!in_array($ext, $cfg['allowed'])) { flash('error','JPG / PNG / WEBP only.'); redirect('/profile/photos'); }
     if (!is_dir($cfg['avatar_dir'])) mkdir($cfg['avatar_dir'], 0775, true);
-    $name = Auth::id() . '_' . bin2hex(random_bytes(6)) . '.' . $ext;
+    $name = $uid . '_' . bin2hex(random_bytes(6)) . '.' . $ext;
     move_uploaded_file($f['tmp_name'], $cfg['avatar_dir'] . '/' . $name);
-    $isFirst = (int) DB::val('SELECT COUNT(*) FROM photos WHERE user_id = ?', [Auth::id()]) === 0 ? 1 : 0;
-    DB::insert('photos', ['user_id' => Auth::id(), 'path' => 'avatars/' . $name, 'is_primary' => $isFirst]);
-    flash('success','Photo uploaded.');
+    $isFirst = $existing === 0 ? 1 : 0;
+    DB::insert('photos', ['user_id' => $uid, 'path' => 'avatars/' . $name, 'is_primary' => $isFirst]);
+    recompute_profile_complete($uid);
+    $nowHave = $existing + 1;
+    flash('success', profile_save_flash($uid, 'Photo uploaded (' . $nowHave . ' of ' . PROFILE_PHOTO_MAX . ')'));
     redirect('/profile/photos');
 });
 
@@ -831,10 +1147,17 @@ $r->post('/profile/photos/{id}/primary', function ($a) {
 
 $r->post('/profile/photos/{id}/delete', function ($a) {
     Auth::require();
-    $row = DB::one('SELECT * FROM photos WHERE id = ? AND user_id = ?', [$a['id'], Auth::id()]);
+    $uid = Auth::id();
+    $row = DB::one('SELECT * FROM photos WHERE id = ? AND user_id = ?', [$a['id'], $uid]);
     if ($row) {
         @unlink(__DIR__ . '/../public/uploads/' . $row['path']);
         DB::q('DELETE FROM photos WHERE id = ?', [$row['id']]);
+        // If we just removed the primary, promote the oldest remaining photo.
+        if ((int)$row['is_primary'] === 1) {
+            $next = DB::val('SELECT id FROM photos WHERE user_id = ? ORDER BY id LIMIT 1', [$uid]);
+            if ($next) DB::q('UPDATE photos SET is_primary = 1 WHERE id = ?', [$next]);
+        }
+        recompute_profile_complete($uid);
     }
     redirect('/profile/photos');
 });
@@ -842,6 +1165,24 @@ $r->post('/profile/photos/{id}/delete', function ($a) {
 // ------------------- BROWSE / SEARCH -------------------
 $r->get('/browse', function () {
     Auth::require();
+    $viewerPlan = current_plan(Auth::id());
+    $advancedAllowed = plan_can($viewerPlan, 'advanced_search');
+    $advancedKeys = [
+        'education','profession','community','guru','organization','temple_frequency',
+        'scripture','lifestyle','min_height','max_height','vegetarian','vegan','no_smoking','no_alcohol',
+    ];
+    $advancedRequested = false;
+    foreach ($advancedKeys as $key) {
+        if (isset($_GET[$key]) && trim((string)$_GET[$key]) !== '') {
+            $advancedRequested = true;
+            break;
+        }
+    }
+    if ($advancedRequested && !$advancedAllowed) {
+        flash('error', 'Advanced search filters are available from Divine Plus and higher.');
+        redirect('/packages');
+    }
+
     $me  = DB::one('SELECT * FROM profiles WHERE user_id = ?', [Auth::id()]);
     $opp = opposite_gender($me['gender'] ?? null);
     // Show every active member — even those still finishing their bio. Cards flag
@@ -861,6 +1202,34 @@ $r->get('/browse', function () {
     if (!empty($_GET['min_age']))  { $where[] = 'TIMESTAMPDIFF(YEAR, p.dob, CURDATE()) >= :min'; $params['min'] = (int)$_GET['min_age']; }
     if (!empty($_GET['max_age']))  { $where[] = 'TIMESTAMPDIFF(YEAR, p.dob, CURDATE()) <= :max'; $params['max'] = (int)$_GET['max_age']; }
 
+    if ($advancedAllowed) {
+        if (!empty($_GET['education']))  { $where[] = 'p.education LIKE :edu';     $params['edu'] = '%' . $_GET['education'] . '%'; }
+        if (!empty($_GET['profession'])) { $where[] = 'p.profession LIKE :prof';   $params['prof'] = '%' . $_GET['profession'] . '%'; }
+        if (!empty($_GET['community']))  { $where[] = 'p.community LIKE :comm';    $params['comm'] = '%' . $_GET['community'] . '%'; }
+        if (!empty($_GET['guru']))       { $where[] = 's.guru LIKE :guru';         $params['guru'] = '%' . $_GET['guru'] . '%'; }
+        if (!empty($_GET['organization'])) {
+            $where[] = 's.spiritual_organization LIKE :org';
+            $params['org'] = '%' . $_GET['organization'] . '%';
+        }
+        if (!empty($_GET['temple_frequency'])) {
+            $where[] = 's.temple_visit_frequency = :temple';
+            $params['temple'] = $_GET['temple_frequency'];
+        }
+        if (!empty($_GET['scripture'])) {
+            $where[] = 's.scripture_preference LIKE :scripture';
+            $params['scripture'] = '%' . $_GET['scripture'] . '%';
+        }
+        if (!empty($_GET['lifestyle'])) {
+            $where[] = 's.spiritual_lifestyle LIKE :lifestyle';
+            $params['lifestyle'] = '%' . $_GET['lifestyle'] . '%';
+        }
+        if (!empty($_GET['min_height'])) { $where[] = 'p.height_cm >= :min_h'; $params['min_h'] = (int)$_GET['min_height']; }
+        if (!empty($_GET['max_height'])) { $where[] = 'p.height_cm <= :max_h'; $params['max_h'] = (int)$_GET['max_height']; }
+        foreach (['vegetarian','vegan','no_smoking','no_alcohol'] as $flag) {
+            if (!empty($_GET[$flag])) $where[] = "s.`{$flag}` = 1";
+        }
+    }
+
     $page = max(1, (int)($_GET['page'] ?? 1));
     $per  = 9;
     $total = (int) DB::val("SELECT COUNT(*) FROM users u JOIN profiles p ON p.user_id = u.id
@@ -868,17 +1237,27 @@ $r->get('/browse', function () {
                             WHERE " . implode(' AND ', $where), $params);
     $pg = paginate($total, $per, $page);
 
+    $priorityJoin = profile_priority_join_sql();
+    $prioritySelect = profile_priority_select_sql();
     $rows = DB::all("SELECT u.id, u.name, p.dob, p.gender, p.city, p.state, p.country, p.height_cm,
                             p.profession, p.education, p.about_me, p.religion, p.community, p.profile_complete,
-                            s.spiritual_path, s.guru
+                            p.verified_tier, s.spiritual_path, s.guru,
+                            {$prioritySelect}
                        FROM users u
                        JOIN profiles p ON p.user_id = u.id
                   LEFT JOIN spiritual_details s ON s.user_id = u.id
+                  {$priorityJoin}
                       WHERE " . implode(' AND ', $where) . "
-                   ORDER BY p.profile_complete DESC, u.created_at DESC
+                   ORDER BY " . profile_priority_order_sql('u.created_at DESC') . "
                       LIMIT {$pg['limit']} OFFSET {$pg['offset']}", $params);
 
-    view('browse/index', ['rows' => $rows, 'page' => $pg, 'total' => $total]);
+    view('browse/index', [
+        'rows' => $rows,
+        'page' => $pg,
+        'total' => $total,
+        'viewerPlan' => $viewerPlan,
+        'advancedAllowed' => $advancedAllowed,
+    ]);
 });
 
 // ------------------- MEMBER PROFILE VIEW -------------------
@@ -908,10 +1287,23 @@ $r->get('/member/{id}', function ($a) {
     $sp = DB::one('SELECT * FROM spiritual_details WHERE user_id = ?', [$targetId]);
     $photos = DB::all('SELECT * FROM photos WHERE user_id = ? ORDER BY is_primary DESC', [$targetId]);
     DB::q('UPDATE profiles SET views = views + 1 WHERE user_id = ?', [$targetId]);
+    DB::insert('profile_views_log', [
+        'viewer_user_id' => Auth::id(),
+        'viewed_user_id' => $targetId,
+    ]);
     $interest = interest_between(Auth::id(), $targetId);
     $shortlisted = (bool) DB::val('SELECT 1 FROM shortlists WHERE user_id = ? AND target_user_id = ?', [Auth::id(), $targetId]);
     $canMessage = $interest && $interest['status'] === 'accepted';
-    view('member/show', compact('u','sp','photos','interest','shortlisted','canMessage','isComplete'));
+    $viewerPlan = current_plan(Auth::id());
+    $contactUnlocked = contact_unlocked(Auth::id(), $targetId);
+    $contactsLeft = contacts_left(Auth::id(), $viewerPlan, current_subscription(Auth::id()));
+    $targetBadge = membership_badge($targetId);
+    $targetFeatured = is_featured($targetId);
+    $targetBoosted = is_boosted($targetId);
+    view('member/show', compact(
+        'u','sp','photos','interest','shortlisted','canMessage','isComplete',
+        'viewerPlan','contactUnlocked','contactsLeft','targetBadge','targetFeatured','targetBoosted'
+    ));
 });
 
 // ------------------- INTERESTS -------------------
@@ -925,11 +1317,16 @@ $r->post('/interest/send/{id}', function ($a) {
     }
 
     $me = active_member_profile($uid);
-    if (!$me || !(int)($me['profile_complete'] ?? 0)) {
-        // Without a complete bio the other person has nothing to read when they
-        // try to view us back — block early so we never create a half-baked match.
-        flash('error', 'Please complete your profile before expressing interest.');
-        redirect('/profile/edit');
+    // Use the live check (not the stored flag) so legacy accounts that pre-date
+    // the 2-photo requirement can't slip past. The edit/photos pages recompute
+    // this themselves, so we don't need to stash — just point the user there.
+    $missing = $me ? profile_missing_fields($uid) : profile_required_fields();
+    if (!$me || $missing) {
+        $labels = array_values($missing);
+        $msg = 'Please complete your profile before expressing interest';
+        if ($labels) $msg .= ' — still needed: ' . implode(', ', $labels) . '.';
+        flash('error', $msg);
+        redirect(isset($missing['photos']) && count($missing) === 1 ? '/profile/photos' : '/profile/edit');
     }
     $target = active_member_profile($targetId);
     if (!$target || !(int)($target['profile_complete'] ?? 0)) {
@@ -959,6 +1356,13 @@ $r->post('/interest/send/{id}', function ($a) {
         flash('success', 'Interest already sent.');
         redirect('/member/' . $targetId);
     }
+
+    $plan = current_plan($uid);
+    if (!consume_interest_quota($uid, $plan)) {
+        flash('error', 'You have used your 10 free interests for this month. Upgrade for unlimited interests.');
+        redirect('/packages');
+    }
+
     if ($outbound && in_array($outbound['status'], ['declined', 'cancelled'], true)) {
         DB::update('interests', ['status' => 'sent'], ['id' => $outbound['id']]);
     } elseif ($inbound && in_array($inbound['status'], ['declined', 'cancelled'], true)) {
@@ -995,14 +1399,14 @@ $r->post('/interest/{id}/decline', function ($a) {
 
 $r->get('/interests', function () {
     Auth::require();
-    $received = DB::all("SELECT i.*, u.name, p.dob, p.city, p.profession
+    $received = DB::all("SELECT i.*, u.name, p.dob, p.city, p.profession, p.verified_tier
                          FROM interests i
                          JOIN users u ON u.id = i.sender_id
                          JOIN profiles p ON p.user_id = u.id
                         WHERE i.receiver_id = ?
                           AND u.role = 'member' AND u.status = 'active'
                      ORDER BY i.created_at DESC", [Auth::id()]);
-    $sent     = DB::all("SELECT i.*, u.name, p.dob, p.city, p.profession
+    $sent     = DB::all("SELECT i.*, u.name, p.dob, p.city, p.profession, p.verified_tier
                          FROM interests i
                          JOIN users u ON u.id = i.receiver_id
                          JOIN profiles p ON p.user_id = u.id
@@ -1025,6 +1429,12 @@ $r->post('/shortlist/{id}', function ($a) {
     if ($exists) {
         DB::q('DELETE FROM shortlists WHERE id = ?', [$exists]);
     } else {
+        $plan = current_plan(Auth::id());
+        $left = shortlists_left(Auth::id(), $plan);
+        if ($left !== null && $left <= 0) {
+            flash('error', 'Your free plan can shortlist up to 20 profiles. Upgrade for unlimited shortlists.');
+            redirect('/packages');
+        }
         DB::insert('shortlists', ['user_id' => Auth::id(), 'target_user_id' => $targetId]);
     }
     redirect('/member/' . $targetId);
@@ -1032,7 +1442,7 @@ $r->post('/shortlist/{id}', function ($a) {
 
 $r->get('/shortlist', function () {
     Auth::require();
-    $rows = DB::all("SELECT u.id, u.name, p.dob, p.city, p.profession, p.about_me, p.height_cm, s.spiritual_path
+    $rows = DB::all("SELECT u.id, u.name, p.dob, p.city, p.profession, p.about_me, p.height_cm, p.verified_tier, s.spiritual_path
                      FROM shortlists sh
                      JOIN users u ON u.id = sh.target_user_id
                 LEFT JOIN profiles p ON p.user_id = u.id

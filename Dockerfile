@@ -13,11 +13,11 @@ RUN apt-get update && apt-get install -y \
     && a2enmod rewrite headers \
     && rm -rf /var/lib/apt/lists/*
 
-# Reasonable production php.ini
+# Reasonable production php.ini (upload caps sized for verification selfie videos)
 RUN { \
     echo 'memory_limit=256M'; \
-    echo 'upload_max_filesize=8M'; \
-    echo 'post_max_size=10M'; \
+    echo 'upload_max_filesize=20M'; \
+    echo 'post_max_size=24M'; \
     echo 'expose_php=Off'; \
     echo 'session.cookie_httponly=1'; \
     echo 'session.use_strict_mode=1'; \
@@ -35,12 +35,14 @@ WORKDIR /var/www/html
 
 COPY . /var/www/html
 
-# Writeable uploads
+# Writeable uploads (+ private verification documents outside the web root)
 RUN mkdir -p /var/www/html/public/uploads/avatars \
              /var/www/html/public/uploads/blog \
              /var/www/html/public/uploads/site \
-    && chown -R www-data:www-data /var/www/html/public/uploads \
-    && chmod -R 775 /var/www/html/public/uploads
+             /var/www/html/storage/verification \
+    && chown -R www-data:www-data /var/www/html/public/uploads /var/www/html/storage \
+    && chmod -R 775 /var/www/html/public/uploads \
+    && chmod -R 770 /var/www/html/storage
 
 EXPOSE 80
 

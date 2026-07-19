@@ -24,6 +24,35 @@
     </div>
 </div>
 
+<?php if (!empty($membership)): ?>
+<div class="admin-card mb-3">
+    <h3>Membership</h3>
+    <div class="info-row"><span class="k">Current Plan</span><span class="v"><?= e($membership['plan']['name']) ?></span></div>
+    <div class="info-row"><span class="k">Priority</span><span class="v"><?= e($membership['priority_label']) ?></span></div>
+    <div class="info-row"><span class="k">Expiry</span><span class="v"><?= $membership['expires_at'] ? e(date('M j, Y', strtotime($membership['expires_at']))) : 'Lifetime / Free' ?></span></div>
+    <div class="info-row"><span class="k">Days Remaining</span><span class="v"><?= $membership['days_left'] === null ? '-' : (int)$membership['days_left'] ?></span></div>
+    <div class="info-row"><span class="k">Contacts Remaining</span><span class="v"><?= $membership['contacts_left'] === null ? 'Unlimited' : (int)$membership['contacts_left'] ?></span></div>
+    <div class="info-row"><span class="k">Boosts Remaining</span><span class="v"><?= (int)$membership['boosts_left'] ?></span></div>
+    <div style="margin-top: 1rem;">
+        <a href="/admin/subscribers" class="btn btn-primary btn-sm">Manage Membership</a>
+    </div>
+</div>
+<?php endif; ?>
+
+<?php if (!empty($verification) || (!empty($p) && ($p['verified_tier'] ?? 'none') !== 'none')): ?>
+<div class="admin-card mb-3">
+    <h3>Verification</h3>
+    <div class="info-row"><span class="k">Badge</span><span class="v">
+        <?php $vt = $p['verified_tier'] ?? 'none';
+              echo $vt !== 'none' ? verified_badge($vt) : '<span style="color: var(--c-muted);">Not verified</span>'; ?>
+    </span></div>
+    <?php if (!empty($verification)): ?>
+        <div class="info-row"><span class="k">Latest request</span><span class="v"><?= $verification['tier'] === 'selfie' ? 'Selfie + Identity' : 'Identity' ?> · <span class="pill <?= $verification['status'] === 'approved' ? 'green' : ($verification['status'] === 'rejected' ? 'red' : 'gold') ?>"><?= e(str_replace('_', ' ', $verification['status'])) ?></span></span></div>
+        <div style="margin-top: .8rem;"><a href="/admin/verification/<?= (int)$verification['id'] ?>" class="btn btn-ghost btn-sm">Open verification request →</a></div>
+    <?php endif; ?>
+</div>
+<?php endif; ?>
+
 <?php if ($p): ?>
 <div class="admin-card mb-3">
     <h3>Profile</h3>

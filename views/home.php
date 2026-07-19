@@ -177,6 +177,7 @@
                     </div>
                     <div class="profile-body">
                         <h3><?= e($m['name']) ?><?php if ($age): ?>, <?= $age ?><?php endif; ?></h3>
+                        <?= verified_badge($m['verified_tier'] ?? null, 'sm') ?>
                         <div class="profile-meta">
                             <?= e($m['profession'] ?: 'Seeker') ?> · <?= e(trim($m['city'] . ' · ' . $m['state'], ' ·')) ?>
                         </div>
@@ -260,38 +261,71 @@
 <?php endif; ?>
 
 <!-- PACKAGES -->
-<?php if ($packages): ?>
+<?php if ($packages):
+    $orderSlugs = ['free','starter','divine','soul_elite','eternal'];
+    $bySlug = [];
+    foreach ($packages as $p) { if (!empty($p['slug'])) $bySlug[$p['slug']] = $p; }
+    $homeOrdered = [];
+    foreach ($orderSlugs as $s) if (isset($bySlug[$s])) $homeOrdered[] = $bySlug[$s];
+    foreach ($packages as $p) { if (empty($p['slug']) || !in_array($p['slug'], $orderSlugs, true)) $homeOrdered[] = $p; }
+?>
 <section class="section section-soft">
     <div class="container">
         <div class="section-head">
             <span class="eyebrow">Choose your path</span>
-            <h2>Three plans. <em style="color: var(--c-saffron); font-family: var(--f-display);">No tricks.</em></h2>
-            <p class="lead">Pay only if you want to. Free Sadhak access lets you experience the community fully before deciding.</p>
+            <h2>Five membership paths. <em style="color: var(--c-saffron); font-family: var(--f-display);">Clear benefits.</em></h2>
+            <p class="lead">Start free, then upgrade when you need more interests, contact unlocks, priority, boosts, and premium discovery tools.</p>
         </div>
-        <div class="pkg-grid">
-            <?php foreach ($packages as $p): ?>
-                <div class="pkg <?= $p['highlighted'] ? 'featured' : '' ?>">
-                    <div class="pkg-name"><?= e($p['name']) ?></div>
-                    <div class="pkg-tag"><?= e($p['tagline']) ?></div>
-                    <div class="pkg-price">
-                        <?php if ($p['price'] > 0): ?>
-                            <small>₹</small><?= number_format((float)$p['price'], 0) ?>
+        <div class="pkg-grid-modern">
+            <?php foreach ($homeOrdered as $p):
+                $isFree = ((float)$p['price']) <= 0;
+                $classes = 'pkg-modern';
+                if (!empty($p['ribbon'])) $classes .= ' has-ribbon';
+                if (!empty($p['highlighted'])) $classes .= ' is-featured';
+            ?>
+                <div class="<?= $classes ?>">
+                    <?php if (!empty($p['ribbon'])): ?><div class="pkg-ribbon"><?= e($p['ribbon']) ?></div><?php endif; ?>
+                    <?php if (!empty($p['savings_badge'])): ?><div class="pkg-savings"><?= e($p['savings_badge']) ?></div><?php endif; ?>
+
+                    <div class="pkg-name-modern"><?= e($p['name']) ?></div>
+                    <?php if (!empty($p['tagline'])): ?><div class="pkg-tag-modern"><?= e($p['tagline']) ?></div><?php endif; ?>
+
+                    <div class="pkg-price-modern">
+                        <?php if ($isFree): ?>
+                            <span class="pkg-price-value">₹0</span>
+                            <span class="pkg-price-note">Lifetime</span>
                         <?php else: ?>
-                            Free
+                            <span class="pkg-price-value"><small>₹</small><?= number_format((float)$p['price'], 0) ?></span>
+                            <span class="pkg-price-note">
+                                <?= (int)$p['duration_months'] ?> month<?= ((int)$p['duration_months']) === 1 ? '' : 's' ?>
+                                <?php if (!empty($p['monthly_display']) && (int)$p['duration_months'] > 1): ?>
+                                    · ₹<?= number_format((float)$p['monthly_display'], 0) ?>/mo
+                                <?php endif; ?>
+                            </span>
                         <?php endif; ?>
                     </div>
-                    <div class="pkg-duration"><?= (int)$p['duration_days'] ?> days</div>
-                    <ul class="pkg-features">
-                        <?php foreach (explode("\n", $p['features'] ?? '') as $f):
+
+                    <ul class="pkg-features-modern">
+                        <?php foreach (explode("\n", (string)($p['features'] ?? '')) as $f):
                             $f = trim($f); if (!$f) continue; ?>
                             <li><?= e($f) ?></li>
                         <?php endforeach; ?>
                     </ul>
-                    <a href="/register" class="btn <?= $p['highlighted'] ? 'btn-gold' : 'btn-ghost' ?> btn-block">
-                        <?= $p['price'] > 0 ? 'Choose ' . e($p['name']) : 'Start Free' ?>
-                    </a>
+
+                    <div class="pkg-cta-modern">
+                        <?php if ($isFree): ?>
+                            <a href="<?= Auth::check() ? '/dashboard' : '/register' ?>" class="btn btn-ghost btn-block">Start Free</a>
+                        <?php else: ?>
+                            <a href="/packages" class="btn <?= !empty($p['highlighted']) ? 'btn-gold' : 'btn-primary' ?> btn-block">
+                                Choose <?= e($p['name']) ?>
+                            </a>
+                        <?php endif; ?>
+                    </div>
                 </div>
             <?php endforeach; ?>
+        </div>
+        <div class="text-center mt-3">
+            <a href="/packages" class="btn btn-ghost">Compare all plans →</a>
         </div>
     </div>
 </section>

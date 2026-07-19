@@ -22,6 +22,8 @@ services:
       DB_PASSWORD: "${DB_PASSWORD:-spiritual_pw}"
     volumes:
       - uploads:/var/www/html/public/uploads
+      # Verification documents (govt IDs / selfies) — private, outside the web root
+      - verify_docs:/var/www/html/storage/verification
     depends_on:
       db:
         condition: service_healthy
@@ -48,6 +50,7 @@ services:
 volumes:
   dbdata:
   uploads:
+  verify_docs:
 
 networks:
   spiritual:

@@ -1,6 +1,9 @@
 # Local env (do not commit real secrets)
 .env
 
+# Claude Code local state
+.claude/
+
 # OS / editor noise
 .DS_Store
 Thumbs.db
@@ -22,3 +25,7 @@ public/uploads/site/*
 # PHP composer (if added later)
 /vendor/
 composer.phar
+
+# Verification documents (PII) — never in git
+storage/verification/*
+!storage/verification/.gitkeep

@@ -19,6 +19,9 @@
         </a>
         <?php $cur = $_SERVER['REQUEST_URI'] ?? ''; ?>
         <ul class="admin-nav">
+            <li><a href="/admin/subscribers" class="<?= str_contains($cur,'/admin/subscribers') ? 'is-active' : '' ?>">Subscribers</a></li>
+            <li><a href="/admin/revenue" class="<?= str_contains($cur,'/admin/revenue') ? 'is-active' : '' ?>">💰 Revenue</a></li>
+            <li><a href="/admin/verification" class="<?= str_contains($cur,'/admin/verification') ? 'is-active' : '' ?>">Verification</a></li>
             <li><a href="/admin"          class="<?= $cur === '/admin' ? 'is-active' : '' ?>">📊 Dashboard</a></li>
             <li><a href="/admin/users"    class="<?= str_contains($cur,'/admin/users') ? 'is-active' : '' ?>">👥 Members</a></li>
             <li><a href="/admin/blog"     class="<?= str_contains($cur,'/admin/blog') ? 'is-active' : '' ?>">📝 Blog</a></li>

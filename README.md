@@ -16,6 +16,7 @@ A modern, deployment-ready matrimony platform for sincere spiritual seekers. Bui
 - Browse & filter by city, religion, diet, spiritual path, age range
 - Photo gallery with primary photo
 - Send / accept / decline interests · shortlist · one-to-one messaging
+- **Profile verification** — submit any government ID + optional live selfie (photo or 5s video captured in-browser); admin reviews and awards a "ID Verified" or "ID + Selfie Verified" badge shown everywhere on the site
 - Three pricing tiers — Sadhak (free), Sankalp (premium), Sangam (concierge)
 
 ### For admins
@@ -27,6 +28,7 @@ A modern, deployment-ready matrimony platform for sincere spiritual seekers. Bui
 - **Editable site settings** — hero text, taglines, contact info, social, stats — all from the admin
 - CMS pages (About, Privacy, Terms, Contact intro) — full HTML editor
 - Contact-message inbox
+- **Verification queue** — side-by-side ID + selfie vs. profile photos, approve/reject with member-visible reason, auto-email notification, documents purged after decision (data minimisation)
 
 ### Tech
 - **PHP 8.2 + Apache** (mod_rewrite, gd, pdo_mysql, zip)
