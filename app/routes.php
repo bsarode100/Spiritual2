@@ -27,9 +27,9 @@ $r->get('/page/{slug}', function ($a) {
     view('page', ['page' => $page]);
 });
 
-$r->get('/about',          function () { $page = DB::one("SELECT * FROM pages WHERE slug='about'");          view('page', ['page' => $page]); });
-$r->get('/privacy',        function () { $page = DB::one("SELECT * FROM pages WHERE slug='privacy'");        view('page', ['page' => $page]); });
-$r->get('/terms',          function () { $page = DB::one("SELECT * FROM pages WHERE slug='terms'");          view('page', ['page' => $page]); });
+$r->get('/about',          function () { $page = DB::one("SELECT * FROM pages WHERE slug='about' AND published=1"); if (!$page) { http_response_code(404); view('errors/404'); return; } view('page', ['page' => $page]); });
+$r->get('/privacy',        function () { $page = DB::one("SELECT * FROM pages WHERE slug='privacy' AND published=1"); if (!$page) { http_response_code(404); view('errors/404'); return; } view('page', ['page' => $page]); });
+$r->get('/terms',          function () { $page = DB::one("SELECT * FROM pages WHERE slug='terms' AND published=1"); if (!$page) { http_response_code(404); view('errors/404'); return; } view('page', ['page' => $page]); });
 // Legacy shortcuts — kept alive as 301 redirects so old bookmarks and outbound
 // links still land on the canonical /page/{slug} version the admin now edits.
 $r->get('/refund-policy',  function () { header('Location: /page/refund-policy', true, 301); exit; });

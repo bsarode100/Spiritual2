@@ -14,13 +14,13 @@ $canUnlockContact = plan_can($viewerPlan, 'view_contacts') && ($contactsLeft ===
     </div>
 
     <div class="profile-hero">
-        <?php if ($photos):
-            $primary = array_filter($photos, fn($p) => $p['is_primary']);
-            $primary = $primary ? array_values($primary)[0] : $photos[0]; ?>
-            <img src="<?= e(upload_url($primary['path'])) ?>" alt="">
-        <?php else: ?>
-            <img src="<?= e(avatar_url(['id' => $u['user_id'] ?? $u['id'], 'name' => $u['name']])) ?>" alt="">
-        <?php endif; ?>
+<?php if ($photos):
+        $primary = array_filter($photos, fn($p) => $p['is_primary']);
+        $primary = $primary ? array_values($primary)[0] : $photos[0]; ?>
+        <img src="<?= e(upload_url($primary['path'])) ?>" alt="">
+    <?php else: ?>
+        <img src="<?= e(avatar_url(['id' => $u['id'], 'name' => $u['name']])) ?>" alt="">
+    <?php endif; ?>
 
         <div>
             <div class="name-row">
