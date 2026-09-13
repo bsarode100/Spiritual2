@@ -415,13 +415,22 @@ try {
 
     // Monthly interest counter — cheaper than COUNT(*) over the interests table on every send.
     DB::pdo()->exec("CREATE TABLE IF NOT EXISTS `interest_counters` (
-        `user_id`    BIGINT UNSIGNED NOT NULL,
-        `year_month` CHAR(7) NOT NULL,
-        `count`      INT NOT NULL DEFAULT 0,
-        `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        `user_id`     BIGINT UNSIGNED NOT NULL,
+        `year_month`  CHAR(7) NOT NULL,
+        `count_sent`  INT NOT NULL DEFAULT 0,
+        `updated_at`  DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
         PRIMARY KEY (`user_id`,`year_month`),
         CONSTRAINT `interest_counters_user_fk` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+
+    // Migrate existing interest_counters tables from the reserved-word column `count`
+    // to `count_sent` to avoid SQL syntax errors on reserved-word usage.
+    try {
+        $cols = DB::all("SHOW COLUMNS FROM `interest_counters` WHERE `Field` = 'count'");
+        if ($cols) {
+            DB::pdo()->exec("ALTER TABLE `interest_counters` CHANGE COLUMN `count` `count_sent` INT NOT NULL DEFAULT 0");
+        }
+    } catch (Throwable $e) { /* column already renamed or table missing */ }
 
     // Boost consumption ledger — one row per boost the user activates so we can
     // count "boosts used this month" per subscription.

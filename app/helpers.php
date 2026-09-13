@@ -419,7 +419,7 @@ function profile_priority_order_sql(string $fallback = 'u.created_at DESC'): str
 function interests_used_this_month(int $userId): int {
     $month = date('Y-m');
     $counter = (int) DB::val(
-        'SELECT `count` FROM interest_counters WHERE user_id = ? AND year_month = ?',
+        'SELECT `count_sent` FROM interest_counters WHERE user_id = ? AND year_month = ?',
         [$userId, $month]
     );
     $legacy = (int) DB::val(
@@ -445,9 +445,9 @@ function consume_interest_quota(int $userId, ?array $plan = null): bool {
     if ($left !== null && $left <= 0) return false;
     $month = date('Y-m');
     DB::q(
-        "INSERT INTO interest_counters (user_id, year_month, `count`)
+        "INSERT INTO interest_counters (user_id, year_month, count_sent)
          VALUES (?, ?, 1)
-         ON DUPLICATE KEY UPDATE `count` = `count` + 1",
+         ON DUPLICATE KEY UPDATE count_sent = count_sent + 1",
         [$userId, $month]
     );
     return true;
