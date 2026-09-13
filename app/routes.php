@@ -27,7 +27,7 @@ $r->get('/page/{slug}', function ($a) {
     view('page', ['page' => $page]);
 });
 
-$r->get('/about',          function () { $page = DB::one("SELECT * FROM pages WHERE slug='about' AND published=1"); if (!$page) { http_response_code(404); view('errors/404'); return; } view('page', ['page' => $page]); });
+$r->get('/about',          function () { $page = DB::one("SELECT * FROM pages WHERE slug IN ('about', 'about-us') AND published=1 ORDER BY slug='about' DESC, id DESC LIMIT 1"); if (!$page) { http_response_code(404); view('errors/404'); return; } view('page', ['page' => $page]); });
 $r->get('/privacy',        function () { $page = DB::one("SELECT * FROM pages WHERE slug='privacy' AND published=1"); if (!$page) { http_response_code(404); view('errors/404'); return; } view('page', ['page' => $page]); });
 $r->get('/terms',          function () { $page = DB::one("SELECT * FROM pages WHERE slug='terms' AND published=1"); if (!$page) { http_response_code(404); view('errors/404'); return; } view('page', ['page' => $page]); });
 // Legacy shortcuts — kept alive as 301 redirects so old bookmarks and outbound
