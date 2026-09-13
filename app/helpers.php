@@ -418,10 +418,24 @@ function profile_priority_order_sql(string $fallback = 'u.created_at DESC'): str
 // How many interests the user has already sent this calendar month.
 function interests_used_this_month(int $userId): int {
     $month = date('Y-m');
-    $counter = (int) DB::val(
-        'SELECT `count_sent` FROM interest_counters WHERE user_id = ? AND year_month = ?',
-        [$userId, $month]
-    );
+    $counter = 0;
+    try {
+        $counter = (int) DB::val(
+            'SELECT `count_sent` FROM interest_counters WHERE user_id = ? AND year_month = ?',
+            [$userId, $month]
+        );
+    } catch (Throwable $e) {
+        // Fallback: if count_sent column doesn't exist (table created before migration),
+        // try the legacy column name with backticks
+        try {
+            $counter = (int) DB::val(
+                'SELECT `count` FROM interest_counters WHERE user_id = ? AND year_month = ?',
+                [$userId, $month]
+            );
+        } catch (Throwable $e2) {
+            // Table might not exist, return 0
+        }
+    }
     $legacy = (int) DB::val(
         "SELECT COUNT(*) FROM interests
           WHERE sender_id = ? AND created_at >= DATE_FORMAT(NOW(), '%Y-%m-01')",
