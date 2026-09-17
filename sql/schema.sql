@@ -320,6 +320,186 @@ CREATE TABLE `contact_messages` (
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- =====================================================================
+-- TABLES CREATED VIA AUTO-MIGRATION (index.php)
+-- Included here so a fresh install from schema.sql alone is complete.
+-- =====================================================================
+
+DROP TABLE IF EXISTS `blocked_users`;
+CREATE TABLE `blocked_users` (
+  `id`              BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `user_id`         BIGINT UNSIGNED NOT NULL,
+  `blocked_user_id` BIGINT UNSIGNED NOT NULL,
+  `reason`          VARCHAR(255) DEFAULT NULL,
+  `created_at`      DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `blocked_pair_unique` (`user_id`,`blocked_user_id`),
+  KEY `blocked_target_idx` (`blocked_user_id`),
+  CONSTRAINT `blocked_user_fk`   FOREIGN KEY (`user_id`)         REFERENCES `users` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `blocked_target_fk` FOREIGN KEY (`blocked_user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+DROP TABLE IF EXISTS `profile_reports`;
+CREATE TABLE `profile_reports` (
+  `id`               BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `reporter_user_id` BIGINT UNSIGNED NOT NULL,
+  `reported_user_id` BIGINT UNSIGNED NOT NULL,
+  `category`         VARCHAR(60) NOT NULL,
+  `details`          TEXT,
+  `status`           ENUM('open','reviewing','resolved','dismissed') NOT NULL DEFAULT 'open',
+  `admin_notes`      TEXT,
+  `resolved_at`      DATETIME DEFAULT NULL,
+  `created_at`       DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at`       DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `reports_reported_idx` (`reported_user_id`),
+  KEY `reports_status_idx`   (`status`),
+  CONSTRAINT `reports_reporter_fk` FOREIGN KEY (`reporter_user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `reports_reported_fk` FOREIGN KEY (`reported_user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+DROP TABLE IF EXISTS `notifications`;
+CREATE TABLE `notifications` (
+  `id`         BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `user_id`    BIGINT UNSIGNED NOT NULL,
+  `type`       VARCHAR(40) NOT NULL,
+  `title`      VARCHAR(200) NOT NULL,
+  `body`       VARCHAR(500) DEFAULT NULL,
+  `link`       VARCHAR(255) DEFAULT NULL,
+  `read_at`    DATETIME DEFAULT NULL,
+  `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `notif_user_read_idx` (`user_id`, `read_at`),
+  CONSTRAINT `notif_user_fk` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+DROP TABLE IF EXISTS `profile_views_log`;
+CREATE TABLE `profile_views_log` (
+  `id`             BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `viewer_user_id` BIGINT UNSIGNED NOT NULL,
+  `viewed_user_id` BIGINT UNSIGNED NOT NULL,
+  `created_at`     DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `views_viewed_time_idx` (`viewed_user_id`, `created_at`),
+  KEY `views_viewer_time_idx` (`viewer_user_id`, `created_at`),
+  CONSTRAINT `views_viewer_fk` FOREIGN KEY (`viewer_user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `views_viewed_fk` FOREIGN KEY (`viewed_user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+DROP TABLE IF EXISTS `audit_log`;
+CREATE TABLE `audit_log` (
+  `id`          BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `actor_id`    BIGINT UNSIGNED DEFAULT NULL,
+  `action`      VARCHAR(80) NOT NULL,
+  `target_type` VARCHAR(40) DEFAULT NULL,
+  `target_id`   BIGINT UNSIGNED DEFAULT NULL,
+  `meta`        TEXT,
+  `ip`          VARCHAR(45) DEFAULT NULL,
+  `created_at`  DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `audit_actor_idx` (`actor_id`),
+  KEY `audit_target_idx` (`target_type`, `target_id`),
+  KEY `audit_created_idx` (`created_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+DROP TABLE IF EXISTS `contact_views`;
+CREATE TABLE `contact_views` (
+  `id`              BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `viewer_user_id`  BIGINT UNSIGNED NOT NULL,
+  `viewed_user_id`  BIGINT UNSIGNED NOT NULL,
+  `subscription_id` BIGINT UNSIGNED NULL,
+  `created_at`      DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `contact_views_pair_unique` (`viewer_user_id`,`viewed_user_id`,`subscription_id`),
+  KEY `contact_views_viewer_idx` (`viewer_user_id`),
+  CONSTRAINT `contact_views_viewer_fk` FOREIGN KEY (`viewer_user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `contact_views_viewed_fk` FOREIGN KEY (`viewed_user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+DROP TABLE IF EXISTS `addon_purchases`;
+DROP TABLE IF EXISTS `addons`;
+CREATE TABLE `addons` (
+  `id`            BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `slug`          VARCHAR(60) NOT NULL,
+  `name`          VARCHAR(120) NOT NULL,
+  `description`   VARCHAR(255) DEFAULT NULL,
+  `price`         DECIMAL(10,2) NOT NULL DEFAULT 0,
+  `currency`      VARCHAR(8) NOT NULL DEFAULT 'INR',
+  `kind`          ENUM('boost','spotlight','featured','contact_pack','review') NOT NULL,
+  `duration_days` SMALLINT UNSIGNED NOT NULL DEFAULT 0,
+  `quantity`      SMALLINT UNSIGNED NOT NULL DEFAULT 0,
+  `is_active`     TINYINT(1) NOT NULL DEFAULT 1,
+  `display_order` SMALLINT NOT NULL DEFAULT 0,
+  `created_at`    DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at`    DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `addons_slug_unique` (`slug`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE `addon_purchases` (
+  `id`         BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `user_id`    BIGINT UNSIGNED NOT NULL,
+  `addon_id`   BIGINT UNSIGNED NOT NULL,
+  `payment_id` BIGINT UNSIGNED NULL,
+  `starts_at`  DATETIME NULL,
+  `ends_at`    DATETIME NULL,
+  `status`     ENUM('pending','active','expired','cancelled') NOT NULL DEFAULT 'pending',
+  `amount`     DECIMAL(10,2) NOT NULL DEFAULT 0,
+  `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `addon_purchases_user_idx` (`user_id`),
+  CONSTRAINT `addon_purchases_user_fk`  FOREIGN KEY (`user_id`)  REFERENCES `users`  (`id`) ON DELETE CASCADE,
+  CONSTRAINT `addon_purchases_addon_fk` FOREIGN KEY (`addon_id`) REFERENCES `addons` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+DROP TABLE IF EXISTS `verification_requests`;
+CREATE TABLE `verification_requests` (
+  `id`             BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `user_id`        BIGINT UNSIGNED NOT NULL,
+  `tier`           ENUM('identity','selfie') NOT NULL,
+  `amount`         DECIMAL(10,2) NOT NULL DEFAULT 0,
+  `payment_id`     BIGINT UNSIGNED NULL,
+  `id_doc_type`    VARCHAR(40) NULL,
+  `id_doc_path`    VARCHAR(255) DEFAULT NULL,
+  `selfie_path`    VARCHAR(255) DEFAULT NULL,
+  `selfie_is_video` TINYINT(1) NOT NULL DEFAULT 0,
+  `status`         ENUM('pending_payment','pending_upload','pending_review','approved','rejected') NOT NULL DEFAULT 'pending_payment',
+  `admin_notes`    TEXT,
+  `reject_reason`  VARCHAR(255) NULL,
+  `submitted_at`   DATETIME NULL,
+  `reviewed_at`    DATETIME NULL,
+  `reviewed_by`    BIGINT UNSIGNED NULL,
+  `created_at`     DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at`     DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `verify_user_idx` (`user_id`),
+  KEY `verify_status_idx` (`status`),
+  CONSTRAINT `verify_user_fk` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+DROP TABLE IF EXISTS `interest_counters`;
+CREATE TABLE `interest_counters` (
+  `user_id`      BIGINT UNSIGNED NOT NULL,
+  `year_month`   CHAR(7) NOT NULL,
+  `count_sent`   INT NOT NULL DEFAULT 0,
+  `updated_at`   DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`user_id`,`year_month`),
+  CONSTRAINT `interest_counters_user_fk` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+DROP TABLE IF EXISTS `profile_boosts`;
+CREATE TABLE `profile_boosts` (
+  `id`         BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `user_id`    BIGINT UNSIGNED NOT NULL,
+  `source`     ENUM('plan','addon') NOT NULL DEFAULT 'plan',
+  `starts_at`  DATETIME NOT NULL,
+  `ends_at`    DATETIME NOT NULL,
+  `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `boosts_user_time_idx` (`user_id`,`created_at`),
+  CONSTRAINT `boosts_user_fk` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 SET FOREIGN_KEY_CHECKS = 1;
 
 -- =====================================================================
