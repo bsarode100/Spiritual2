@@ -44,6 +44,9 @@ RUN mkdir -p /var/www/html/public/uploads/avatars \
     && chmod -R 775 /var/www/html/public/uploads \
     && chmod -R 770 /var/www/html/storage
 
+# Declare persistent volumes so uploads and private verification documents survive restarts
+VOLUME ["/var/www/html/public/uploads", "/var/www/html/storage/verification"]
+
 EXPOSE 80
 
 # Apache picks up env vars at boot — required for Coolify-managed envs

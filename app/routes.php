@@ -9,6 +9,28 @@ $r->get('/google81d45da2403fa41d.html', function () {
     exit;
 });
 
+// ------------------- UPLOADS / AVATARS STREAMING & FALLBACK -------------------
+$r->get('/uploads/avatars/{file}', function ($a) {
+    $filename = basename($a['file']);
+    $full = __DIR__ . '/../public/uploads/avatars/' . $filename;
+    if (file_exists($full) && is_file($full)) {
+        $mime = mime_content_type($full) ?: 'image/jpeg';
+        header('Content-Type: ' . $mime);
+        header('Cache-Control: public, max-age=86400');
+        readfile($full);
+        exit;
+    }
+    // Graceful fallback if image is missing on disk (e.g. after container redeployment)
+    $parts = explode('_', $filename, 2);
+    $userName = 'Seeker';
+    if (!empty($parts[0]) && is_numeric($parts[0])) {
+        $userName = DB::val('SELECT name FROM users WHERE id = ?', [(int)$parts[0]]) ?: 'Seeker';
+    }
+    $seed = urlencode($userName);
+    header('Location: https://api.dicebear.com/9.x/initials/svg?seed=' . $seed . '&backgroundColor=D99420,D46A76,933D47&textColor=FFFDF9', true, 302);
+    exit;
+});
+
 // ------------------- HOME -------------------
 $r->get('/', function () {
     $priorityJoin = profile_priority_join_sql();
@@ -1134,9 +1156,16 @@ $r->post('/profile/photos', function () {
     if ($f['size'] > $cfg['max_bytes']) { flash('error','Photo too large (max 4MB).'); redirect('/profile/photos'); }
     $ext = strtolower(pathinfo($f['name'], PATHINFO_EXTENSION));
     if (!in_array($ext, $cfg['allowed'])) { flash('error','JPG / PNG / WEBP only.'); redirect('/profile/photos'); }
-    if (!is_dir($cfg['avatar_dir'])) mkdir($cfg['avatar_dir'], 0775, true);
+    if (!is_dir($cfg['avatar_dir'])) {
+        @mkdir($cfg['avatar_dir'], 0777, true);
+    }
+    @chmod($cfg['avatar_dir'], 0777);
     $name = $uid . '_' . bin2hex(random_bytes(6)) . '.' . $ext;
-    move_uploaded_file($f['tmp_name'], $cfg['avatar_dir'] . '/' . $name);
+    $targetPath = $cfg['avatar_dir'] . '/' . $name;
+    if (!move_uploaded_file($f['tmp_name'], $targetPath)) {
+        flash('error', 'Upload failed: Server could not write to uploads directory. Please ensure persistent storage permissions.');
+        redirect('/profile/photos');
+    }
     $isFirst = $existing === 0 ? 1 : 0;
     DB::insert('photos', ['user_id' => $uid, 'path' => 'avatars/' . $name, 'is_primary' => $isFirst]);
     recompute_profile_complete($uid);

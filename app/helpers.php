@@ -778,10 +778,10 @@ function verified_badge(?string $tier, string $extra = ''): string {
 }
 
 function avatar_url(array $user): string {
-    $p = primary_photo((int)$user['id']);
+    $p = primary_photo((int)($user['id'] ?? 0));
     if ($p) return upload_url($p);
     $seed = urlencode($user['name'] ?? 'Seeker');
-    return "https://api.dicebear.com/9.x/initials/svg?seed={$seed}&backgroundColor=B8860B,8B2C2C,2D1B4E&textColor=FAF3E0";
+    return "https://api.dicebear.com/9.x/initials/svg?seed={$seed}&backgroundColor=D99420,D46A76,933D47&textColor=FFFDF9";
 }
 
 function slugify(string $s): string {
