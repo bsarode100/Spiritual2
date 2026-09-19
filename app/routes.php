@@ -1104,6 +1104,10 @@ $r->post('/profile/spiritual', function () {
     Auth::require();
     $uid = Auth::id();
 
+    if (isset($_POST['spiritual_path']) && $_POST['spiritual_path'] === 'Other') {
+        $_POST['spiritual_path'] = trim((string)($_POST['spiritual_path_other'] ?? ''));
+    }
+
     if (isset($_POST['spiritual_organization']) && $_POST['spiritual_organization'] === 'Other') {
         $_POST['spiritual_organization'] = trim((string)($_POST['spiritual_organization_other'] ?? ''));
     }

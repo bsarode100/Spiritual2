@@ -114,7 +114,12 @@
         <form method="get" action="/browse" class="glass-search-grid">
             <div class="glass-field">
                 <label>Spiritual Path</label>
-                <input type="text" name="path" placeholder="e.g. ISKCON, Vipassana, Vedanta" class="glass-control">
+                <input type="text" name="path" list="home_path_list" placeholder="e.g. Advaita Vedanta, Bhakti Yoga..." class="glass-control">
+                <datalist id="home_path_list">
+                    <?php foreach (spiritual_paths() as $hp): ?>
+                        <option value="<?= e($hp) ?>"></option>
+                    <?php endforeach; ?>
+                </datalist>
             </div>
             <div class="glass-field">
                 <label>Dietary Practice</label>

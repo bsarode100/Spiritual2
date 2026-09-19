@@ -2649,7 +2649,9 @@ p {
 }
 
 /* Smooth Slide for Dynamic Other Input */
-#spiritual_org_other_wrap {
+#spiritual_org_other_wrap,
+#spiritual_path_other_wrap,
+.combobox-other-wrap {
     animation: fadeInSlideDown 0.28s cubic-bezier(0.16, 1, 0.3, 1);
     background: rgba(255, 255, 255, 0.6);
     border: 1px solid rgba(212, 91, 122, 0.2);

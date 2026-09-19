@@ -117,8 +117,10 @@
             const clearBtn    = cb.querySelector('.combobox-clear');
             const optionsList = cb.querySelectorAll('.combobox-option');
             const emptyState  = cb.querySelector('.combobox-empty');
-            const otherWrap   = document.getElementById('spiritual_org_other_wrap');
-            const otherInput  = document.getElementById('spiritual_org_other_input');
+            const otherWrapId = cb.getAttribute('data-other-wrap');
+            const otherInputId = cb.getAttribute('data-other-input');
+            const otherWrap   = otherWrapId ? document.getElementById(otherWrapId) : (document.getElementById('spiritual_org_other_wrap') || (cb.closest('.field') ? cb.closest('.field').querySelector('.combobox-other-wrap') : null));
+            const otherInput  = otherInputId ? document.getElementById(otherInputId) : (document.getElementById('spiritual_org_other_input') || (otherWrap ? otherWrap.querySelector('input') : null));
 
             if (!trigger || !dropdown) return;
 

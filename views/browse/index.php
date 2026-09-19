@@ -19,7 +19,15 @@
     <form method="get" class="filters filters-wide">
         <div class="field"><label>City / Location</label><input type="text" name="city" value="<?= e($_GET['city'] ?? '') ?>" placeholder="Any city"></div>
         <div class="field"><label>Religion</label><input type="text" name="religion" value="<?= e($_GET['religion'] ?? '') ?>" placeholder="Hindu, Buddhist..."></div>
-        <div class="field"><label>Spiritual Path</label><input type="text" name="path" value="<?= e($_GET['path'] ?? '') ?>" placeholder="ISKCON, Vipassana..."></div>
+        <div class="field">
+            <label>Spiritual Path</label>
+            <input type="text" name="path" list="browse_path_list" value="<?= e($_GET['path'] ?? '') ?>" placeholder="Search or select path...">
+            <datalist id="browse_path_list">
+                <?php foreach (spiritual_paths() as $pathItem): ?>
+                    <option value="<?= e($pathItem) ?>"></option>
+                <?php endforeach; ?>
+            </datalist>
+        </div>
         <div class="field"><label>Dietary Practice</label>
             <select name="diet">
                 <option value="">Any Diet</option>

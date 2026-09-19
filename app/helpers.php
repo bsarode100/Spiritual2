@@ -982,3 +982,52 @@ function spiritual_organizations(): array {
         'Devatma Shakti Society',
     ];
 }
+
+/**
+ * Predefined master list of verified spiritual paths and traditions.
+ *
+ * @return array<string>
+ */
+function spiritual_paths(): array {
+    return [
+        'Advaita Vedanta',
+        'Akshar-Purushottam Darshan',
+        'Ashtanga Yoga',
+        'Atma Vichara (Self-Enquiry)',
+        'Bhakti Yoga',
+        'Brahm Gyan (Realization of Formless God)',
+        'Dynamic / Cathartic Meditation',
+        'Engaged Buddhism',
+        'Gaudiya Vaishnavism',
+        'Gayatri Mantra Sadhana',
+        'Hatha Yoga',
+        'Integral Yoga (Purna Yoga / Yoga of Synthesis)',
+        'Jnana Yoga',
+        'Karma Yoga',
+        'Kashmir Shaivism',
+        'Kayakalpa',
+        'Kriya Yoga',
+        'Kundalini Yoga',
+        'Maha Yoga',
+        'Mahamudra',
+        'Mantra Meditation / Chanting',
+        'Nichiren Buddhism',
+        'Pranahuti (Yogic Transmission)',
+        'Pranayama',
+        'Raja Yoga',
+        'Seva (Selfless Service)',
+        'Shaktipat Initiation',
+        'Siddha Yoga',
+        'Sikh Dharma',
+        'Supramental Consciousness',
+        'Surat Shabd Yoga (Meditation on Inner Light and Sound)',
+        'Syncretic Mysticism / Neo-Sannyas',
+        'Tamil Siddhar Tradition',
+        'Theravada Buddhism',
+        'Tibetan Buddhism',
+        'Vedic Philosophy',
+        'Vipassana (Insight) Meditation',
+        'Yagya / Homa (Fire Rituals)',
+        'Zen Buddhism',
+    ];
+}

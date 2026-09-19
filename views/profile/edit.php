@@ -126,7 +126,64 @@ $cls = fn(string $key) => isset($missing[$key]) ? 'field field-error' : 'field';
         <h3>Spiritual Details</h3>
         <p style="color: var(--c-muted);">The heart of your profile. Share what others won't find on traditional matrimony sites.</p>
         <div class="form-grid">
-            <div class="field"><label>Spiritual Path</label><input type="text" name="spiritual_path" value="<?= e($spiritual['spiritual_path'] ?? '') ?>" placeholder="ISKCON / Vipassana / Sahaja Yoga / Art of Living..."></div>
+            <?php
+            $savedPath = trim((string)($spiritual['spiritual_path'] ?? ''));
+            $pathList = spiritual_paths();
+            $isPathPredefined = in_array($savedPath, $pathList, true);
+            $isPathOther = ($savedPath !== '' && !$isPathPredefined);
+            ?>
+            <div class="field full spiritual-path-container">
+                <label>Spiritual Path / Lineage</label>
+                <div class="custom-combobox" id="spiritual_path_combobox" data-other-wrap="spiritual_path_other_wrap" data-other-input="spiritual_path_other_input">
+                    <input type="hidden" name="spiritual_path" id="spiritual_path_value" value="<?= $isPathOther ? 'Other' : e($savedPath) ?>">
+                    
+                    <div class="combobox-trigger" id="spiritual_path_trigger" tabindex="0" role="combobox" aria-expanded="false" aria-haspopup="listbox">
+                        <span class="combobox-text <?= ($savedPath === '') ? 'is-placeholder' : '' ?>">
+                            <?php if ($isPathOther): ?>
+                                Other: <?= e($savedPath) ?>
+                            <?php elseif ($isPathPredefined): ?>
+                                <?= e($savedPath) ?>
+                            <?php else: ?>
+                                Select or search spiritual path...
+                            <?php endif; ?>
+                        </span>
+                        <div class="combobox-icons">
+                            <button type="button" class="combobox-clear" id="spiritual_path_clear" title="Clear selection" style="<?= ($savedPath !== '') ? 'display:inline-flex;' : 'display:none;' ?>">×</button>
+                            <svg class="combobox-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M6 9l6 6 6-6"/></svg>
+                        </div>
+                    </div>
+
+                    <div class="combobox-dropdown" id="spiritual_path_dropdown" role="listbox">
+                        <div class="combobox-search-box">
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+                            <input type="text" class="combobox-search-input" id="spiritual_path_search" placeholder="Search 39+ spiritual paths..." autocomplete="off">
+                        </div>
+                        <div class="combobox-options-list" id="spiritual_path_options">
+                            <?php foreach ($pathList as $p): ?>
+                                <div class="combobox-option <?= ($savedPath === $p) ? 'is-selected' : '' ?>" data-value="<?= e($p) ?>" role="option">
+                                    <?= e($p) ?>
+                                </div>
+                            <?php endforeach; ?>
+                            <div class="combobox-divider"></div>
+                            <div class="combobox-option combobox-other-option <?= $isPathOther ? 'is-selected' : '' ?>" data-value="Other" role="option">
+                                <span>✏️ <strong>Other</strong> (Not in list / Specify manually)</span>
+                            </div>
+                            <div class="combobox-empty" id="spiritual_path_empty" style="display: none;">
+                                <div>No matching spiritual path found.</div>
+                                <button type="button" class="btn btn-ghost btn-sm select-other-btn">Select "Other" &amp; Enter Name</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Dynamic Manual Input when Other is chosen -->
+                <div id="spiritual_path_other_wrap" class="mt-2" style="<?= $isPathOther ? 'display:block;' : 'display:none;' ?>">
+                    <label for="spiritual_path_other_input" style="font-size: 0.84rem; color: var(--c-rose); font-weight: 600; display: block; margin-bottom: 0.35rem;">
+                        Specify Your Spiritual Path / Tradition Name:
+                    </label>
+                    <input type="text" name="spiritual_path_other" id="spiritual_path_other_input" value="<?= $isPathOther ? e($savedPath) : '' ?>" placeholder="Enter the name of your spiritual path or tradition..." class="glass-control" style="background:#FFFFFF;">
+                </div>
+            </div>
             <div class="field"><label>Guru</label><input type="text" name="guru" value="<?= e($spiritual['guru'] ?? '') ?>"></div>
             <div class="field"><label>Ishta Devata</label><input type="text" name="ishta_devata" value="<?= e($spiritual['ishta_devata'] ?? '') ?>" placeholder="Krishna / Devi / Shiva..."></div>
             <div class="field"><label>Mantra</label><input type="text" name="mantra" value="<?= e($spiritual['mantra'] ?? '') ?>"></div>
@@ -141,7 +198,7 @@ $cls = fn(string $key) => isset($missing[$key]) ? 'field field-error' : 'field';
             ?>
             <div class="field full spiritual-org-container">
                 <label>Spiritual Organization / Sangha</label>
-                <div class="custom-combobox" id="spiritual_org_combobox">
+                <div class="custom-combobox" id="spiritual_org_combobox" data-other-wrap="spiritual_org_other_wrap" data-other-input="spiritual_org_other_input">
                     <input type="hidden" name="spiritual_organization" id="spiritual_org_value" value="<?= $isOther ? 'Other' : e($savedOrg) ?>">
                     
                     <div class="combobox-trigger" id="spiritual_org_trigger" tabindex="0" role="combobox" aria-expanded="false" aria-haspopup="listbox">
