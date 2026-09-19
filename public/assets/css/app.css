@@ -648,6 +648,7 @@ p {
 
 /* Hero Visual Composition */
 .hero-visual {
+    width: 100%;
     position: relative;
     aspect-ratio: 1 / 1.05;
     max-width: 500px;
@@ -734,9 +735,15 @@ p {
 }
 
 @media (max-width: 900px) {
-    .hero { padding: 3.5rem 0 5rem; }
-    .hero-grid { grid-template-columns: 1fr; gap: 3.5rem; text-align: left; }
-    .hero-visual { max-width: 100%; aspect-ratio: 1 / 0.85; margin: 0 auto; }
+    .hero { padding: 3.5rem 0 4.5rem; }
+    .hero-grid { grid-template-columns: 1fr; gap: 2.75rem; text-align: left; }
+    .hero-visual { width: 100%; max-width: 420px; aspect-ratio: 1 / 0.88; margin: 0 auto; }
+}
+
+@media (max-width: 640px) {
+    .hero-visual { max-width: 330px; aspect-ratio: 1 / 0.92; }
+    .hero-card-3 { padding: 0.8rem; }
+    .hero-card-3 .script { font-size: 1.75rem !important; }
 }
 
 /* =====================================================================
