@@ -34,69 +34,6 @@
                     <div><strong style="color: var(--c-ink);"><?= e(setting('stat_marriages','1,200+')) ?> sacred unions</strong> · across <?= e(setting('stat_paths','18')) ?> spiritual paths</div>
                 </div>
             </div>
-
-            <div class="hero-visual">
-                <!-- Background sacred geometry mandala -->
-                <svg class="mandala" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
-                    <g fill="none" stroke="#D99420" stroke-width="0.45" opacity="0.6">
-                        <circle cx="100" cy="100" r="95"/>
-                        <circle cx="100" cy="100" r="78"/>
-                        <circle cx="100" cy="100" r="60"/>
-                        <circle cx="100" cy="100" r="42"/>
-                        <circle cx="100" cy="100" r="24"/>
-                        <?php for ($i = 0; $i < 16; $i++) {
-                            $angle = $i * 22.5;
-                            echo "<line x1='100' y1='100' x2='100' y2='5' transform='rotate($angle 100 100)'/>";
-                        } ?>
-                    </g>
-                </svg>
-
-                <!-- Card 3 (back small) -->
-                <div class="hero-card hero-card-3">
-                    <div>
-                        <div class="script" style="color: var(--c-saffron); font-size: 2.2rem;">सहजीवन</div>
-                        <div style="font-size: .88rem; font-weight: 600; color: var(--c-maroon); letter-spacing: .04em; margin-top: .2rem;">Walk together</div>
-                    </div>
-                </div>
-
-                <!-- Card 2 (medium - groom sadhak) -->
-                <div class="hero-card hero-card-2">
-                    <div style="height: 100%; background: linear-gradient(135deg, rgba(235, 168, 64, 0.95) 0%, rgba(217, 107, 123, 0.95) 100%); display: flex; align-items: flex-end; padding: 1.5rem; color: white;">
-                        <div>
-                            <div style="font-size: .72rem; letter-spacing: .18em; opacity: .95; margin-bottom: .25rem; font-weight: 700; text-transform: uppercase;">VIPASSANA · 6 YRS</div>
-                            <div style="font-family: var(--f-display); font-size: 1.55rem; font-weight: 600; line-height: 1.15;">Arjun, 31</div>
-                            <div style="font-size: .86rem; opacity: .92;">Software Engineer · Bengaluru</div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Card 1 (main, front - bride sadhika) -->
-                <div class="hero-card hero-card-main">
-                    <div style="height: 100%; background: linear-gradient(145deg, #FFFDF8 0%, #FCECEF 60%, #F8E5EC 100%); position: relative; overflow: hidden;">
-                        <svg viewBox="0 0 200 240" style="width: 100%; height: 100%;" xmlns="http://www.w3.org/2000/svg">
-                            <defs>
-                                <linearGradient id="auroraLight" x1="0" y1="0" x2="1" y2="1">
-                                    <stop offset="0%" stop-color="#FDF3E5"/>
-                                    <stop offset="50%" stop-color="#FCEBEF"/>
-                                    <stop offset="100%" stop-color="#EFE6F7"/>
-                                </linearGradient>
-                            </defs>
-                            <rect width="200" height="240" fill="url(#auroraLight)"/>
-                            <!-- Stylized serene portrait profile -->
-                            <circle cx="100" cy="85" r="38" fill="#FFFDF8" opacity=".95"/>
-                            <path d="M38 240 Q40 135 100 135 Q160 135 162 240 Z" fill="#FFFDF8" opacity=".95"/>
-                            <!-- Auspicious kumkum bindi -->
-                            <circle cx="100" cy="72" r="3.6" fill="#D96B7B"/>
-                            <!-- Subtle lotus aura arc -->
-                            <path d="M70 110 Q100 125 130 110" stroke="#D99420" stroke-width="1.2" fill="none" opacity=".65"/>
-                        </svg>
-                    </div>
-                    <div class="hero-card-badge">
-                        <h4>Anjali, 28</h4>
-                        <p>Yoga Teacher · Bhakti Path · Pune</p>
-                    </div>
-                </div>
-            </div>
         </div>
     </div>
 </section>
