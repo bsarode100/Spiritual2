@@ -10,7 +10,7 @@
             </div>
         </a>
 
-        <ul class="nav-links" style="list-style: none; padding: 0; margin: 0;">
+        <ul class="nav-links">
             <li><a href="/" class="<?= nav_active('/') ?>">Home</a></li>
             <li><a href="/about" class="<?= nav_active('/about') ?>">About</a></li>
             <li><a href="/browse" class="<?= nav_active('/browse') ?>">Browse</a></li>

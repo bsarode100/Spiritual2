@@ -408,46 +408,54 @@ p {
 .nav-links {
     display: flex;
     align-items: center;
-    gap: 1.6rem;
+    gap: clamp(0.4rem, 1.2vw, 1.3rem);
     list-style: none;
+    padding: 0;
+    margin: 0;
+    flex-shrink: 1;
+}
+.nav-links li {
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
     padding: 0;
     margin: 0;
 }
 .nav-links a {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
     color: var(--c-ink-soft);
     font-weight: 500;
-    font-size: 0.92rem;
-    padding: 0.45rem 0.85rem;
+    font-size: clamp(0.86rem, 0.95vw, 0.93rem);
+    line-height: 1;
+    padding: 0.5rem 0.95rem;
     border-radius: var(--r-pill);
     position: relative;
+    white-space: nowrap;
+    text-decoration: none;
+    border: 1px solid transparent;
     transition: var(--tr-fast);
+    box-sizing: border-box;
 }
 .nav-links a:hover {
     color: var(--c-maroon);
-    background: rgba(247, 214, 220, 0.3);
+    background: rgba(247, 214, 220, 0.35);
+    border-color: rgba(247, 214, 220, 0.5);
 }
 .nav-links a.is-active {
     color: var(--c-maroon);
     font-weight: 600;
-    background: rgba(255, 255, 255, 0.8);
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
-}
-.nav-links a.is-active::after {
-    content: '';
-    position: absolute;
-    bottom: 2px;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 14px;
-    height: 2px;
-    background: var(--c-saffron);
-    border-radius: 2px;
+    background: rgba(255, 255, 255, 0.96);
+    border: 1px solid rgba(217, 148, 32, 0.35);
+    box-shadow: 0 3px 12px rgba(217, 148, 32, 0.14), 0 1px 4px rgba(0, 0, 0, 0.04);
 }
 
 .nav-cta {
     display: flex;
     gap: 0.75rem;
     align-items: center;
+    flex-shrink: 0;
 }
 
 .nav-badge {
@@ -478,7 +486,7 @@ p {
 }
 .mobile-toggle svg { width: 24px; height: 24px; stroke: currentColor; }
 
-@media (max-width: 960px) {
+@media (max-width: 1040px) {
     .nav-links, .nav-cta .btn-ghost { display: none; }
     .mobile-toggle { display: flex; align-items: center; justify-content: center; }
     .nav-links.open {
@@ -498,7 +506,12 @@ p {
         box-shadow: var(--shadow-lg);
         animation: slideDown 0.25s cubic-bezier(0.16, 1, 0.3, 1);
     }
+    .nav-links.open li {
+        width: 100%;
+    }
     .nav-links.open a {
+        width: 100%;
+        justify-content: flex-start;
         padding: 0.75rem 1rem;
         font-size: 1rem;
     }
