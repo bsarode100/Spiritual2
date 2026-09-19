@@ -341,6 +341,7 @@ p {
     display: flex;
     align-items: center;
     justify-content: space-between;
+    gap: 1.25rem;
     padding: 0.95rem 0;
     transition: padding 0.25s ease;
 }
@@ -405,7 +406,7 @@ p {
 .nav-links {
     display: flex;
     align-items: center;
-    gap: clamp(0.4rem, 1.2vw, 1.3rem);
+    gap: clamp(0.25rem, 0.75vw, 0.95rem);
     list-style: none;
     padding: 0;
     margin: 0;
@@ -424,9 +425,9 @@ p {
     justify-content: center;
     color: var(--c-ink-soft);
     font-weight: 500;
-    font-size: clamp(0.86rem, 0.95vw, 0.93rem);
+    font-size: clamp(0.84rem, 0.88vw, 0.92rem);
     line-height: 1;
-    padding: 0.5rem 0.95rem;
+    padding: 0.45rem clamp(0.6rem, 0.72vw, 0.85rem);
     border-radius: var(--r-pill);
     position: relative;
     white-space: nowrap;
@@ -453,6 +454,24 @@ p {
     gap: 0.75rem;
     align-items: center;
     flex-shrink: 0;
+    margin-left: clamp(1.25rem, 2.2vw, 2.5rem);
+    padding-left: clamp(1.25rem, 2.2vw, 2.5rem);
+    position: relative;
+}
+/* Luxury architectural vertical hairline divider between navigation and user actions */
+.nav-cta::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    height: 24px;
+    width: 1px;
+    background: linear-gradient(180deg, rgba(217, 148, 32, 0.04) 0%, rgba(217, 148, 32, 0.38) 50%, rgba(217, 148, 32, 0.04) 100%);
+    pointer-events: none;
+}
+.nav.scrolled .nav-cta::before {
+    background: linear-gradient(180deg, rgba(234, 224, 212, 0.05) 0%, rgba(217, 148, 32, 0.45) 50%, rgba(234, 224, 212, 0.05) 100%);
 }
 
 .nav-badge {
@@ -485,6 +504,8 @@ p {
 
 @media (max-width: 1040px) {
     .nav-links, .nav-cta .btn-ghost { display: none; }
+    .nav-cta { margin-left: auto; padding-left: 0; }
+    .nav-cta::before { display: none; }
     .mobile-toggle { display: flex; align-items: center; justify-content: center; }
     .nav-links.open {
         display: flex;

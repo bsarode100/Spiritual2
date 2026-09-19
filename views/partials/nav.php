@@ -1,5 +1,5 @@
 <nav class="nav">
-    <div class="container nav-inner">
+    <div class="container-lg nav-inner">
         <a href="/" class="brand">
             <div class="brand-icon">
                 <img src="<?= asset('images/logo.png') ?>" alt="SpiritualShaadi Logo" style="height: 36px; width: auto;">
