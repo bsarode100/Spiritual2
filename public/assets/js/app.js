@@ -313,17 +313,33 @@
                 if (stateIndiaWrap) stateIndiaWrap.style.display = 'block';
                 if (stateOtherWrap) stateOtherWrap.style.display = 'none';
                 if (countryOtherWrap) countryOtherWrap.style.display = 'none';
-                if (stateIndiaSelect) stateIndiaSelect.disabled = false;
-                if (stateOtherInput) stateOtherInput.disabled = true;
-                if (countryOtherInput) countryOtherInput.disabled = true;
+                if (stateIndiaSelect) {
+                    stateIndiaSelect.disabled = false;
+                    stateIndiaSelect.required = true;
+                }
+                if (stateOtherInput) {
+                    stateOtherInput.disabled = true;
+                    stateOtherInput.required = false;
+                }
+                if (countryOtherInput) {
+                    countryOtherInput.disabled = true;
+                    countryOtherInput.required = false;
+                }
             } else {
                 if (stateIndiaWrap) stateIndiaWrap.style.display = 'none';
                 if (stateOtherWrap) stateOtherWrap.style.display = 'block';
                 if (countryOtherWrap) countryOtherWrap.style.display = 'block';
-                if (stateIndiaSelect) stateIndiaSelect.disabled = true;
-                if (stateOtherInput) stateOtherInput.disabled = false;
+                if (stateIndiaSelect) {
+                    stateIndiaSelect.disabled = true;
+                    stateIndiaSelect.required = false;
+                }
+                if (stateOtherInput) {
+                    stateOtherInput.disabled = false;
+                    stateOtherInput.required = true;
+                }
                 if (countryOtherInput) {
                     countryOtherInput.disabled = false;
+                    countryOtherInput.required = true;
                     if (!countryOtherInput.value.trim()) {
                         setTimeout(() => countryOtherInput.focus(), 60);
                     }
@@ -335,14 +351,55 @@
         updateLocationUI();
     }
 
+    // =====================================================================
+    // Spiritual Form Validation (Combobox & Checkbox mandatory guards)
+    // =====================================================================
+    function initProfileValidation() {
+        const spiritualForm = document.getElementById('spiritual');
+        if (!spiritualForm) return;
+
+        spiritualForm.addEventListener('submit', (e) => {
+            const pathVal = (document.getElementById('spiritual_path_value')?.value || '').trim();
+            const otherInput = document.getElementById('spiritual_path_other_input');
+            const pathField = document.getElementById('field-spiritual_path');
+
+            if (!pathVal) {
+                e.preventDefault();
+                alert('Please select or specify your Spiritual Path / Lineage.');
+                pathField?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                document.getElementById('spiritual_path_trigger')?.focus();
+                return;
+            }
+
+            if (pathVal === 'Other' && otherInput && !otherInput.value.trim()) {
+                e.preventDefault();
+                alert('Please specify the name of your Spiritual Path / Tradition.');
+                otherInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                otherInput.focus();
+                return;
+            }
+
+            const commitmentsChecked = spiritualForm.querySelectorAll('#field-lifestyle_commitments input[type="checkbox"]:checked');
+            if (commitmentsChecked.length === 0) {
+                e.preventDefault();
+                alert('Please select at least one Spiritual Lifestyle Commitment (e.g. Vegetarian, Vegan, No smoking, or No alcohol).');
+                const commitmentField = document.getElementById('field-lifestyle_commitments');
+                commitmentField?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                return;
+            }
+        });
+    }
+
     // Initialize on DOM ready
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', () => {
             initComboboxes();
             initLocationSelectors();
+            initProfileValidation();
         });
     } else {
         initComboboxes();
         initLocationSelectors();
+        initProfileValidation();
     }
 })();

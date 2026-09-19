@@ -2140,6 +2140,27 @@ p {
     color: #1E5028;
 }
 
+/* Missing mandatory profile field highlighting */
+.field.field-error > label {
+    color: #C0392B !important;
+    font-weight: 700;
+}
+.field.field-error input:not([type="checkbox"]):not([type="radio"]),
+.field.field-error select,
+.field.field-error textarea,
+.field.field-error .combobox-trigger {
+    border-color: #E74C3C !important;
+    background-color: #FFFDFD !important;
+    box-shadow: 0 0 0 3px rgba(231, 76, 60, 0.12) !important;
+}
+.field.field-error .admin-check-grid {
+    border: 1.5px dashed #E74C3C;
+    border-radius: var(--r);
+    padding: 0.6rem 0.8rem;
+    background: #FFFDFD;
+}
+
+
 /* =====================================================================
    Messages & Chat Pane
    ===================================================================== */

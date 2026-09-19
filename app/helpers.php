@@ -180,12 +180,21 @@ const PROFILE_PHOTO_MAX = 6;
 // this is also the order the "please complete" banner lists them in.
 function profile_required_fields(): array {
     return [
-        'name'     => 'Full name',
-        'gender'   => 'Gender',
-        'dob'      => 'Date of birth',
-        'city'     => 'City',
-        'about_me' => 'About you',
-        'photos'   => 'At least ' . PROFILE_PHOTO_MIN . ' profile photos',
+        'name'                  => 'Full name',
+        'gender'                => 'Gender',
+        'dob'                   => 'Date of birth',
+        'marital_status'        => 'Marital status',
+        'religion'              => 'Religion',
+        'country'               => 'Country',
+        'state'                 => 'State',
+        'city'                  => 'City',
+        'profession'            => 'Profession',
+        'annual_income'         => 'Annual income',
+        'spiritual_path'        => 'Spiritual path',
+        'ishta_devata'          => 'Isht Devta',
+        'lifestyle_commitments' => 'Spiritual lifestyle commitments',
+        'about_me'              => 'About you',
+        'photos'                => 'At least ' . PROFILE_PHOTO_MIN . ' profile photos',
     ];
 }
 
@@ -193,10 +202,14 @@ function profile_required_fields(): array {
 // Empty array means the profile is complete.
 function profile_missing_fields(int $userId): array {
     $row = DB::one(
-        "SELECT u.name, p.gender, p.dob, p.city, p.about_me,
+        "SELECT u.name,
+                p.gender, p.dob, p.marital_status, p.religion, p.country, p.state, p.city,
+                p.profession, p.annual_income, p.about_me,
+                s.spiritual_path, s.ishta_devata, s.vegetarian, s.vegan, s.no_smoking, s.no_alcohol,
                 (SELECT COUNT(*) FROM photos WHERE user_id = u.id) AS photo_count
            FROM users u
            LEFT JOIN profiles p ON p.user_id = u.id
+           LEFT JOIN spiritual_details s ON s.user_id = u.id
           WHERE u.id = ?",
         [$userId]
     );
@@ -206,7 +219,10 @@ function profile_missing_fields(int $userId): array {
     foreach (profile_required_fields() as $key => $label) {
         if ($key === 'photos') {
             if ((int)($row['photo_count'] ?? 0) < PROFILE_PHOTO_MIN) $missing[$key] = $label;
-        } elseif (empty($row[$key])) {
+        } elseif ($key === 'lifestyle_commitments') {
+            $hasCommitment = !empty($row['vegetarian']) || !empty($row['vegan']) || !empty($row['no_smoking']) || !empty($row['no_alcohol']);
+            if (!$hasCommitment) $missing[$key] = $label;
+        } elseif (empty($row[$key]) || trim((string)$row[$key]) === '') {
             $missing[$key] = $label;
         }
     }

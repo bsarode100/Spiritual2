@@ -1146,6 +1146,7 @@ $r->post('/profile/spiritual', function () {
     } else {
         DB::insert('spiritual_details', $data);
     }
+    recompute_profile_complete($uid);
     flash('success', profile_save_flash($uid, 'Spiritual details saved'));
     redirect('/profile/edit#spiritual');
 });
