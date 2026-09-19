@@ -47,7 +47,11 @@ RUN mkdir -p /var/www/html/public/uploads/avatars \
 # Declare persistent volumes so uploads and private verification documents survive restarts
 VOLUME ["/var/www/html/public/uploads", "/var/www/html/storage/verification"]
 
+COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
+RUN chmod +x /usr/local/bin/docker-entrypoint.sh
+
 EXPOSE 80
 
 # Apache picks up env vars at boot — required for Coolify-managed envs
+ENTRYPOINT ["docker-entrypoint.sh"]
 CMD ["apache2-foreground"]
