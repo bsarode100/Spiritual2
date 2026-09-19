@@ -14,7 +14,11 @@
             <span>Password</span>
             <a href="/forgot-password" style="font-weight:400; font-size:.88rem;">Forgot password?</a>
         </label>
-        <input type="password" name="password" required>
+        <input type="password" name="password" id="login-password" required>
+        <label class="show-password-label">
+            <input type="checkbox" class="show-password-checkbox" data-target="login-password">
+            <span>Show password</span>
+        </label>
     </div>
     <button class="btn btn-primary btn-block btn-lg">Sign In</button>
     <p style="margin-top: 1rem; font-size: .78rem; color: var(--c-ink-soft); line-height: 1.5; text-align: center;">
@@ -26,10 +30,4 @@
 
 <div class="small-link">
     New here? <a href="/register">Create your free account</a>
-</div>
-
-<div class="small-link" style="margin-top: 2rem; padding-top: 1.5rem; border-top: 1px dashed var(--c-line); color: var(--c-muted);">
-    <strong>Demo accounts</strong><br>
-    Admin: admin@spiritual2.test / admin@123<br>
-    Member: anjali@example.com / member@123
 </div>

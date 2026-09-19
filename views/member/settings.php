@@ -13,8 +13,15 @@
         <div class="field"><label>Phone</label><input type="tel" name="phone" value="<?= e($u['phone']) ?>"></div>
 
         <h3 class="mt-4">Change Password</h3>
-        <div class="field"><label>Current password</label><input type="password" name="current_password"></div>
-        <div class="field"><label>New password</label><input type="password" name="new_password" minlength="6"></div>
+        <div class="field"><label>Current password</label><input type="password" name="current_password" id="current_password"></div>
+        <div class="field">
+            <label>New password</label>
+            <input type="password" name="new_password" id="new_password" minlength="6">
+            <label class="show-password-label">
+                <input type="checkbox" class="show-password-checkbox" data-targets="current_password,new_password">
+                <span>Show passwords</span>
+            </label>
+        </div>
         <span class="field-help">Leave blank to keep your current password.</span>
 
         <button class="btn btn-primary mt-3">Save Changes</button>

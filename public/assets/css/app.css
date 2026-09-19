@@ -578,7 +578,7 @@ p { margin: 0 0 1em; color: var(--c-ink-soft); }
 .form-grid .full, .form-grid-3 .full { grid-column: 1 / -1; }
 .field { display: flex; flex-direction: column; gap: .4rem; margin-bottom: 1.2rem; }
 .field label { font-size: .86rem; color: var(--c-ink-soft); font-weight: 500; }
-.field input, .field select, .field textarea {
+.field input:not([type="checkbox"]):not([type="radio"]), .field select, .field textarea {
     border: 1.5px solid var(--c-line);
     background: var(--c-card);
     border-radius: var(--r);
@@ -589,13 +589,39 @@ p { margin: 0 0 1em; color: var(--c-ink-soft); }
     transition: border-color .2s, box-shadow .2s;
     width: 100%;
 }
-.field input:focus, .field select:focus, .field textarea:focus {
+.field input:focus:not([type="checkbox"]):not([type="radio"]), .field select:focus, .field textarea:focus {
     outline: none;
     border-color: var(--c-saffron);
     box-shadow: 0 0 0 3px rgba(212, 160, 23, .18);
 }
 .field textarea { resize: vertical; min-height: 110px; }
 .field-help { font-size: .8rem; color: var(--c-muted); }
+
+/* Show password toggle checkbox */
+.show-password-label {
+    display: inline-flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    gap: .45rem;
+    font-size: .84rem;
+    color: var(--c-ink-soft);
+    cursor: pointer;
+    margin-top: .35rem;
+    user-select: none;
+    font-weight: 400 !important;
+}
+.show-password-label input[type="checkbox"] {
+    width: 15px !important;
+    height: 15px !important;
+    min-height: 15px !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    accent-color: var(--c-maroon);
+    cursor: pointer;
+}
+.show-password-label:hover {
+    color: var(--c-maroon);
+}
 
 /* Highlight when a required field is empty and the user got bounced here
    from Express Interest — helps them see exactly what still needs filling. */

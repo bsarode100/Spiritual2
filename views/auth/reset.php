@@ -7,11 +7,15 @@
     <?= csrf_field() ?>
     <div class="field">
         <label>New password</label>
-        <input type="password" name="password" required autofocus minlength="6" placeholder="At least 6 characters">
+        <input type="password" name="password" id="reset-password" required autofocus minlength="6" placeholder="At least 6 characters">
     </div>
     <div class="field">
         <label>Confirm password</label>
-        <input type="password" name="password_confirm" required minlength="6">
+        <input type="password" name="password_confirm" id="reset-password-confirm" required minlength="6">
+        <label class="show-password-label">
+            <input type="checkbox" class="show-password-checkbox" data-targets="reset-password,reset-password-confirm">
+            <span>Show passwords</span>
+        </label>
     </div>
     <button class="btn btn-primary btn-block btn-lg">Update password</button>
 </form>

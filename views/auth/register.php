@@ -33,8 +33,12 @@
     </div>
     <div class="field">
         <label>Choose a password</label>
-        <input type="password" name="password" required minlength="6">
+        <input type="password" name="password" id="reg-password" required minlength="6">
         <span class="field-help">At least 6 characters.</span>
+        <label class="show-password-label">
+            <input type="checkbox" class="show-password-checkbox" data-target="reg-password">
+            <span>Show password</span>
+        </label>
     </div>
     <label style="display: flex; gap: .55rem; align-items: flex-start; margin: 1rem 0 1.25rem; font-size: .9rem; color: var(--c-ink-soft); line-height: 1.45;">
         <input type="checkbox" name="agree" value="1" required style="margin-top: .25rem;">
