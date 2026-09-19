@@ -4,8 +4,10 @@
             <div class="brand-icon">
                 <img src="<?= asset('images/logo.png') ?>" alt="SpiritualShaadi Logo" style="height: 36px; width: auto;">
             </div>
-            <span><?= e(setting('site_name', 'SpiritualShaadi')) ?></span>
-            <small class="brand-motto" style="font-size: 0.65rem; opacity: 0.75; display: block; margin-top: -2px; letter-spacing: 0.5px;">Find a Perfect Spiritual Life Partner</small>
+            <div class="brand-text">
+                <span><?= e(setting('site_name', 'SpiritualShaadi')) ?></span>
+                <small class="brand-motto">Find a Perfect Spiritual Life Partner</small>
+            </div>
         </a>
 
         <ul class="nav-links" style="list-style: none; padding: 0; margin: 0;">
