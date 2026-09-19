@@ -36,7 +36,15 @@
             <div class="field"><label>Profession</label><input type="text" name="profession" value="<?= e($_GET['profession'] ?? '') ?>"></div>
             <div class="field"><label>Community</label><input type="text" name="community" value="<?= e($_GET['community'] ?? '') ?>"></div>
             <div class="field"><label>Guru / Lineage</label><input type="text" name="guru" value="<?= e($_GET['guru'] ?? '') ?>"></div>
-            <div class="field"><label>Spiritual Org</label><input type="text" name="organization" value="<?= e($_GET['organization'] ?? '') ?>"></div>
+            <div class="field">
+                <label>Spiritual Org</label>
+                <input type="text" name="organization" list="browse_org_list" value="<?= e($_GET['organization'] ?? '') ?>" placeholder="Type to filter organizations...">
+                <datalist id="browse_org_list">
+                    <?php foreach (spiritual_organizations() as $orgItem): ?>
+                        <option value="<?= e($orgItem) ?>"></option>
+                    <?php endforeach; ?>
+                </datalist>
+            </div>
             <div class="field"><label>Temple Visits</label>
                 <select name="temple_frequency">
                     <option value="">Any</option>

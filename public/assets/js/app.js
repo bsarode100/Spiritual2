@@ -102,4 +102,199 @@
             }
         }
     });
+
+    // =====================================================================
+    // Searchable Combobox Component (Spiritual Organizations & Dropdowns)
+    // =====================================================================
+    function initComboboxes() {
+        const comboboxes = document.querySelectorAll('.custom-combobox');
+        comboboxes.forEach(cb => {
+            const trigger     = cb.querySelector('.combobox-trigger');
+            const dropdown    = cb.querySelector('.combobox-dropdown');
+            const searchInput = cb.querySelector('.combobox-search-input');
+            const hiddenVal   = cb.querySelector('input[type="hidden"]');
+            const displayText = cb.querySelector('.combobox-text');
+            const clearBtn    = cb.querySelector('.combobox-clear');
+            const optionsList = cb.querySelectorAll('.combobox-option');
+            const emptyState  = cb.querySelector('.combobox-empty');
+            const otherWrap   = document.getElementById('spiritual_org_other_wrap');
+            const otherInput  = document.getElementById('spiritual_org_other_input');
+
+            if (!trigger || !dropdown) return;
+
+            const openDropdown = () => {
+                cb.classList.add('is-open');
+                trigger.setAttribute('aria-expanded', 'true');
+                if (searchInput) {
+                    searchInput.value = '';
+                    filterOptions('');
+                    setTimeout(() => searchInput.focus(), 50);
+                }
+            };
+
+            const closeDropdown = () => {
+                cb.classList.remove('is-open');
+                trigger.setAttribute('aria-expanded', 'false');
+            };
+
+            const toggleDropdown = () => {
+                if (cb.classList.contains('is-open')) closeDropdown();
+                else openDropdown();
+            };
+
+            const filterOptions = (query) => {
+                const q = query.trim().toLowerCase();
+                let matchCount = 0;
+                optionsList.forEach(opt => {
+                    if (opt.classList.contains('combobox-other-option')) {
+                        opt.style.display = 'flex'; // Always visible
+                        return;
+                    }
+                    const val = (opt.getAttribute('data-value') || '').toLowerCase();
+                    const text = opt.textContent.toLowerCase();
+                    if (val.includes(q) || text.includes(q)) {
+                        opt.style.display = 'flex';
+                        matchCount++;
+                    } else {
+                        opt.style.display = 'none';
+                    }
+                });
+
+                if (emptyState) {
+                    emptyState.style.display = (matchCount === 0 && q.length > 0) ? 'block' : 'none';
+                }
+            };
+
+            const selectOption = (val, label) => {
+                optionsList.forEach(o => {
+                    if (o.getAttribute('data-value') === val) {
+                        o.classList.add('is-selected');
+                    } else {
+                        o.classList.remove('is-selected');
+                    }
+                });
+
+                if (val === 'Other') {
+                    if (hiddenVal) hiddenVal.value = 'Other';
+                    if (displayText) {
+                        displayText.textContent = 'Other (Manual Entry)';
+                        displayText.classList.remove('is-placeholder');
+                    }
+                    if (clearBtn) clearBtn.style.display = 'inline-flex';
+                    if (otherWrap) {
+                        otherWrap.style.display = 'block';
+                        if (otherInput) {
+                            setTimeout(() => otherInput.focus(), 60);
+                        }
+                    }
+                } else if (val) {
+                    if (hiddenVal) hiddenVal.value = val;
+                    if (displayText) {
+                        displayText.textContent = label || val;
+                        displayText.classList.remove('is-placeholder');
+                    }
+                    if (clearBtn) clearBtn.style.display = 'inline-flex';
+                    if (otherWrap) {
+                        otherWrap.style.display = 'none';
+                        if (otherInput) otherInput.value = '';
+                    }
+                } else {
+                    resetSelection();
+                }
+                closeDropdown();
+            };
+
+            const resetSelection = () => {
+                if (hiddenVal) hiddenVal.value = '';
+                if (displayText) {
+                    displayText.textContent = 'Select or search organization...';
+                    displayText.classList.add('is-placeholder');
+                }
+                if (clearBtn) clearBtn.style.display = 'none';
+                if (otherWrap) {
+                    otherWrap.style.display = 'none';
+                    if (otherInput) otherInput.value = '';
+                }
+                optionsList.forEach(o => o.classList.remove('is-selected'));
+            };
+
+            // Trigger click
+            trigger.addEventListener('click', (e) => {
+                if (e.target.closest('.combobox-clear')) return;
+                toggleDropdown();
+            });
+
+            // Keyboard on trigger
+            trigger.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' || e.key === ' ' || e.key === 'ArrowDown') {
+                    e.preventDefault();
+                    openDropdown();
+                }
+            });
+
+            // Clear button
+            if (clearBtn) {
+                clearBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    resetSelection();
+                });
+            }
+
+            // Live search
+            if (searchInput) {
+                searchInput.addEventListener('input', (e) => {
+                    filterOptions(e.target.value);
+                });
+                searchInput.addEventListener('keydown', (e) => {
+                    if (e.key === 'Escape') {
+                        closeDropdown();
+                        trigger.focus();
+                    }
+                });
+            }
+
+            // Option clicks
+            optionsList.forEach(opt => {
+                opt.addEventListener('click', () => {
+                    const val = opt.getAttribute('data-value');
+                    const label = opt.textContent.trim().replace(/^✓\s*/, '');
+                    selectOption(val, label);
+                });
+            });
+
+            // "Select Other" button inside empty state
+            if (emptyState) {
+                const emptyOtherBtn = emptyState.querySelector('.select-other-btn');
+                if (emptyOtherBtn) {
+                    emptyOtherBtn.addEventListener('click', () => {
+                        selectOption('Other', 'Other');
+                        if (otherInput && searchInput && searchInput.value.trim()) {
+                            otherInput.value = searchInput.value.trim();
+                        }
+                    });
+                }
+            }
+
+            // Close on click outside
+            document.addEventListener('click', (e) => {
+                if (!cb.contains(e.target)) {
+                    closeDropdown();
+                }
+            });
+
+            // Close on escape
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape' && cb.classList.contains('is-open')) {
+                    closeDropdown();
+                }
+            });
+        });
+    }
+
+    // Initialize on DOM ready
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initComboboxes);
+    } else {
+        initComboboxes();
+    }
 })();

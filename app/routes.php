@@ -1103,6 +1103,11 @@ $r->post('/profile/edit', function () {
 $r->post('/profile/spiritual', function () {
     Auth::require();
     $uid = Auth::id();
+
+    if (isset($_POST['spiritual_organization']) && $_POST['spiritual_organization'] === 'Other') {
+        $_POST['spiritual_organization'] = trim((string)($_POST['spiritual_organization_other'] ?? ''));
+    }
+
     $fields = [
         'spiritual_path','guru','ishta_devata','daily_sadhana','favorite_scripture','fasting_practice','pilgrimage_done','mantra',
         'spiritual_organization','temple_visit_frequency','vegetarian','vegan','no_smoking','no_alcohol',

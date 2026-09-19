@@ -133,7 +133,64 @@ $cls = fn(string $key) => isset($missing[$key]) ? 'field field-error' : 'field';
             <div class="field full"><label>Daily Sadhana</label><input type="text" name="daily_sadhana" value="<?= e($spiritual['daily_sadhana'] ?? '') ?>" placeholder="108 mala japa, 1hr meditation, etc."></div>
             <div class="field"><label>Favorite Scripture</label><input type="text" name="favorite_scripture" value="<?= e($spiritual['favorite_scripture'] ?? '') ?>"></div>
             <div class="field"><label>Fasting Practice</label><input type="text" name="fasting_practice" value="<?= e($spiritual['fasting_practice'] ?? '') ?>"></div>
-            <div class="field"><label>Spiritual Organization</label><input type="text" name="spiritual_organization" value="<?= e($spiritual['spiritual_organization'] ?? '') ?>"></div>
+            <?php
+            $savedOrg = trim((string)($spiritual['spiritual_organization'] ?? ''));
+            $orgList = spiritual_organizations();
+            $isPredefined = in_array($savedOrg, $orgList, true);
+            $isOther = ($savedOrg !== '' && !$isPredefined);
+            ?>
+            <div class="field full spiritual-org-container">
+                <label>Spiritual Organization / Sangha</label>
+                <div class="custom-combobox" id="spiritual_org_combobox">
+                    <input type="hidden" name="spiritual_organization" id="spiritual_org_value" value="<?= $isOther ? 'Other' : e($savedOrg) ?>">
+                    
+                    <div class="combobox-trigger" id="spiritual_org_trigger" tabindex="0" role="combobox" aria-expanded="false" aria-haspopup="listbox">
+                        <span class="combobox-text <?= ($savedOrg === '') ? 'is-placeholder' : '' ?>">
+                            <?php if ($isOther): ?>
+                                Other: <?= e($savedOrg) ?>
+                            <?php elseif ($isPredefined): ?>
+                                <?= e($savedOrg) ?>
+                            <?php else: ?>
+                                Select or search organization...
+                            <?php endif; ?>
+                        </span>
+                        <div class="combobox-icons">
+                            <button type="button" class="combobox-clear" id="spiritual_org_clear" title="Clear selection" style="<?= ($savedOrg !== '') ? 'display:inline-flex;' : 'display:none;' ?>">×</button>
+                            <svg class="combobox-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M6 9l6 6 6-6"/></svg>
+                        </div>
+                    </div>
+
+                    <div class="combobox-dropdown" id="spiritual_org_dropdown" role="listbox">
+                        <div class="combobox-search-box">
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+                            <input type="text" class="combobox-search-input" id="spiritual_org_search" placeholder="Search 40+ spiritual organizations..." autocomplete="off">
+                        </div>
+                        <div class="combobox-options-list" id="spiritual_org_options">
+                            <?php foreach ($orgList as $o): ?>
+                                <div class="combobox-option <?= ($savedOrg === $o) ? 'is-selected' : '' ?>" data-value="<?= e($o) ?>" role="option">
+                                    <?= e($o) ?>
+                                </div>
+                            <?php endforeach; ?>
+                            <div class="combobox-divider"></div>
+                            <div class="combobox-option combobox-other-option <?= $isOther ? 'is-selected' : '' ?>" data-value="Other" role="option">
+                                <span>✏️ <strong>Other</strong> (Not in list / Specify manually)</span>
+                            </div>
+                            <div class="combobox-empty" id="spiritual_org_empty" style="display: none;">
+                                <div>No matching organization found.</div>
+                                <button type="button" class="btn btn-ghost btn-sm select-other-btn">Select "Other" &amp; Enter Name</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Dynamic Manual Input when Other is chosen -->
+                <div id="spiritual_org_other_wrap" class="mt-2" style="<?= $isOther ? 'display:block;' : 'display:none;' ?>">
+                    <label for="spiritual_org_other_input" style="font-size: 0.84rem; color: var(--c-rose); font-weight: 600; display: block; margin-bottom: 0.35rem;">
+                        Specify Your Spiritual Organization / Sangha Name:
+                    </label>
+                    <input type="text" name="spiritual_organization_other" id="spiritual_org_other_input" value="<?= $isOther ? e($savedOrg) : '' ?>" placeholder="Enter the name of your spiritual organization, center, or lineage..." class="glass-control" style="background:#FFFFFF;">
+                </div>
+            </div>
             <div class="field"><label>Temple Visit Frequency</label>
                 <select name="temple_visit_frequency">
                     <option value="">Choose</option>

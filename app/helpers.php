@@ -929,3 +929,56 @@ function smtp_header_encode(string $value): string {
         ? '=?UTF-8?B?' . base64_encode($value) . '?='
         : str_replace(["\r", "\n"], '', $value);
 }
+
+/**
+ * Predefined master list of verified spiritual organizations and traditions.
+ *
+ * @return array<string>
+ */
+function spiritual_organizations(): array {
+    return [
+        'All World Gayatri Pariwar (Shantikunj)',
+        'Isha Foundation',
+        'The Art of Living Foundation',
+        'Ramakrishna Math and Ramakrishna Mission',
+        'BAPS Swaminarayan Sanstha',
+        'ISKCON (International Society for Krishna Consciousness)',
+        'Brahma Kumaris World Spiritual University',
+        'Chinmaya Mission',
+        'Patanjali Yogpeeth',
+        'Vipassana Research Institute',
+        'Arya Samaj',
+        'Swadhyay Parivar',
+        'Radha Soami Satsang Beas (RSSB)',
+        'Divine Life Society (Sivananda Ashram)',
+        'Mata Amritanandamayi Math (Amma)',
+        'Osho International Foundation',
+        'Yogoda Satsanga Society of India / Self-Realization Fellowship (SRF)',
+        'Sri Aurobindo Ashram',
+        'Sathya Sai International Organisation',
+        'Sant Nirankari Mission',
+        'Bharat Sevashram Sangha',
+        'Sahaja Yoga',
+        'Ramana Ashram (Sri Ramana Maharshi)',
+        'Divya Jyoti Jagrati Sansthan',
+        'Geeta Pariwar',
+        'Adhyatmik Ishwariya Vishwa Vidyalaya',
+        'Kriya Yoga International Organizations',
+        "Babaji's Kriya Yoga Order of Acharyas",
+        'Ananda Sangha Worldwide',
+        'Center for Spiritual Awareness',
+        'Karar Ashram',
+        'Aryya Mission Institution',
+        'Kriya Yoga Institute',
+        'SYDA Foundation (Siddha Yoga Dham Associates)',
+        'Gurudev Siddha Peeth',
+        'Shree Muktananda Ashram',
+        'Shanti Mandir (Siddha Yoga tradition)',
+        'Siddha Samadhi Yoga (Rishi Samskruti Vidya Kendra)',
+        '3HO (Healthy, Happy, Holy Organization)',
+        'Kundalini Research Institute (KRI)',
+        'Guru Ram Das Center for Medicine & Humanology',
+        'Vethathiri Maharishi Kundalini Yoga and Kayakalpa Research Foundation',
+        'Devatma Shakti Society',
+    ];
+}
