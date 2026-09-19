@@ -2,6 +2,13 @@
 // Public + member routes (admin routes live in admin_routes.php).
 /** @var Router $r */
 
+// ------------------- GOOGLE VERIFICATION -------------------
+$r->get('/google81d45da2403fa41d.html', function () {
+    header('Content-Type: text/html; charset=utf-8');
+    echo "google-site-verification: google81d45da2403fa41d.html\n";
+    exit;
+});
+
 // ------------------- HOME -------------------
 $r->get('/', function () {
     $priorityJoin = profile_priority_join_sql();
