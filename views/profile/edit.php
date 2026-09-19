@@ -94,10 +94,50 @@ $cls = fn(string $key) => isset($missing[$key]) ? 'field field-error' : 'field';
         </div>
 
         <h3 class="mt-4">Location</h3>
-        <div class="form-grid-3">
-            <div class="field"><label>Country</label><input type="text" name="country" value="<?= e($profile['country'] ?? 'India') ?>"></div>
-            <div class="field"><label>State</label><input type="text" name="state" value="<?= e($profile['state'] ?? '') ?>"></div>
-            <div id="field-city" class="<?= $cls('city') ?>"><label>City <span style="color: var(--c-maroon);">*</span></label><input type="text" name="city" value="<?= e($profile['city'] ?? '') ?>" required></div>
+        <?php
+        $savedCountry = trim((string)($profile['country'] ?? 'India'));
+        $savedState   = trim((string)($profile['state'] ?? ''));
+        $indianStates = indian_states();
+        $isIndia      = ($savedCountry === '' || strcasecmp($savedCountry, 'India') === 0);
+        $isOtherCountry = !$isIndia;
+        ?>
+        <div class="form-grid-3 location-grid">
+            <!-- Country Selector -->
+            <div class="field">
+                <label for="country_select">Country</label>
+                <select name="country" id="country_select" class="glass-control">
+                    <option value="India" <?= $isIndia ? 'selected' : '' ?>>India</option>
+                    <option value="Other" <?= $isOtherCountry ? 'selected' : '' ?>>Other (International / NRI)</option>
+                </select>
+                <!-- Manual input if Other country is chosen -->
+                <div id="country_other_wrap" class="mt-2" style="<?= $isOtherCountry ? 'display:block;' : 'display:none;' ?>">
+                    <input type="text" name="country_other" id="country_other_input" value="<?= $isOtherCountry ? e($savedCountry) : '' ?>" placeholder="Specify country (e.g. United States, UK, Canada...)" class="glass-control">
+                </div>
+            </div>
+
+            <!-- State Field (Dropdown for India, Manual for Other) -->
+            <div class="field">
+                <label for="state_india_select">State / Province</label>
+                <!-- Indian States Dropdown -->
+                <div id="state_india_wrap" style="<?= $isIndia ? 'display:block;' : 'display:none;' ?>">
+                    <select name="state_india" id="state_india_select" class="glass-control">
+                        <option value="">Select State / UT</option>
+                        <?php foreach ($indianStates as $st): ?>
+                            <option value="<?= e($st) ?>" <?= (strcasecmp($savedState, $st) === 0) ? 'selected' : '' ?>><?= e($st) ?></option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+                <!-- Other State Manual Input -->
+                <div id="state_other_wrap" style="<?= $isOtherCountry ? 'display:block;' : 'display:none;' ?>">
+                    <input type="text" name="state_other" id="state_other_input" value="<?= $isOtherCountry ? e($savedState) : '' ?>" placeholder="e.g. California, Ontario, Greater London..." class="glass-control">
+                </div>
+            </div>
+
+            <!-- City Field (Manual entry in both cases) -->
+            <div id="field-city" class="<?= $cls('city') ?>">
+                <label>City / Town <span style="color: var(--c-maroon);">*</span></label>
+                <input type="text" name="city" value="<?= e($profile['city'] ?? '') ?>" placeholder="e.g. Pune, Mumbai, Rishikesh..." required>
+            </div>
         </div>
 
         <h3 class="mt-4">Education &amp; Career</h3>

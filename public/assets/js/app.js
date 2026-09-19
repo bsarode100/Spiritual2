@@ -293,10 +293,56 @@
         });
     }
 
+    // =====================================================================
+    // Country & State Dynamic Switching (India vs Other)
+    // =====================================================================
+    function initLocationSelectors() {
+        const countrySelect = document.getElementById('country_select');
+        const countryOtherWrap = document.getElementById('country_other_wrap');
+        const countryOtherInput = document.getElementById('country_other_input');
+        const stateIndiaWrap = document.getElementById('state_india_wrap');
+        const stateIndiaSelect = document.getElementById('state_india_select');
+        const stateOtherWrap = document.getElementById('state_other_wrap');
+        const stateOtherInput = document.getElementById('state_other_input');
+
+        if (!countrySelect) return;
+
+        const updateLocationUI = () => {
+            const isIndia = countrySelect.value === 'India';
+            if (isIndia) {
+                if (stateIndiaWrap) stateIndiaWrap.style.display = 'block';
+                if (stateOtherWrap) stateOtherWrap.style.display = 'none';
+                if (countryOtherWrap) countryOtherWrap.style.display = 'none';
+                if (stateIndiaSelect) stateIndiaSelect.disabled = false;
+                if (stateOtherInput) stateOtherInput.disabled = true;
+                if (countryOtherInput) countryOtherInput.disabled = true;
+            } else {
+                if (stateIndiaWrap) stateIndiaWrap.style.display = 'none';
+                if (stateOtherWrap) stateOtherWrap.style.display = 'block';
+                if (countryOtherWrap) countryOtherWrap.style.display = 'block';
+                if (stateIndiaSelect) stateIndiaSelect.disabled = true;
+                if (stateOtherInput) stateOtherInput.disabled = false;
+                if (countryOtherInput) {
+                    countryOtherInput.disabled = false;
+                    if (!countryOtherInput.value.trim()) {
+                        setTimeout(() => countryOtherInput.focus(), 60);
+                    }
+                }
+            }
+        };
+
+        countrySelect.addEventListener('change', updateLocationUI);
+        updateLocationUI();
+    }
+
     // Initialize on DOM ready
     if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', initComboboxes);
+        document.addEventListener('DOMContentLoaded', () => {
+            initComboboxes();
+            initLocationSelectors();
+        });
     } else {
         initComboboxes();
+        initLocationSelectors();
     }
 })();

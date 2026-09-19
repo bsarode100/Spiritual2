@@ -1079,6 +1079,21 @@ $r->post('/profile/edit', function () {
     foreach ($allowed as $k) {
         if (isset($_POST[$k])) $data[$k] = $_POST[$k] === '' ? null : $_POST[$k];
     }
+
+    // Dynamic Country & State resolution
+    $country = trim((string)($_POST['country'] ?? 'India'));
+    if ($country === 'Other') {
+        $countryOther = trim((string)($_POST['country_other'] ?? ''));
+        $country = ($countryOther !== '') ? $countryOther : 'Other';
+    }
+    $data['country'] = $country;
+
+    if (strcasecmp($country, 'India') === 0) {
+        $stateVal = trim((string)($_POST['state_india'] ?? $_POST['state'] ?? ''));
+    } else {
+        $stateVal = trim((string)($_POST['state_other'] ?? $_POST['state'] ?? ''));
+    }
+    $data['state'] = ($stateVal !== '') ? $stateVal : null;
     $profileExists = DB::val('SELECT id FROM profiles WHERE user_id = ?', [$uid]);
     if ($profileExists) {
         DB::update('profiles', $data, ['user_id' => $uid]);
