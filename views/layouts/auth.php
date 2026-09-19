@@ -31,7 +31,10 @@
             <div class="brand-icon">
                 <img src="<?= asset('images/logo.png') ?>" alt="SpiritualShaadi Logo" style="height: 36px; width: auto;">
             </div>
-            <span><?= e(setting('site_name', 'SpiritualShaadi')) ?></span>
+            <div class="brand-text">
+                <span><?= e(setting('site_name', 'SpiritualShaadi')) ?></span>
+                <small class="brand-motto"><?= e(setting('site_tagline', 'Find a Perfect Spiritual Life Partner')) ?></small>
+            </div>
         </a>
         <div>
             <p class="script" style="color: var(--c-saffron); margin-bottom: 0;">two souls,</p>
@@ -45,6 +48,17 @@
 
     <div class="auth-form-shell">
         <div class="auth-form-shell-inner">
+            <div class="auth-mobile-brand">
+                <a href="/" class="brand" style="justify-content: center;">
+                    <div class="brand-icon">
+                        <img src="<?= asset('images/logo.png') ?>" alt="SpiritualShaadi Logo" style="height: 36px; width: auto;">
+                    </div>
+                    <div class="brand-text" style="text-align: left;">
+                        <span><?= e(setting('site_name', 'SpiritualShaadi')) ?></span>
+                        <small class="brand-motto"><?= e(setting('site_tagline', 'Find a Perfect Spiritual Life Partner')) ?></small>
+                    </div>
+                </a>
+            </div>
             <?php if ($msg = flash('success')): ?><div class="flash flash-success"><?= e($msg) ?></div><?php endif; ?>
             <?php if ($msg = flash('error')):   ?><div class="flash flash-error"><?= e($msg)   ?></div><?php endif; ?>
             <?= $content ?>

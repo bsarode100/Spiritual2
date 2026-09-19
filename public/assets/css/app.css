@@ -1852,11 +1852,20 @@ p {
     color: var(--c-ink);
 }
 
+.auth-mobile-brand {
+    display: none;
+}
+
 @media (max-width: 960px) {
     .auth-shell { grid-template-columns: 1fr; }
     .auth-art { display: none; }
-    .auth-form-shell { padding: 3rem 1.5rem; }
+    .auth-form-shell { padding: 2.5rem 1.25rem; }
     .auth-form-shell-inner { padding: 2rem 1.5rem; }
+    .auth-mobile-brand {
+        display: flex;
+        justify-content: center;
+        margin-bottom: 1.8rem;
+    }
 }
 
 /* =====================================================================
