@@ -810,7 +810,7 @@ function nav_active(string $path): string {
 
 function send_transactional_mail(string $to, string $subject, string $body, ?string $replyTo = null): bool {
     $cfg = $GLOBALS['CFG']['mail'] ?? [];
-    $siteName = $GLOBALS['CFG']['app']['name'] ?? 'Spiritual Shadi';
+    $siteName = $GLOBALS['CFG']['app']['name'] ?? 'SpiritualShaadi';
     $from = ($cfg['from'] ?? '') ?: setting('contact_email', 'no-reply@' . ($_SERVER['SERVER_NAME'] ?? 'localhost'));
     $fromName = ($cfg['from_name'] ?? '') ?: $siteName;
     $replyTo = $replyTo ?: $from;

@@ -1,5 +1,5 @@
 /* =====================================================================
-   Spiritual Matrimony — design system
+   SpiritualShaadi — design system
    Warm dharma-rooted palette: saffron, deep maroon, cream, sacred indigo.
    ===================================================================== */
 
@@ -171,11 +171,8 @@ p { margin: 0 0 1em; color: var(--c-ink-soft); }
 .brand-icon {
     width: 42px; height: 42px;
     border-radius: 50%;
-    background: radial-gradient(circle at 30% 30%, var(--c-saffron), var(--c-maroon));
     display: flex; align-items: center; justify-content: center;
-    color: var(--c-cream);
-    font-weight: 700;
-    box-shadow: var(--shadow-sm);
+    overflow: hidden;
 }
 .brand-icon svg { width: 28px; height: 28px; }
 .nav-links { display: flex; align-items: center; gap: 1.8rem; }

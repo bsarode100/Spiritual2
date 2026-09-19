@@ -2,10 +2,10 @@
     <div class="container nav-inner">
         <a href="/" class="brand">
             <div class="brand-icon">
-                <img src="<?= asset('images/logo.png') ?>" alt="Spiritual Shadi Logo" style="height: 36px; width: auto;">
+                <img src="<?= asset('images/logo.png') ?>" alt="SpiritualShaadi Logo" style="height: 36px; width: auto;">
             </div>
-            <span><?= e(setting('site_name', 'Spiritual Shadi')) ?></span>
-            <small class="brand-motto" style="font-size: 0.65rem; opacity: 0.75; display: block; margin-top: -2px; letter-spacing: 0.5px;">Find a perfect spiritual life partner</small>
+            <span><?= e(setting('site_name', 'SpiritualShaadi')) ?></span>
+            <small class="brand-motto" style="font-size: 0.65rem; opacity: 0.75; display: block; margin-top: -2px; letter-spacing: 0.5px;">Find a Perfect Spiritual Life Partner</small>
         </a>
 
         <ul class="nav-links" style="list-style: none; padding: 0; margin: 0;">

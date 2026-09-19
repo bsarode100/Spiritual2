@@ -1,4 +1,4 @@
-// Spiritual Matrimony — light UI behaviors
+// SpiritualShaadi — light UI behaviors
 (function () {
     // Mobile menu
     const toggle = document.querySelector('.mobile-toggle');

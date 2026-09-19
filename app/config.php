@@ -4,7 +4,7 @@
 
 return [
     'app' => [
-        'name'     => getenv('APP_NAME')     ?: 'Spiritual Shadi',
+        'name'     => getenv('APP_NAME')     ?: 'SpiritualShaadi',
         'url'      => getenv('APP_URL')      ?: 'http://localhost:8080',
         'env'      => getenv('APP_ENV')      ?: 'production',
         'debug'    => filter_var(getenv('APP_DEBUG') ?: 'false', FILTER_VALIDATE_BOOLEAN),
@@ -27,7 +27,7 @@ return [
         'password'   => getenv('MAIL_PASSWORD') ?: '',
         'encryption' => getenv('MAIL_ENCRYPTION') ?: 'tls',
         'from'       => getenv('MAIL_FROM_ADDRESS') ?: '',
-        'from_name'  => getenv('MAIL_FROM_NAME') ?: (getenv('APP_NAME') ?: 'Spiritual Shadi'),
+        'from_name'  => getenv('MAIL_FROM_NAME') ?: (getenv('APP_NAME') ?: 'SpiritualShaadi'),
         'timeout'    => (int)(getenv('MAIL_TIMEOUT') ?: 15),
     ],
     'uploads' => [

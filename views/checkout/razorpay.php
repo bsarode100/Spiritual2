@@ -4,7 +4,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Pay for <?= e($pkg['name']) ?> — <?= e(setting('site_name','Spiritual Shadi')) ?></title>
+<title>Pay for <?= e($pkg['name']) ?> — <?= e(setting('site_name','SpiritualShaadi')) ?></title>
 <link rel="stylesheet" href="<?= asset('css/app.css') ?>">
 <style>
 .checkout-wrap { min-height: 100vh; display: grid; place-items: center; padding: 2rem; background: var(--c-cream); }
@@ -53,7 +53,7 @@ const options = {
     amount:   <?= json_encode($order['amount']) ?>,
     currency: <?= json_encode($order['currency']) ?>,
     order_id: <?= json_encode($order['id']) ?>,
-    name:     <?= json_encode(setting('site_name','Spiritual Shadi')) ?>,
+    name:     <?= json_encode(setting('site_name','SpiritualShaadi')) ?>,
     description: <?= json_encode('Membership: ' . $pkg['name']) ?>,
     prefill: {
         name:    <?= json_encode($user['name'] ?? '') ?>,

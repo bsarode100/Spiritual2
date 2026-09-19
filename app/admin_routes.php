@@ -97,7 +97,7 @@ $r->post('/admin/test-mail', $admin(function () {
         redirect('/admin');
     }
 
-    $siteName = setting('site_name', 'Spiritual Shadi');
+    $siteName = setting('site_name', 'SpiritualShaadi');
     $sent = send_transactional_mail(
         $to,
         "Test email from {$siteName}",
@@ -442,7 +442,7 @@ $r->post('/admin/verification/{id}/approve', $admin(function ($a) {
     if ($user) {
         $badge = $req['tier'] === 'selfie' ? 'ID + Selfie Verified' : 'ID Verified';
         send_transactional_mail($user['email'], 'Your profile is now verified 🎉',
-            "Namaste {$user['name']},\n\nGreat news — your verification has been approved. The \"$badge\" badge now appears on your profile, in search results and on the homepage.\n\nYour submitted documents have been permanently deleted from our systems.\n\nWith gratitude,\n" . setting('site_name', 'Spiritual Shadi'));
+            "Namaste {$user['name']},\n\nGreat news — your verification has been approved. The \"$badge\" badge now appears on your profile, in search results and on the homepage.\n\nYour submitted documents have been permanently deleted from our systems.\n\nWith gratitude,\n" . setting('site_name', 'SpiritualShaadi'));
     }
     flash('success','Verification approved — member notified and documents purged.');
     redirect('/admin/verification');
@@ -476,7 +476,7 @@ $r->post('/admin/verification/{id}/reject', $admin(function ($a) {
     $user = DB::one('SELECT name, email FROM users WHERE id = ?', [$req['user_id']]);
     if ($user) {
         send_transactional_mail($user['email'], 'Verification — action needed',
-            "Namaste {$user['name']},\n\nWe couldn't approve your verification this time.\n\nReason: $reason\n\nYou can resubmit your documents from the Verification page — no additional payment is needed. Your previous documents have been deleted from our systems.\n\nWith gratitude,\n" . setting('site_name', 'Spiritual Shadi'));
+            "Namaste {$user['name']},\n\nWe couldn't approve your verification this time.\n\nReason: $reason\n\nYou can resubmit your documents from the Verification page — no additional payment is needed. Your previous documents have been deleted from our systems.\n\nWith gratitude,\n" . setting('site_name', 'SpiritualShaadi'));
     }
     flash('success','Verification rejected — member notified with the reason.');
     redirect('/admin/verification');
