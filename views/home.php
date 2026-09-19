@@ -114,7 +114,7 @@
         <form method="get" action="/browse" class="glass-search-grid">
             <div class="glass-field">
                 <label>Spiritual Path</label>
-                <input type="text" name="path" placeholder="e.g. ISKCON, Vipassana" class="glass-control">
+                <input type="text" name="path" placeholder="e.g. ISKCON, Vipassana, Vedanta" class="glass-control">
             </div>
             <div class="glass-field">
                 <label>Dietary Practice</label>
@@ -129,7 +129,7 @@
             </div>
             <div class="glass-field">
                 <label>City / Location</label>
-                <input type="text" name="city" placeholder="Any City" class="glass-control">
+                <input type="text" name="city" placeholder="Any City / State" class="glass-control">
             </div>
             <div class="glass-field">
                 <label>Min Age</label>
@@ -161,6 +161,46 @@
             </div>
         </form>
     </div>
+
+    <!-- 4-Column Feature Highlights (Reference Design Kit Row) -->
+    <div class="hero-features-row">
+        <div class="hero-feat-card">
+            <div class="hero-feat-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><polyline points="9 12 11 14 15 10"/></svg>
+            </div>
+            <div class="hero-feat-content">
+                <h4>Verified Profiles</h4>
+                <p>100% human-verified seekers with optional ID &amp; selfie checks.</p>
+            </div>
+        </div>
+        <div class="hero-feat-card">
+            <div class="hero-feat-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="4"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4"/></svg>
+            </div>
+            <div class="hero-feat-content">
+                <h4>Spiritual Values</h4>
+                <p>Filter by lineage, sadhana, guru, daily practice, and diet.</p>
+            </div>
+        </div>
+        <div class="hero-feat-card">
+            <div class="hero-feat-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+            </div>
+            <div class="hero-feat-content">
+                <h4>Genuine Intentions</h4>
+                <p>Sincere seekers dedicated to sacred grihastha dharma.</p>
+            </div>
+        </div>
+        <div class="hero-feat-card">
+            <div class="hero-feat-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+            </div>
+            <div class="hero-feat-content">
+                <h4>Safe &amp; Private</h4>
+                <p>Discreet contact and full granular control over photo privacy.</p>
+            </div>
+        </div>
+    </div>
 </div>
 
 <!-- STATS -->
@@ -171,6 +211,132 @@
             <div><div class="stat-num"><?= e(setting('stat_marriages','1,200+')) ?></div><div class="stat-label">Sacred Unions</div></div>
             <div><div class="stat-num"><?= e(setting('stat_paths','18')) ?></div><div class="stat-label">Spiritual Paths</div></div>
             <div><div class="stat-num"><?= e(setting('stat_countries','40+')) ?></div><div class="stat-label">Countries Worldwide</div></div>
+        </div>
+    </div>
+</section>
+
+<!-- FIND SOMEONE WHO TRULY ALIGNS (EDITORIAL DESIGN REFERENCE SECTION) -->
+<section class="align-section">
+    <div class="container">
+        <div class="align-grid">
+            <div class="align-visual-wrapper">
+                <div class="align-visual-card">
+                    <svg viewBox="0 0 520 400" style="width: 100%; height: auto; display: block;" xmlns="http://www.w3.org/2000/svg">
+                        <defs>
+                            <linearGradient id="auroraSky" x1="0%" y1="0%" x2="100%" y2="100%">
+                                <stop offset="0%" stop-color="#FFF8F2"/>
+                                <stop offset="45%" stop-color="#FCEBEF"/>
+                                <stop offset="85%" stop-color="#EEDDF8"/>
+                                <stop offset="100%" stop-color="#E5D6F5"/>
+                            </linearGradient>
+                            <radialGradient id="sunGlow" cx="50%" cy="50%" r="50%">
+                                <stop offset="0%" stop-color="#F6C177" stop-opacity="0.85"/>
+                                <stop offset="60%" stop-color="#F6C177" stop-opacity="0.25"/>
+                                <stop offset="100%" stop-color="#F6C177" stop-opacity="0"/>
+                            </radialGradient>
+                            <linearGradient id="coupleGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                                <stop offset="0%" stop-color="#482E63"/>
+                                <stop offset="100%" stop-color="#2D1942"/>
+                            </linearGradient>
+                        </defs>
+                        <!-- Gentle Himalayan Sunrise Sky -->
+                        <rect width="520" height="400" rx="28" fill="url(#auroraSky)"/>
+                        
+                        <!-- Golden Dawn Sun Aura -->
+                        <circle cx="260" cy="180" r="140" fill="url(#sunGlow)"/>
+                        <circle cx="260" cy="180" r="60" fill="#FFF4E0" opacity="0.6"/>
+                        
+                        <!-- Sacred Geometry Aura Rings -->
+                        <circle cx="260" cy="180" r="90" fill="none" stroke="#F6C177" stroke-width="1" stroke-dasharray="4 4" opacity="0.5"/>
+                        <circle cx="260" cy="180" r="120" fill="none" stroke="#D45B7A" stroke-width="0.75" opacity="0.35"/>
+                        
+                        <!-- Sacred OM in the Dawn Sun -->
+                        <text x="260" y="195" font-family="'Playfair Display', serif" font-size="48" fill="#BA385C" text-anchor="middle" font-weight="600" opacity="0.85">ॐ</text>
+                        
+                        <!-- Gentle Mountain Horizons -->
+                        <path d="M0 320 Q 130 250 260 290 T 520 270 L 520 400 L 0 400 Z" fill="#EAD5EE" opacity="0.55"/>
+                        <path d="M0 340 Q 160 300 300 330 T 520 310 L 520 400 L 0 400 Z" fill="#E3C4DF" opacity="0.5"/>
+                        
+                        <!-- Serene Meditating Couple Silhouettes (Groom & Bride in Dhyana Mudra) -->
+                        <!-- Groom Sadhak (Left) -->
+                        <g fill="url(#coupleGrad)" opacity="0.92">
+                            <circle cx="205" cy="275" r="19"/>
+                            <path d="M175 370 C175 320 188 300 205 300 C222 300 235 320 235 370 Z"/>
+                            <ellipse cx="205" cy="375" rx="42" ry="16"/>
+                        </g>
+                        
+                        <!-- Bride Sadhika (Right) -->
+                        <g fill="url(#coupleGrad)" opacity="0.92">
+                            <circle cx="315" cy="278" r="18"/>
+                            <path d="M285 370 C285 320 298 302 315 302 C332 302 345 320 345 370 Z"/>
+                            <ellipse cx="315" cy="375" rx="40" ry="15"/>
+                        </g>
+                        
+                        <!-- Floating Lotus Petal Motifs -->
+                        <path d="M260 345 C252 355 242 362 260 375 C278 362 268 355 260 345 Z" fill="#D45B7A" opacity="0.75"/>
+                        <circle cx="260" cy="358" r="3" fill="#F6C177"/>
+                    </svg>
+                </div>
+                <!-- Floating Testimonial/Badge from Reference -->
+                <div class="align-floating-badge">
+                    <p>“Finding someone who meditates each sunrise transformed my life.”</p>
+                    <span>
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="color: var(--c-rose);"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+                        Ananya &amp; Rohit · Married 2024
+                    </span>
+                </div>
+            </div>
+
+            <div class="align-content">
+                <span class="eyebrow" style="color: var(--c-rose);">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="color: var(--c-saffron);"><path d="M12 3v18M3 12h18M6 6l12 12M6 18L18 6"/></svg>
+                    Sacred Harmony · Sincere Connection
+                </span>
+                <h2 style="font-size: clamp(2rem, 3.8vw, 3.2rem); margin: 0.4rem 0 1rem;">
+                    Find Someone Who <em style="font-family: var(--f-display); color: var(--c-rose);">Truly Aligns</em>
+                </h2>
+                <p class="lead" style="font-size: 1.1rem; color: var(--c-ink-soft); line-height: 1.7; margin-bottom: 1.5rem;">
+                    Connect with individuals who honor your spiritual philosophy, daily practices, and heartfelt commitment to conscious matrimonial partnership.
+                </p>
+
+                <ul class="align-checklist">
+                    <li class="align-check-item">
+                        <div class="align-check-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="20 6 9 17 4 12"/></svg>
+                        </div>
+                        <div>
+                            <div class="align-check-title">Shared Sadhana &amp; Daily Practice</div>
+                            <div class="align-check-desc">Find a companion who honors morning meditation, japa, and conscious stillness.</div>
+                        </div>
+                    </li>
+                    <li class="align-check-item">
+                        <div class="align-check-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="20 6 9 17 4 12"/></svg>
+                        </div>
+                        <div>
+                            <div class="align-check-title">Dietary &amp; Conscious Living Harmony</div>
+                            <div class="align-check-desc">Sattvic, vegetarian, vegan, and mindful living without friction or compromise.</div>
+                        </div>
+                    </li>
+                    <li class="align-check-item">
+                        <div class="align-check-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="20 6 9 17 4 12"/></svg>
+                        </div>
+                        <div>
+                            <div class="align-check-title">Reverence for Dharma &amp; Sacred Union</div>
+                            <div class="align-check-desc">Marriage viewed as a sacred sadhana for mutual elevation and family grace.</div>
+                        </div>
+                    </li>
+                </ul>
+
+                <div style="display: flex; gap: 1rem; align-items: center; flex-wrap: wrap;">
+                    <a href="/browse" class="btn btn-primary btn-lg">
+                        Explore Compatible Seekers
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+                    </a>
+                    <a href="/register" class="btn btn-ghost btn-lg">Join Free Today</a>
+                </div>
+            </div>
         </div>
     </div>
 </section>
@@ -407,8 +573,8 @@
                         <?php if ($isFree): ?>
                             <a href="<?= Auth::check() ? '/dashboard' : '/register' ?>" class="btn btn-ghost btn-block">Start Free</a>
                         <?php else: ?>
-                            <a href="/packages" class="btn <?= !empty($p['highlighted']) ? 'btn-gold' : 'btn-primary' ?> btn-block">
-                                Choose <?= e($p['name']) ?>
+                            <a href="/packages" class="btn <?= !empty($p['highlighted']) ? 'btn-primary' : 'btn-ghost' ?> btn-block">
+                                <?= e($p['name']) ?>
                             </a>
                         <?php endif; ?>
                     </div>

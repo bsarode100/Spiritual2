@@ -72,23 +72,23 @@ $currentPlanSlug = $me['plan']['slug'] ?? null;
 
                 <div class="pkg-cta-modern">
                     <?php if ($isCurrent): ?>
-                        <span class="btn btn-ghost btn-block" style="cursor:default;">Your current plan</span>
+                        <span class="btn btn-ghost btn-block" style="cursor:default;">Current Plan</span>
                     <?php elseif ($isFree): ?>
                         <a href="<?= $loggedIn ? '/dashboard' : '/register' ?>" class="btn btn-ghost btn-block">Start Free</a>
                     <?php elseif ($rzp_enabled): ?>
                         <?php if ($loggedIn): ?>
-                            <a href="/checkout/<?= (int)$p['id'] ?>" class="btn <?= !empty($p['highlighted']) ? 'btn-gold' : 'btn-primary' ?> btn-block">
-                                Get <?= e($p['name']) ?>
+                            <a href="/checkout/<?= (int)$p['id'] ?>" class="btn <?= !empty($p['highlighted']) ? 'btn-primary' : 'btn-ghost' ?> btn-block">
+                                <?= e($p['name']) ?>
                             </a>
-                            <a href="/payment-details" class="btn btn-ghost btn-block btn-quiet">Or pay via UPI / Bank →</a>
+                            <a href="/payment-details" class="btn btn-ghost btn-block btn-quiet">UPI / Bank →</a>
                         <?php else: ?>
-                            <a href="/register" class="btn <?= !empty($p['highlighted']) ? 'btn-gold' : 'btn-primary' ?> btn-block">
-                                Sign up to choose <?= e($p['name']) ?>
+                            <a href="/register" class="btn <?= !empty($p['highlighted']) ? 'btn-primary' : 'btn-ghost' ?> btn-block">
+                                <?= e($p['name']) ?>
                             </a>
                         <?php endif; ?>
                     <?php else: ?>
-                        <a href="<?= $loggedIn ? '/payment-details' : '/register' ?>" class="btn <?= !empty($p['highlighted']) ? 'btn-gold' : 'btn-primary' ?> btn-block">
-                            Choose <?= e($p['name']) ?>
+                        <a href="<?= $loggedIn ? '/payment-details' : '/register' ?>" class="btn <?= !empty($p['highlighted']) ? 'btn-primary' : 'btn-ghost' ?> btn-block">
+                            <?= e($p['name']) ?>
                         </a>
                     <?php endif; ?>
                 </div>
