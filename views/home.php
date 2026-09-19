@@ -51,31 +51,31 @@
 
                 <!-- Card 2 (medium) -->
                 <div class="hero-card hero-card-2">
-                    <div style="height: 100%; background: linear-gradient(135deg, #E8A23B 0%, #7B1F1F 100%); display: flex; align-items: flex-end; padding: 1.4rem; color: white;">
+                    <div style="height: 100%; background: linear-gradient(135deg, #F0B24A 0%, #D46A76 100%); display: flex; align-items: flex-end; padding: 1.4rem; color: white;">
                         <div>
-                            <div style="font-size: .75rem; letter-spacing: .15em; opacity: .9; margin-bottom: .3rem;">VIPASSANA · 6 YRS</div>
-                            <div style="font-family: var(--f-display); font-size: 1.4rem;">Arjun, 31</div>
-                            <div style="font-size: .85rem; opacity: .8;">Engineer, Bengaluru</div>
+                            <div style="font-size: .75rem; letter-spacing: .15em; opacity: .92; margin-bottom: .3rem; font-weight: 600;">VIPASSANA · 6 YRS</div>
+                            <div style="font-family: var(--f-display); font-size: 1.45rem; font-weight: 600;">Arjun, 31</div>
+                            <div style="font-size: .85rem; opacity: .9;">Engineer, Bengaluru</div>
                         </div>
                     </div>
                 </div>
 
                 <!-- Card 1 (main, front) -->
                 <div class="hero-card hero-card-main">
-                    <div style="height: 100%; background: linear-gradient(135deg, #FAF3E0 0%, #E8A6A6 100%); position: relative;">
+                    <div style="height: 100%; background: linear-gradient(135deg, #FFF6E5 0%, #FCEBEF 100%); position: relative;">
                         <svg viewBox="0 0 200 240" style="width: 100%; height: 100%;" xmlns="http://www.w3.org/2000/svg">
                             <defs>
                                 <linearGradient id="g1" x1="0" y1="0" x2="0" y2="1">
-                                    <stop offset="0" stop-color="#E8A6A6"/>
-                                    <stop offset="1" stop-color="#7B1F1F"/>
+                                    <stop offset="0" stop-color="#FCE8EC"/>
+                                    <stop offset="1" stop-color="#F6D5DA"/>
                                 </linearGradient>
                             </defs>
                             <rect width="200" height="240" fill="url(#g1)"/>
                             <!-- Stylized portrait shape -->
-                            <circle cx="100" cy="90" r="36" fill="#FAF3E0" opacity=".85"/>
-                            <path d="M40 240 Q40 140 100 140 Q160 140 160 240 Z" fill="#FAF3E0" opacity=".85"/>
-                            <!-- bindi -->
-                            <circle cx="100" cy="74" r="3" fill="#7B1F1F"/>
+                            <circle cx="100" cy="90" r="36" fill="#FFFDF8" opacity=".95"/>
+                            <path d="M40 240 Q40 140 100 140 Q160 140 160 240 Z" fill="#FFFDF8" opacity=".95"/>
+                            <!-- bindi in auspicious terracotta rose -->
+                            <circle cx="100" cy="74" r="3.5" fill="#D46A76"/>
                         </svg>
                     </div>
                     <div class="hero-card-badge">
@@ -199,31 +199,32 @@
 <?php endif; ?>
 
 <!-- HOW IT WORKS -->
-<section class="section section-dark">
+<section class="section section-radiant">
     <div class="container">
         <div class="section-head">
             <span class="eyebrow">Your journey</span>
             <h2>Three steps to <em style="font-family: var(--f-display); color: var(--c-saffron);">grihastha dharma</em></h2>
+            <p class="lead">A simple, sacred pathway from sincere intention to life-partnership.</p>
         </div>
         <div class="features-grid">
-            <div style="background: rgba(255,248,238,.06); border-radius: var(--r-lg); padding: 2.5rem 2rem; backdrop-filter: blur(6px); border: 1px solid rgba(255,248,238,.1);">
-                <div style="width: 56px; height: 56px; border-radius: 50%; background: var(--c-saffron); color: var(--c-indigo); display: flex; align-items: center; justify-content: center; font-family: var(--f-display); font-size: 1.6rem; font-weight: 700; margin-bottom: 1.4rem;">१</div>
-                <h3 style="color: var(--c-cream);">Create your sankalpa</h3>
-                <p>Sign up free. Build a profile that reflects who you truly are — your sadhana, your guru, your ishta-devata, and the partner your heart seeks.</p>
+            <div style="background: var(--c-card); border-radius: var(--r-lg); padding: 2.5rem 2rem; border: 1.5px solid var(--c-line); box-shadow: var(--shadow-sm); transition: transform .3s ease, box-shadow .3s ease;">
+                <div style="width: 56px; height: 56px; border-radius: 18px; background: linear-gradient(135deg, #E5A93B, #D47B2A); color: #fff; display: flex; align-items: center; justify-content: center; font-family: var(--f-display); font-size: 1.6rem; font-weight: 700; margin-bottom: 1.4rem; box-shadow: 0 6px 18px rgba(217,148,32,.25);">१</div>
+                <h3 style="color: var(--c-maroon);">Create your sankalpa</h3>
+                <p style="color: var(--c-ink-soft); line-height: 1.6;">Sign up free. Build a profile that reflects who you truly are — your sadhana, your guru, your ishta-devata, and the partner your heart seeks.</p>
             </div>
-            <div style="background: rgba(255,248,238,.06); border-radius: var(--r-lg); padding: 2.5rem 2rem; backdrop-filter: blur(6px); border: 1px solid rgba(255,248,238,.1);">
-                <div style="width: 56px; height: 56px; border-radius: 50%; background: var(--c-saffron); color: var(--c-indigo); display: flex; align-items: center; justify-content: center; font-family: var(--f-display); font-size: 1.6rem; font-weight: 700; margin-bottom: 1.4rem;">२</div>
-                <h3 style="color: var(--c-cream);">Discover sangha</h3>
-                <p>Browse, search, and shortlist profiles. Use our deep spiritual filters to find seekers walking your specific path.</p>
+            <div style="background: var(--c-card); border-radius: var(--r-lg); padding: 2.5rem 2rem; border: 1.5px solid var(--c-line); box-shadow: var(--shadow-sm); transition: transform .3s ease, box-shadow .3s ease;">
+                <div style="width: 56px; height: 56px; border-radius: 18px; background: linear-gradient(135deg, #E5A93B, #D47B2A); color: #fff; display: flex; align-items: center; justify-content: center; font-family: var(--f-display); font-size: 1.6rem; font-weight: 700; margin-bottom: 1.4rem; box-shadow: 0 6px 18px rgba(217,148,32,.25);">२</div>
+                <h3 style="color: var(--c-maroon);">Discover sangha</h3>
+                <p style="color: var(--c-ink-soft); line-height: 1.6;">Browse, search, and shortlist profiles. Use our deep spiritual filters to find seekers walking your specific path.</p>
             </div>
-            <div style="background: rgba(255,248,238,.06); border-radius: var(--r-lg); padding: 2.5rem 2rem; backdrop-filter: blur(6px); border: 1px solid rgba(255,248,238,.1);">
-                <div style="width: 56px; height: 56px; border-radius: 50%; background: var(--c-saffron); color: var(--c-indigo); display: flex; align-items: center; justify-content: center; font-family: var(--f-display); font-size: 1.6rem; font-weight: 700; margin-bottom: 1.4rem;">३</div>
-                <h3 style="color: var(--c-cream);">Begin your conversation</h3>
-                <p>Send an interest. When accepted, message each other directly. Take it offline, meet families, and walk together.</p>
+            <div style="background: var(--c-card); border-radius: var(--r-lg); padding: 2.5rem 2rem; border: 1.5px solid var(--c-line); box-shadow: var(--shadow-sm); transition: transform .3s ease, box-shadow .3s ease;">
+                <div style="width: 56px; height: 56px; border-radius: 18px; background: linear-gradient(135deg, #E5A93B, #D47B2A); color: #fff; display: flex; align-items: center; justify-content: center; font-family: var(--f-display); font-size: 1.6rem; font-weight: 700; margin-bottom: 1.4rem; box-shadow: 0 6px 18px rgba(217,148,32,.25);">३</div>
+                <h3 style="color: var(--c-maroon);">Begin your conversation</h3>
+                <p style="color: var(--c-ink-soft); line-height: 1.6;">Send an interest. When accepted, message each other directly. Take it offline, meet families, and walk together.</p>
             </div>
         </div>
         <div class="text-center mt-4">
-            <a href="/register" class="btn btn-gold btn-lg">Begin Free Today</a>
+            <a href="/register" class="btn btn-primary btn-lg">Begin Free Today →</a>
         </div>
     </div>
 </section>

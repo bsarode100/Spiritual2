@@ -7,6 +7,20 @@
         toggle.addEventListener('click', () => links.classList.toggle('open'));
     }
 
+    // Navbar elevation on scroll
+    const nav = document.querySelector('.nav');
+    if (nav) {
+        const handleScroll = () => {
+            if (window.scrollY > 15) {
+                nav.classList.add('scrolled');
+            } else {
+                nav.classList.remove('scrolled');
+            }
+        };
+        window.addEventListener('scroll', handleScroll, { passive: true });
+        handleScroll();
+    }
+
     // Auto-dismiss flash messages
     document.querySelectorAll('.flash').forEach(f => {
         setTimeout(() => { f.style.transition = 'opacity .4s'; f.style.opacity = '0'; }, 4500);

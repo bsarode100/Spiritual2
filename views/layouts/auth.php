@@ -27,7 +27,7 @@
 <body>
 <div class="auth-shell">
     <aside class="auth-art">
-        <a href="/" class="brand" style="color: var(--c-cream);">
+        <a href="/" class="brand">
             <div class="brand-icon">
                 <img src="<?= asset('images/logo.png') ?>" alt="SpiritualShaadi Logo" style="height: 36px; width: auto;">
             </div>
@@ -38,7 +38,7 @@
             <h2 style="font-style: italic;">one path</h2>
             <p class="quote">A sacred space for sincere seekers — devotees, sadhakas, yogis, and dharmics — looking for a life-companion aligned with the spiritual journey.</p>
         </div>
-        <div style="opacity: .7; font-size: .9rem; position: relative; z-index: 2;">
+        <div style="font-size: .92rem; font-weight: 600; color: var(--c-ink-soft); position: relative; z-index: 2; opacity: .88;">
             🪷 25,000+ sincere seekers · 1,200+ marriages
         </div>
     </aside>
