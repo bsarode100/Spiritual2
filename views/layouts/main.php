@@ -4,13 +4,13 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title><?= e(setting('site_name', 'Spiritual Matrimony')) ?><?= isset($title) ? ' — ' . e($title) : '' ?></title>
-<meta name="description" content="<?= e(setting('site_tagline', 'Where two souls meet on the same path.')) ?>">
+<title><?= e(setting('site_name', 'Spiritual Shadi')) ?><?= isset($title) ? ' — ' . e($title) : '' ?></title>
+<meta name="description" content="<?= e(setting('site_tagline', 'Find a perfect spiritual life partner.')) ?>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,500;1,600&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&family=Tangerine:wght@400;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="<?= asset('css/app.css') ?>">
-<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='45' fill='%237B1F1F'/><text x='50' y='68' text-anchor='middle' font-family='serif' font-size='52' fill='%23D4A017'>ॐ</text></svg>">
+<link rel="icon" type="image/png" href="<?= asset('images/logo.png') ?>">
 </head>
 <body>
 <?php include __DIR__ . '/../partials/nav.php'; ?>

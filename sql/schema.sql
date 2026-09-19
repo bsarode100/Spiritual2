@@ -537,12 +537,12 @@ INSERT INTO `spiritual_details` (`user_id`,`spiritual_path`,`guru`,`ishta_devata
 
 -- Default site settings
 INSERT INTO `site_settings` (`setting_key`,`setting_value`) VALUES
-('site_name','Spiritual Matrimony'),
-('site_tagline','Where two souls meet on the same path'),
+('site_name','Spiritual Shadi'),
+('site_tagline','Find a perfect spiritual life partner'),
 ('hero_heading','Find a partner who walks your spiritual path'),
 ('hero_subheading','A sacred space for sincere seekers to find a life-companion rooted in dharma, sadhana, and love.'),
 ('hero_cta_text','Begin Your Journey'),
-('about_short','Spiritual Matrimony is a curated community for sincere seekers — devotees, sadhakas, yogis, and dharmics — looking for a life partner aligned with their spiritual journey.'),
+('about_short','Spiritual Shadi is a curated community for sincere seekers — devotees, sadhakas, yogis, and dharmics — looking for a life partner aligned with their spiritual journey.'),
 ('contact_email','hello@spiritualmatrimony.com'),
 ('contact_phone','+91 98XXX XXXXX'),
 ('contact_address','Rishikesh, Uttarakhand, India'),
@@ -555,7 +555,7 @@ INSERT INTO `site_settings` (`setting_key`,`setting_value`) VALUES
 ('stat_paths','18'),
 ('stat_countries','40+'),
 -- Payment details (editable from /admin/payment-details). Leave blank to hide a row on the public page.
-('payment_payee_name','Spiritual Matrimony'),
+('payment_payee_name','Spiritual Shadi'),
 ('payment_upi_id',''),
 ('payment_upi_qr_url',''),
 ('payment_bank_name',''),

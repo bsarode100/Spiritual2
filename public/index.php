@@ -1,5 +1,5 @@
 <?php
-// Front controller for Spiritual Matrimony
+// Front controller for Spiritual Shadi
 declare(strict_types=1);
 
 session_start();

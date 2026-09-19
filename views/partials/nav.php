@@ -2,9 +2,10 @@
     <div class="container nav-inner">
         <a href="/" class="brand">
             <div class="brand-icon">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><text x="12" y="18" text-anchor="middle" font-family="serif" font-size="20" fill="currentColor">ॐ</text></svg>
+                <img src="<?= asset('images/logo.png') ?>" alt="Spiritual Shadi Logo" style="height: 36px; width: auto;">
             </div>
-            <span><?= e(setting('site_name', 'Spiritual Matrimony')) ?></span>
+            <span><?= e(setting('site_name', 'Spiritual Shadi')) ?></span>
+            <small class="brand-motto" style="font-size: 0.65rem; opacity: 0.75; display: block; margin-top: -2px; letter-spacing: 0.5px;">Find a perfect spiritual life partner</small>
         </a>
 
         <ul class="nav-links" style="list-style: none; padding: 0; margin: 0;">

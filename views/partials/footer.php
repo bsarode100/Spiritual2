@@ -2,9 +2,11 @@
     <div class="container">
         <div class="footer-grid">
             <div class="footer-brand">
-                <h3 style="font-family: var(--f-display); font-size: 1.6rem;">
-                    <span style="color: var(--c-saffron);">ॐ</span> <?= e(setting('site_name', 'Spiritual Matrimony')) ?>
+                <h3 style="font-family: var(--f-display); font-size: 1.6rem; display: flex; align-items: center; gap: 0.5rem;">
+                    <img src="<?= asset('images/logo.png') ?>" alt="Spiritual Shadi Logo" style="height: 36px; width: auto;">
+                    <?= e(setting('site_name', 'Spiritual Shadi')) ?>
                 </h3>
+                <p style="font-size: 0.85rem; font-style: italic; opacity: 0.85; margin-top: 0.25rem;">Find a perfect spiritual life partner</p>
                 <p><?= e(setting('footer_about', 'Two souls. One path. A lifetime of sadhana — together.')) ?></p>
                 <div class="social">
                     <?php if ($u = setting('social_facebook')): ?>
@@ -55,7 +57,7 @@
             </div>
         </div>
         <div class="footer-bottom">
-            <span>&copy; <?= date('Y') ?> <?= e(setting('site_name','Spiritual Matrimony')) ?>. Made with reverence.</span>
+            <span>&copy; <?= date('Y') ?> <?= e(setting('site_name','Spiritual Shadi')) ?>. Made with reverence.</span>
             <span class="om">ॐ शान्ति शान्ति शान्तिः</span>
         </div>
     </div>

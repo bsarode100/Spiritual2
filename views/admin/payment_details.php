@@ -13,7 +13,7 @@
         <div class="form-grid">
             <div class="field">
                 <label>Payee / Business name</label>
-                <input type="text" name="payment_payee_name" value="<?= e($values['payment_payee_name']) ?>" placeholder="e.g. Spiritual Matrimony">
+                <input type="text" name="payment_payee_name" value="<?= e($values['payment_payee_name']) ?>" placeholder="e.g. Spiritual Shadi">
             </div>
             <div class="field">
                 <label>UPI ID</label>

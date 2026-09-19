@@ -4,7 +4,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title><?= e(setting('site_name', 'Spiritual Matrimony')) ?> — Welcome</title>
+<title><?= e(setting('site_name', 'Spiritual Shadi')) ?> — Welcome</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,500;1,600&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&family=Tangerine:wght@400;700&display=swap" rel="stylesheet">
@@ -15,9 +15,9 @@
     <aside class="auth-art">
         <a href="/" class="brand" style="color: var(--c-cream);">
             <div class="brand-icon">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><text x="12" y="18" text-anchor="middle" font-family="serif" font-size="20" fill="#FFF8EE">ॐ</text></svg>
+                <img src="<?= asset('images/logo.png') ?>" alt="Spiritual Shadi Logo" style="height: 36px; width: auto;">
             </div>
-            <span><?= e(setting('site_name', 'Spiritual Matrimony')) ?></span>
+            <span><?= e(setting('site_name', 'Spiritual Shadi')) ?></span>
         </a>
         <div>
             <p class="script" style="color: var(--c-saffron); margin-bottom: 0;">two souls,</p>

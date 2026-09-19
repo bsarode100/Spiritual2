@@ -881,7 +881,7 @@ function reset_session_valid(): bool {
 
 // Helper: send the OTP email via PHP mail(). Best-effort — fails silently if mail() is unavailable.
 function send_password_reset_email(array $user, string $otp): bool {
-    $siteName = setting('site_name', 'Spiritual Matrimony');
+    $siteName = setting('site_name', 'Spiritual Shadi');
     $replyTo = setting('contact_email', $GLOBALS['CFG']['mail']['from'] ?? null);
 
     $subject = "Your {$siteName} password reset code";
@@ -897,7 +897,7 @@ function send_password_reset_email(array $user, string $otp): bool {
 }
 
 function send_signup_otp_email(array $pending, string $otp): bool {
-    $siteName = setting('site_name', 'Spiritual Matrimony');
+    $siteName = setting('site_name', 'Spiritual Shadi');
     $replyTo = setting('contact_email', $GLOBALS['CFG']['mail']['from'] ?? null);
 
     $subject = "Your {$siteName} signup code";
