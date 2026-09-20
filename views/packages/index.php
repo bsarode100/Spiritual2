@@ -31,6 +31,44 @@ $currentPlanSlug = $me['plan']['slug'] ?? null;
     </div>
 </section>
 
+<?php if ($loggedIn && $me):
+    $contactsText = $me['contacts_left'] === null ? 'Unlimited' : (string)(int)$me['contacts_left'];
+    $interestsText = $me['interests_left'] === null ? 'Unlimited' : (string)(int)$me['interests_left'];
+    $shortlistsText = $me['shortlists_left'] === null ? 'Unlimited' : (string)(int)$me['shortlists_left'];
+?>
+<section class="section-tight" style="padding-bottom: 0;">
+    <div class="container">
+        <div class="membership-card mb-4">
+            <div class="membership-main">
+                <span class="eyebrow">Current Membership</span>
+                <h2><?= e($me['plan']['name']) ?></h2>
+                <p><?= e($me['plan']['tagline'] ?? 'Your current membership benefits') ?></p>
+                <div class="membership-actions">
+                    <a href="#plans" class="btn btn-gold btn-sm">Upgrade Plan</a>
+                    <a href="/billing" class="btn btn-ghost btn-sm">Billing &amp; Invoices</a>
+                    <?php if ((int)$me['boosts_left'] > 0): ?>
+                        <form method="post" action="/boost" style="margin:0; display:inline;">
+                            <?= csrf_field() ?>
+                            <button class="btn btn-primary btn-sm">Use Boost</button>
+                        </form>
+                    <?php endif; ?>
+                </div>
+            </div>
+            <div class="membership-metrics">
+                <div><span>Expiry</span><strong><?= $me['expires_at'] ? e(date('M j, Y', strtotime($me['expires_at']))) : 'Lifetime' ?></strong></div>
+                <div><span>Days Left</span><strong><?= $me['days_left'] === null ? '-' : (int)$me['days_left'] ?></strong></div>
+                <div><span>Contacts Left</span><strong><?= e($contactsText) ?></strong></div>
+                <div><span>Interests Left</span><strong><?= e($interestsText) ?></strong></div>
+                <div><span>Shortlists Left</span><strong><?= e($shortlistsText) ?></strong></div>
+                <div><span>Boosts Left</span><strong><?= (int)$me['boosts_left'] ?></strong></div>
+                <div><span>Priority</span><strong><?= e($me['priority_label']) ?></strong></div>
+                <div><span>Badge</span><strong><?= $me['badge'] ? e($me['badge']) : 'None' ?></strong></div>
+            </div>
+        </div>
+    </div>
+</section>
+<?php endif; ?>
+
 <section class="section" id="plans"><div class="container">
     <div class="pkg-grid-modern">
         <?php foreach ($ordered as $p):

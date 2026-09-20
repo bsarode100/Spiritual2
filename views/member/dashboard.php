@@ -44,72 +44,94 @@ $shortlistsText = $membership['shortlists_left'] === null ? 'Unlimited' : (strin
                 <a href="/profile/edit" class="btn btn-ghost btn-sm">Edit Profile</a>
             </div>
 
-            <!-- Jeevansathi-inspired Mobile Quick Action Pills -->
-            <div class="mobile-quick-pills">
-                <a href="/profile/photos" class="quick-pill"><span class="pill-icon">📸</span> Photos</a>
-                <a href="/verification" class="quick-pill"><span class="pill-icon">🛡️</span> Verify ID</a>
-                <a href="/shortlist" class="quick-pill"><span class="pill-icon">💖</span> Shortlists<?php if (!empty($stats['shortlisted'])): ?><span class="pill-count"><?= (int)$stats['shortlisted'] ?></span><?php endif; ?></a>
-                <a href="/visitors" class="quick-pill"><span class="pill-icon">👁️</span> Visitors<?php if (!empty($stats['profile_views'])): ?><span class="pill-count"><?= (int)$stats['profile_views'] ?></span><?php endif; ?></a>
-                <a href="/interests" class="quick-pill"><span class="pill-icon">💌</span> Interests<?php if (!empty($stats['interests_received'])): ?><span class="pill-count"><?= (int)$stats['interests_received'] ?></span><?php endif; ?></a>
-                <a href="/packages" class="quick-pill"><span class="pill-icon">💎</span> Plans</a>
+            <!-- Activity Cross-Navigation Tabs -->
+            <?php include __DIR__ . '/../partials/activity_tabs.php'; ?>
+
+            <!-- Compact Mobile Membership Status Banner -->
+            <div class="mobile-membership-pill mb-3">
+                <div class="m-pill-info">
+                    <span class="m-pill-badge">💎 <?= e($plan['name']) ?></span>
+                    <span class="m-pill-expiry"><?= $membership['days_left'] === null ? 'Lifetime' : (int)$membership['days_left'] . ' days left' ?></span>
+                </div>
+                <a href="/packages" class="m-pill-link">Upgrade / Perks →</a>
             </div>
 
-            <div class="membership-card mb-4">
-                <div class="membership-main">
-                    <span class="eyebrow">Membership</span>
-                    <h2><?= e($plan['name']) ?></h2>
-                    <p><?= e($plan['tagline'] ?? 'Your current membership benefits') ?></p>
-                    <div class="membership-actions">
-                        <a href="/packages" class="btn btn-gold btn-sm">Upgrade</a>
-                        <a href="/packages" class="btn btn-ghost btn-sm">Renew</a>
-                        <?php if ((int)$membership['boosts_left'] > 0): ?>
-                            <form method="post" action="/boost" style="margin:0;">
-                                <?= csrf_field() ?>
-                                <button class="btn btn-primary btn-sm">Use Boost</button>
-                            </form>
-                        <?php endif; ?>
+            <!-- Full Membership Card & Perks (Desktop Only - on mobile these live in Upgrade tab) -->
+            <div class="desktop-membership-section">
+                <div class="membership-card mb-4">
+                    <div class="membership-main">
+                        <span class="eyebrow">Membership</span>
+                        <h2><?= e($plan['name']) ?></h2>
+                        <p><?= e($plan['tagline'] ?? 'Your current membership benefits') ?></p>
+                        <div class="membership-actions">
+                            <a href="/packages" class="btn btn-gold btn-sm">Upgrade</a>
+                            <a href="/packages" class="btn btn-ghost btn-sm">Renew</a>
+                            <?php if ((int)$membership['boosts_left'] > 0): ?>
+                                <form method="post" action="/boost" style="margin:0;">
+                                    <?= csrf_field() ?>
+                                    <button class="btn btn-primary btn-sm">Use Boost</button>
+                                </form>
+                            <?php endif; ?>
+                        </div>
+                    </div>
+                    <div class="membership-metrics">
+                        <div><span>Expiry</span><strong><?= $membership['expires_at'] ? e(date('M j, Y', strtotime($membership['expires_at']))) : 'Lifetime' ?></strong></div>
+                        <div><span>Days Left</span><strong><?= $membership['days_left'] === null ? '-' : (int)$membership['days_left'] ?></strong></div>
+                        <div><span>Contacts</span><strong><?= e($contactsText) ?></strong></div>
+                        <div><span>Interests</span><strong><?= e($interestsText) ?></strong></div>
+                        <div><span>Shortlists</span><strong><?= e($shortlistsText) ?></strong></div>
+                        <div><span>Boosts</span><strong><?= (int)$membership['boosts_left'] ?></strong></div>
+                        <div><span>Priority</span><strong><?= e($membership['priority_label']) ?></strong></div>
+                        <div><span>Badge</span><strong><?= $membership['badge'] ? e($membership['badge']) : 'None' ?></strong></div>
                     </div>
                 </div>
-                <div class="membership-metrics">
-                    <div><span>Expiry</span><strong><?= $membership['expires_at'] ? e(date('M j, Y', strtotime($membership['expires_at']))) : 'Lifetime' ?></strong></div>
-                    <div><span>Days Left</span><strong><?= $membership['days_left'] === null ? '-' : (int)$membership['days_left'] ?></strong></div>
-                    <div><span>Contacts</span><strong><?= e($contactsText) ?></strong></div>
-                    <div><span>Interests</span><strong><?= e($interestsText) ?></strong></div>
-                    <div><span>Shortlists</span><strong><?= e($shortlistsText) ?></strong></div>
-                    <div><span>Boosts</span><strong><?= (int)$membership['boosts_left'] ?></strong></div>
-                    <div><span>Priority</span><strong><?= e($membership['priority_label']) ?></strong></div>
-                    <div><span>Badge</span><strong><?= $membership['badge'] ? e($membership['badge']) : 'None' ?></strong></div>
+
+                <div class="member-perk-grid mb-4">
+                    <div class="member-perk">
+                        <strong>Profile Visitors</strong>
+                        <span><?= plan_can($plan, 'see_who_viewed') ? 'Unlocked' : 'Starter Premium required' ?></span>
+                        <a href="<?= plan_can($plan, 'see_who_viewed') ? '/visitors' : '/packages' ?>"><?= plan_can($plan, 'see_who_viewed') ? 'View visitors' : 'Upgrade' ?></a>
+                    </div>
+                    <div class="member-perk">
+                        <strong>Who Shortlisted You</strong>
+                        <span><?= plan_can($plan, 'see_who_shortlisted') ? (int)$stats['shortlisted_me'] . ' members' : 'Divine Plus required' ?></span>
+                        <a href="<?= plan_can($plan, 'see_who_shortlisted') ? '/shortlisted-by' : '/packages' ?>"><?= plan_can($plan, 'see_who_shortlisted') ? 'View members' : 'Upgrade' ?></a>
+                    </div>
+                    <div class="member-perk">
+                        <strong>Match Suggestions</strong>
+                        <span><?= e($plan['match_suggestions'] ?? 'Basic') ?></span>
+                        <a href="/browse">Browse matches</a>
+                    </div>
                 </div>
             </div>
 
-            <div class="stat-cards">
-                <div class="stat-card"><div class="label">New Interests</div><div class="value"><?= (int)$stats['interests_received'] ?></div></div>
-                <div class="stat-card"><div class="label">Conversations</div><div class="value"><?= (int)$stats['interests_accepted'] ?></div></div>
-                <div class="stat-card"><div class="label">Shortlisted</div><div class="value"><?= (int)$stats['shortlisted'] ?></div></div>
-                <div class="stat-card"><div class="label">Profile Views</div><div class="value"><?= (int)$stats['profile_views'] ?></div></div>
+            <!-- Activity Stat Cards -->
+            <div class="stat-cards mb-4">
+                <a href="/interests" class="stat-card" style="text-decoration:none; color:inherit;">
+                    <div class="label">New Interests</div>
+                    <div class="value"><?= (int)$stats['interests_received'] ?></div>
+                </a>
+                <a href="/messages" class="stat-card" style="text-decoration:none; color:inherit;">
+                    <div class="label">Conversations</div>
+                    <div class="value"><?= (int)$stats['interests_accepted'] ?></div>
+                </a>
+                <a href="/shortlist" class="stat-card" style="text-decoration:none; color:inherit;">
+                    <div class="label">Shortlisted</div>
+                    <div class="value"><?= (int)$stats['shortlisted'] ?></div>
+                </a>
+                <a href="/visitors" class="stat-card" style="text-decoration:none; color:inherit;">
+                    <div class="label">Profile Views</div>
+                    <div class="value"><?= (int)$stats['profile_views'] ?></div>
+                </a>
             </div>
 
-            <div class="member-perk-grid mb-4">
-                <div class="member-perk">
-                    <strong>Profile Visitors</strong>
-                    <span><?= plan_can($plan, 'see_who_viewed') ? 'Unlocked' : 'Starter Premium required' ?></span>
-                    <a href="<?= plan_can($plan, 'see_who_viewed') ? '/visitors' : '/packages' ?>"><?= plan_can($plan, 'see_who_viewed') ? 'View visitors' : 'Upgrade' ?></a>
-                </div>
-                <div class="member-perk">
-                    <strong>Who Shortlisted You</strong>
-                    <span><?= plan_can($plan, 'see_who_shortlisted') ? (int)$stats['shortlisted_me'] . ' members' : 'Divine Plus required' ?></span>
-                    <a href="<?= plan_can($plan, 'see_who_shortlisted') ? '/shortlisted-by' : '/packages' ?>"><?= plan_can($plan, 'see_who_shortlisted') ? 'View members' : 'Upgrade' ?></a>
-                </div>
-                <div class="member-perk">
-                    <strong>Match Suggestions</strong>
-                    <span><?= e($plan['match_suggestions'] ?? 'Basic') ?></span>
-                    <a href="/browse">Browse matches</a>
-                </div>
-            </div>
-
+            <!-- Incoming Interests Feed -->
             <?php if ($recent_interests): ?>
             <div class="admin-card mb-4">
-                <h3 style="margin-bottom: 1rem;">New interests for you</h3>
+                <div class="flex-between mb-3">
+                    <h3 style="margin: 0;">New interests for you</h3>
+                    <a href="/interests" class="btn btn-ghost btn-sm">See all (<?= count($recent_interests) ?>) →</a>
+                </div>
                 <?php foreach ($recent_interests as $i): $age = age_from_dob($i['dob'] ?? null); ?>
                     <div class="flex-between" style="padding: .8rem 0; border-bottom: 1px solid var(--c-line); flex-wrap: wrap; gap: .6rem;">
                         <div>
@@ -139,12 +161,15 @@ $shortlistsText = $membership['shortlists_left'] === null ? 'Unlimited' : (strin
                         </div>
                     </div>
                 <?php endforeach; ?>
-                <div class="mt-2"><a href="/interests">See all interests</a></div>
             </div>
             <?php endif; ?>
 
+            <!-- Daily Suggested Matches -->
             <?php if ($matches): ?>
-            <h2 style="font-size: 1.6rem; margin-bottom: 1rem;">Suggested for you</h2>
+            <div class="flex-between mb-3">
+                <h2 style="font-size: 1.5rem; margin: 0;">Suggested for you</h2>
+                <a href="/browse" class="btn btn-ghost btn-sm">Explore All Seekers →</a>
+            </div>
             <div class="profiles-grid">
                 <?php foreach ($matches as $m): $age = age_from_dob($m['dob']); ?>
                     <article class="profile-card">
@@ -175,86 +200,6 @@ $shortlistsText = $membership['shortlists_left'] === null ? 'Unlimited' : (strin
                 <?php endforeach; ?>
             </div>
             <?php endif; ?>
-
-            <!-- Jeevansathi-inspired Mobile Account & Activity Hub -->
-            <div class="mobile-account-hub mb-4">
-                <div class="mobile-hub-header">
-                    <h3><span>✨</span> Account &amp; Activity Hub</h3>
-                    <small>Quick tools &amp; profile management</small>
-                </div>
-                <div class="mobile-hub-grid">
-                    <a href="/profile/photos" class="mobile-hub-card">
-                        <div class="hub-card-icon">📸</div>
-                        <div class="hub-card-body">
-                            <strong>Manage Photos</strong>
-                            <span>Upload &amp; edit gallery</span>
-                        </div>
-                    </a>
-                    <a href="/verification" class="mobile-hub-card">
-                        <div class="hub-card-icon">🛡️</div>
-                        <div class="hub-card-body">
-                            <strong>Get Verified</strong>
-                            <span style="color: #1B7A43; font-weight: 600;">✓ Free Trust Badge</span>
-                        </div>
-                    </a>
-                    <a href="/shortlist" class="mobile-hub-card">
-                        <div class="hub-card-icon">💖</div>
-                        <div class="hub-card-body">
-                            <strong>My Shortlist</strong>
-                            <span><?= (int)$stats['shortlisted'] ?> saved profiles</span>
-                        </div>
-                    </a>
-                    <a href="/visitors" class="mobile-hub-card">
-                        <div class="hub-card-icon">👁️</div>
-                        <div class="hub-card-body">
-                            <strong>Profile Visitors</strong>
-                            <span><?= (int)$stats['profile_views'] ?> views</span>
-                        </div>
-                    </a>
-                    <a href="/shortlisted-by" class="mobile-hub-card">
-                        <div class="hub-card-icon">👥</div>
-                        <div class="hub-card-body">
-                            <strong>Shortlisted Me</strong>
-                            <span><?= (int)$stats['shortlisted_me'] ?> members</span>
-                        </div>
-                    </a>
-                    <a href="/interests" class="mobile-hub-card">
-                        <div class="hub-card-icon">💌</div>
-                        <div class="hub-card-body">
-                            <strong>Interests</strong>
-                            <span><?= (int)$stats['interests_received'] ?> received requests</span>
-                        </div>
-                    </a>
-                    <a href="/packages" class="mobile-hub-card">
-                        <div class="hub-card-icon">💎</div>
-                        <div class="hub-card-body">
-                            <strong>Membership</strong>
-                            <span><?= e($plan['name']) ?> · Upgrade</span>
-                        </div>
-                    </a>
-                    <a href="/billing" class="mobile-hub-card">
-                        <div class="hub-card-icon">💳</div>
-                        <div class="hub-card-body">
-                            <strong>Billing &amp; Receipts</strong>
-                            <span>Invoices &amp; history</span>
-                        </div>
-                    </a>
-                    <a href="/settings" class="mobile-hub-card">
-                        <div class="hub-card-icon">⚙️</div>
-                        <div class="hub-card-body">
-                            <strong>Settings</strong>
-                            <span>Privacy &amp; security</span>
-                        </div>
-                    </a>
-                    <a href="/logout" class="mobile-hub-card hub-card-logout">
-                        <div class="hub-card-icon">🚪</div>
-                        <div class="hub-card-body">
-                            <strong>Sign Out</strong>
-                            <span>End session</span>
-                        </div>
-                    </a>
-                </div>
-            </div>
         </div>
     </div>
 </div>

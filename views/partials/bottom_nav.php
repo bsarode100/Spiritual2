@@ -1,6 +1,6 @@
 <?php
 // Mobile-only bottom navigation bar (strictly hidden on desktop / laptop screens via CSS)
-// Shaadi.com / Jeevansathi-inspired 5-tab layout: Home · Matches · Activity · Messages · Upgrade
+// Shaadi.com / Jeevansathi-inspired 5-tab layout: Home · Matches · Dashboard · Messages · Upgrade
 $currentUri = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH);
 $isAuth = Auth::check();
 $unreadCount = $isAuth ? unread_messages_count(Auth::id()) : 0;
@@ -29,13 +29,16 @@ $unreadCount = $isAuth ? unread_messages_count(Auth::id()) : 0;
     </a>
 
     <?php if ($isAuth): ?>
-        <a href="/interests" class="bottom-nav-item <?= str_starts_with($currentUri, '/interests') || str_starts_with($currentUri, '/shortlist') || str_starts_with($currentUri, '/visitors') || str_starts_with($currentUri, '/shortlisted-by') ? 'active' : '' ?>">
+        <a href="<?= Auth::isAdmin() ? '/admin' : '/dashboard' ?>" class="bottom-nav-item <?= str_starts_with($currentUri, '/dashboard') || str_starts_with($currentUri, '/interests') || str_starts_with($currentUri, '/shortlist') || str_starts_with($currentUri, '/visitors') || str_starts_with($currentUri, '/shortlisted-by') || str_starts_with($currentUri, '/admin') ? 'active' : '' ?>">
             <div class="bottom-nav-icon">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+                    <rect x="3" y="3" width="7" height="9"/>
+                    <rect x="14" y="3" width="7" height="5"/>
+                    <rect x="14" y="12" width="7" height="9"/>
+                    <rect x="3" y="16" width="7" height="5"/>
                 </svg>
             </div>
-            <span>Activity</span>
+            <span><?= Auth::isAdmin() ? 'Admin' : 'Dashboard' ?></span>
         </a>
 
         <a href="/messages" class="bottom-nav-item <?= str_starts_with($currentUri, '/messages') ? 'active' : '' ?>">
@@ -50,7 +53,7 @@ $unreadCount = $isAuth ? unread_messages_count(Auth::id()) : 0;
             <span>Messages</span>
         </a>
 
-        <a href="/packages" class="bottom-nav-item bottom-nav-upgrade <?= str_starts_with($currentUri, '/packages') || str_starts_with($currentUri, '/billing') ? 'active' : '' ?>">
+        <a href="/packages" class="bottom-nav-item bottom-nav-upgrade <?= str_starts_with($currentUri, '/packages') || str_starts_with($currentUri, '/billing') || str_starts_with($currentUri, '/addons') ? 'active' : '' ?>">
             <div class="bottom-nav-icon">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
