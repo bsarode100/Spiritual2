@@ -934,15 +934,15 @@ function send_transactional_mail(string $to, string $subject, string $body, ?str
         'from_name'  => $fromName,
     ];
 
-    // If host is provided and mailer is not explicitly 'mail', try SMTP delivery first
-    $useSmtp = (strtolower((string)$mailer) === 'smtp' || (!empty($host) && strtolower((string)$mailer) !== 'mail')) && !empty($host);
+    // If host is provided or mailer is smtp, use SMTP delivery
+    $useSmtp = (strtolower((string)$mailer) === 'smtp' || !empty($host)) && !empty($host);
     if ($useSmtp) {
         try {
             return smtp_send_mail($resolvedCfg, $from, $fromName, $to, $subject, $body, $replyTo);
         } catch (Throwable $e) {
             $GLOBALS['last_mail_error'] = $e->getMessage();
-            error_log('SMTP mail failed: ' . $e->getMessage() . '. Falling back to server mail()...');
-            // Do NOT return false — fall back to server mail() below
+            error_log('SMTP mail failed: ' . $e->getMessage());
+            return false;
         }
     }
 
@@ -954,12 +954,7 @@ function send_transactional_mail(string $to, string $subject, string $body, ?str
         'X-Mailer: ' . $siteName,
     ];
     $sent = @mail($to, $subject, $body, implode("\r\n", $headers));
-    if ($sent) {
-        // Server mail() succeeded — clear any previous SMTP error
-        $GLOBALS['last_mail_error'] = null;
-        return true;
-    }
-    if (!$sent && empty($GLOBALS['last_mail_error'])) {
+    if (!$sent) {
         $GLOBALS['last_mail_error'] = 'PHP mail() returned false (no local mail transfer agent configured on server)';
     }
     return $sent;
