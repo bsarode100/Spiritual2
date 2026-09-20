@@ -14,17 +14,19 @@
             <?php if (Auth::check()): ?>
                 <!-- Mobile User Profile Card -->
                 <li class="mobile-nav-user">
-                    <div class="mobile-user-greeting">
+                    <a href="/profile/edit" class="mobile-user-greeting">
                         <div class="mobile-user-avatar"><?= mb_strtoupper(mb_substr(Auth::user()['name'] ?? 'S', 0, 1)) ?></div>
                         <div class="mobile-user-info">
-                            <strong><?= e(Auth::user()['name'] ?? 'Seeker') ?></strong>
+                            <div class="mobile-user-name-row">
+                                <strong><?= e(Auth::user()['name'] ?? 'Seeker') ?></strong>
+                                <span class="mobile-view-profile-pill">Edit →</span>
+                            </div>
                             <span><?= e(Auth::user()['email'] ?? '') ?></span>
                             <?php if (!Auth::isAdmin() && ($uBadge = membership_badge(Auth::id()))): ?>
                                 <small class="mobile-user-plan">★ <?= e($uBadge) ?> Member</small>
                             <?php endif; ?>
                         </div>
-                        <a href="/profile/edit" class="mobile-edit-btn" title="Edit Profile">✏️</a>
-                    </div>
+                    </a>
                 </li>
 
                 <!-- CATEGORY 1: Profile & Verification -->
