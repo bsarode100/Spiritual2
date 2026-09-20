@@ -1361,9 +1361,28 @@ $r->get('/member/{id}', function ($a) {
     $targetBadge = membership_badge($targetId);
     $targetFeatured = is_featured($targetId);
     $targetBoosted = is_boosted($targetId);
+
+    // Compute previous and next profile IDs for swipe and quick switching (Jeevansathi style)
+    $oppGender = opposite_gender($viewer['gender'] ?? null);
+    $browseWhere = ["u.status = 'active'", "u.role = 'member'", 'u.id != :me'];
+    $browseParams = ['me' => Auth::id()];
+    if ($oppGender) {
+        $browseWhere[] = 'p.gender = :opp';
+        $browseParams['opp'] = $oppGender;
+    }
+    $prevParams = array_merge($browseParams, ['cur' => $targetId]);
+    $prevId = (int) DB::val("SELECT u.id FROM users u JOIN profiles p ON p.user_id = u.id
+                             WHERE " . implode(' AND ', $browseWhere) . " AND u.id > :cur
+                             ORDER BY u.id ASC LIMIT 1", $prevParams);
+    $nextParams = array_merge($browseParams, ['cur' => $targetId]);
+    $nextId = (int) DB::val("SELECT u.id FROM users u JOIN profiles p ON p.user_id = u.id
+                             WHERE " . implode(' AND ', $browseWhere) . " AND u.id < :cur
+                             ORDER BY u.id DESC LIMIT 1", $nextParams);
+
     view('member/show', compact(
         'u','sp','photos','interest','shortlisted','canMessage','isComplete',
-        'viewerPlan','contactUnlocked','contactsLeft','targetBadge','targetFeatured','targetBoosted'
+        'viewerPlan','contactUnlocked','contactsLeft','targetBadge','targetFeatured','targetBoosted',
+        'prevId','nextId'
     ));
 });
 

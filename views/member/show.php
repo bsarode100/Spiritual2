@@ -1,17 +1,56 @@
 <?php
-/** @var array $u, $sp, $photos, $viewerPlan; @var array|null $interest; @var bool $shortlisted, $canMessage, $isComplete, $contactUnlocked, $targetFeatured, $targetBoosted; @var int|null $contactsLeft; @var string|null $targetBadge */
+/** @var array $u, $sp, $photos, $viewerPlan; @var array|null $interest; @var bool $shortlisted, $canMessage, $isComplete, $contactUnlocked, $targetFeatured, $targetBoosted; @var int|null $contactsLeft; @var string|null $targetBadge; @var int|null $prevId, $nextId */
 $age = age_from_dob($u['dob']);
 $canUnlockContact = plan_can($viewerPlan, 'view_contacts') && ($contactsLeft === null || $contactsLeft > 0);
 ?>
-<section class="section-tight">
+<section class="section-tight member-profile-section" data-prev-url="<?= !empty($prevId) ? '/member/' . (int)$prevId : '' ?>" data-next-url="<?= !empty($nextId) ? '/member/' . (int)$nextId : '' ?>">
 <div class="container">
-    <div class="flex-between mb-3" style="flex-wrap: wrap; gap: .5rem;">
-        <a href="/browse" class="btn btn-ghost btn-sm">Back to browse</a>
-        <div class="flex gap-1" style="flex-wrap: wrap;">
-            <a href="/browse" class="btn btn-ghost btn-sm">Browse Profiles</a>
-            <a href="/dashboard" class="btn btn-ghost btn-sm">Dashboard</a>
+    <!-- Top Profile Navigation Bar (Jeevansathi Style: Prev | Matches | Next + Mobile Swipe Hint) -->
+    <div class="profile-nav-bar flex-between mb-3">
+        <?php if (!empty($prevId)): ?>
+            <a href="/member/<?= (int)$prevId ?>" class="btn btn-ghost btn-sm profile-nav-btn profile-nav-prev" title="Previous Profile (← Arrow / Swipe Right)">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
+                <span>Prev Profile</span>
+            </a>
+        <?php else: ?>
+            <span class="btn btn-ghost btn-sm profile-nav-btn disabled" style="opacity: 0.35; pointer-events: none;">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
+                <span>Prev Profile</span>
+            </span>
+        <?php endif; ?>
+
+        <div class="profile-nav-center text-center">
+            <a href="/browse" class="btn btn-ghost btn-sm profile-nav-matches">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+                <span>All Matches</span>
+            </a>
+            <div class="swipe-hint-pill">👈 Swipe to switch 👉</div>
         </div>
+
+        <?php if (!empty($nextId)): ?>
+            <a href="/member/<?= (int)$nextId ?>" class="btn btn-ghost btn-sm profile-nav-btn profile-nav-next" title="Next Profile (→ Arrow / Swipe Left)">
+                <span>Next Profile</span>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+            </a>
+        <?php else: ?>
+            <span class="btn btn-ghost btn-sm profile-nav-btn disabled" style="opacity: 0.35; pointer-events: none;">
+                <span>Next Profile</span>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+            </span>
+        <?php endif; ?>
     </div>
+
+    <!-- Floating Side Navigation Arrows (Desktop / Tablet) -->
+    <?php if (!empty($prevId)): ?>
+        <a href="/member/<?= (int)$prevId ?>" class="profile-float-arrow arrow-prev" title="Previous Profile (← Arrow / Swipe Right)" aria-label="Previous Profile">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
+        </a>
+    <?php endif; ?>
+    <?php if (!empty($nextId)): ?>
+        <a href="/member/<?= (int)$nextId ?>" class="profile-float-arrow arrow-next" title="Next Profile (→ Arrow / Swipe Left)" aria-label="Next Profile">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+        </a>
+    <?php endif; ?>
 
     <div class="profile-hero">
 <?php if ($photos):

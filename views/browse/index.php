@@ -109,7 +109,7 @@
     <?php else: ?>
         <div class="profiles-grid">
             <?php foreach ($rows as $m): $age = age_from_dob($m['dob']); $user = ['id' => $m['id'], 'name' => $m['name']]; ?>
-                <article class="profile-card">
+                <article class="profile-card is-clickable" onclick="navigateToProfile(event, '/member/<?= (int)$m['id'] ?>')" tabindex="0" role="button" aria-label="View profile of <?= e($m['name']) ?>">
                     <div class="profile-photo">
                         <img src="<?= e(avatar_url($user)) ?>" alt="<?= e($m['name']) ?>" loading="lazy">
                         <div class="photo-gradient-overlay"></div>
@@ -156,31 +156,53 @@
                             <p class="profile-about"><?= e($m['about_me']) ?></p>
                         <?php endif; ?>
 
+                        <!-- 4 Synchronized Action Buttons (Jeevansathi Style) -->
                         <div class="profile-card-actions">
-                            <!-- Cancel / Pass Button -->
-                            <button type="button" class="card-action-icon-btn btn-pass" title="Pass / Not interested" onclick="dismissProfileCard(this)">
-                                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-                            </button>
+                            <!-- 1. Interest -->
+                            <div class="card-action-item">
+                                <form method="post" action="/interest/send/<?= (int)$m['id'] ?>" style="margin:0;">
+                                    <?= csrf_field() ?>
+                                    <button type="submit" class="card-action-circle card-action-interest" title="Express Interest" aria-label="Express Interest">
+                                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                                            <path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/>
+                                        </svg>
+                                    </button>
+                                </form>
+                                <span class="card-action-label">Interest</span>
+                            </div>
 
-                            <!-- Shortlist Button -->
-                            <form method="post" action="/shortlist/<?= (int)$m['id'] ?>" style="margin:0;">
-                                <?= csrf_field() ?>
-                                <button type="submit" class="card-action-icon-btn btn-shortlist" title="Shortlist profile">
-                                    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                            <!-- 2. Shortlist -->
+                            <div class="card-action-item">
+                                <form method="post" action="/shortlist/<?= (int)$m['id'] ?>" style="margin:0;">
+                                    <?= csrf_field() ?>
+                                    <button type="submit" class="card-action-circle card-action-shortlist" title="Shortlist Profile" aria-label="Shortlist Profile">
+                                        <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+                                        </svg>
+                                    </button>
+                                </form>
+                                <span class="card-action-label">Shortlist</span>
+                            </div>
+
+                            <!-- 3. Ignore -->
+                            <div class="card-action-item">
+                                <button type="button" class="card-action-circle card-action-ignore" title="Ignore / Pass" aria-label="Ignore / Pass" onclick="dismissProfileCard(this)">
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4">
+                                        <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                                    </svg>
                                 </button>
-                            </form>
+                                <span class="card-action-label">Ignore</span>
+                            </div>
 
-                            <!-- View Profile -->
-                            <a href="/member/<?= (int)$m['id'] ?>" class="btn btn-ghost btn-sm" style="flex: 1; text-align: center;">View Profile</a>
-
-                            <!-- Interested Button (Formerly Connect) -->
-                            <form method="post" action="/interest/send/<?= (int)$m['id'] ?>" style="margin:0;">
-                                <?= csrf_field() ?>
-                                <button type="submit" class="btn btn-primary btn-sm btn-interested" title="Express Interest">
-                                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
-                                    Interested
-                                </button>
-                            </form>
+                            <!-- 4. Chat -->
+                            <div class="card-action-item">
+                                <a href="/messages/<?= (int)$m['id'] ?>" class="card-action-circle card-action-chat" title="Chat" aria-label="Chat">
+                                    <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/>
+                                    </svg>
+                                </a>
+                                <span class="card-action-label">Chat</span>
+                            </div>
                         </div>
                     </div>
                 </article>

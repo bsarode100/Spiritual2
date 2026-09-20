@@ -1514,58 +1514,206 @@ p {
     overflow: hidden;
     line-height: 1.55;
 }
+.profile-card.is-clickable {
+    cursor: pointer;
+    transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.3s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.3s ease;
+}
+.profile-card.is-clickable:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 16px 36px rgba(72, 46, 99, 0.14);
+    border-color: rgba(212, 91, 122, 0.4);
+}
+.profile-card.is-clickable .profile-card-actions {
+    cursor: default;
+}
+
+/* 4 Synchronized Action Buttons (Jeevansathi Style: Interest, Shortlist, Ignore, Chat) */
 .profile-card-actions {
     display: flex;
-    gap: 0.55rem;
     align-items: center;
+    justify-content: space-around;
+    gap: 0.4rem;
+    padding-top: 0.95rem;
+    border-top: 1px solid var(--c-line-soft);
     margin-top: auto;
+    width: 100%;
 }
-.card-action-icon-btn {
-    width: 38px;
-    height: 38px;
+.card-action-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.35rem;
+    flex: 1;
+    text-align: center;
+}
+.card-action-circle {
+    width: 44px;
+    height: 44px;
     border-radius: 50%;
     display: inline-flex;
     align-items: center;
     justify-content: center;
     border: 1.5px solid var(--c-line);
     background: #FFFFFF;
-    color: var(--c-muted);
+    color: var(--c-ink-soft);
     cursor: pointer;
     transition: var(--tr-fast);
     flex-shrink: 0;
     padding: 0;
+    text-decoration: none;
     -webkit-tap-highlight-color: transparent;
+    box-shadow: 0 2px 6px rgba(72, 46, 99, 0.04);
 }
-.card-action-icon-btn svg {
+.card-action-circle svg {
     transition: transform 0.2s ease;
 }
-.card-action-icon-btn.btn-pass:hover,
-.card-action-icon-btn.btn-pass:active {
+.card-action-circle:hover svg {
+    transform: scale(1.1);
+}
+
+/* 1. Interest Button (Highlighted Maroon/Rose Circle) */
+.card-action-circle.card-action-interest {
+    background: linear-gradient(135deg, var(--c-rose), var(--c-maroon));
+    color: #FFFFFF;
+    border: none;
+    box-shadow: 0 4px 12px rgba(212, 91, 122, 0.35);
+}
+.card-action-circle.card-action-interest:hover,
+.card-action-circle.card-action-interest:active {
+    background: linear-gradient(135deg, var(--c-rose-dark), #82223e);
+    box-shadow: 0 6px 16px rgba(212, 91, 122, 0.45);
+    transform: scale(1.08);
+}
+
+/* 2. Shortlist Button */
+.card-action-circle.card-action-shortlist:hover,
+.card-action-circle.card-action-shortlist:active {
+    color: #d99420;
+    background: rgba(246, 193, 119, 0.18);
+    border-color: rgba(217, 148, 32, 0.4);
+    transform: scale(1.08);
+}
+
+/* 3. Ignore Button */
+.card-action-circle.card-action-ignore:hover,
+.card-action-circle.card-action-ignore:active {
     color: #d9383a;
     background: rgba(217, 56, 58, 0.08);
     border-color: rgba(217, 56, 58, 0.3);
-    transform: scale(1.06);
+    transform: scale(1.08);
 }
-.card-action-icon-btn.btn-shortlist:hover,
-.card-action-icon-btn.btn-shortlist:active {
-    color: #d99420;
-    background: rgba(246, 193, 119, 0.16);
-    border-color: rgba(217, 148, 32, 0.4);
-    transform: scale(1.06);
+
+/* 4. Chat Button */
+.card-action-circle.card-action-chat:hover,
+.card-action-circle.card-action-chat:active {
+    color: var(--c-rose);
+    background: rgba(212, 91, 122, 0.1);
+    border-color: rgba(212, 91, 122, 0.3);
+    transform: scale(1.08);
 }
-.btn-interested {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.4rem;
-    font-weight: 600;
-    white-space: nowrap;
+
+.card-action-label {
+    font-size: 0.72rem;
+    font-weight: 500;
+    color: var(--c-ink-soft);
+    line-height: 1.2;
+    user-select: none;
 }
+
 .profile-card.is-dismissed {
     opacity: 0;
     transform: scale(0.88) translateY(20px);
     transition: opacity 0.35s ease, transform 0.35s ease;
     pointer-events: none;
+}
+
+/* Member Profile Top Navigation Bar */
+.profile-nav-bar {
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.4rem 0;
+}
+.profile-nav-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    font-size: 0.82rem;
+    font-weight: 500;
+}
+.profile-nav-center {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.2rem;
+}
+.swipe-hint-pill {
+    display: none;
+    font-size: 0.7rem;
+    color: var(--c-muted);
+    background: rgba(246, 193, 119, 0.14);
+    border: 1px solid rgba(217, 148, 32, 0.25);
+    padding: 0.15rem 0.6rem;
+    border-radius: var(--r-pill);
+    font-weight: 500;
+}
+@media (max-width: 768px) {
+    .swipe-hint-pill {
+        display: inline-block;
+    }
+}
+
+/* Floating Side Switcher Arrows (Desktop / Tablet) */
+.profile-float-arrow {
+    position: fixed;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.92);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    box-shadow: 0 4px 20px rgba(72, 46, 99, 0.14);
+    border: 1.5px solid var(--c-line);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--c-ink);
+    z-index: 90;
+    transition: var(--tr-fast);
+    text-decoration: none;
+    -webkit-tap-highlight-color: transparent;
+}
+.profile-float-arrow:hover {
+    background: #FFFFFF;
+    color: var(--c-rose);
+    border-color: var(--c-rose);
+    transform: translateY(-50%) scale(1.1);
+    box-shadow: 0 8px 26px rgba(212, 91, 122, 0.25);
+}
+.profile-float-arrow.arrow-prev {
+    left: 1.5rem;
+}
+.profile-float-arrow.arrow-next {
+    right: 1.5rem;
+}
+@media (max-width: 1020px) {
+    .profile-float-arrow {
+        display: none !important;
+    }
+}
+
+/* Smooth Touch Swipe Slide Transitions */
+.member-profile-section {
+    transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.22s ease;
+}
+.member-profile-section.slide-out-left {
+    transform: translateX(-50px);
+    opacity: 0;
+}
+.member-profile-section.slide-out-right {
+    transform: translateX(50px);
+    opacity: 0;
 }
 
 @media (max-width: 960px) {

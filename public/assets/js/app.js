@@ -102,6 +102,66 @@
         }, 360);
     };
 
+    // Navigate to profile on card click (ignoring clicks on action buttons)
+    window.navigateToProfile = function (e, url) {
+        if (e.target.closest('.profile-card-actions, button, a, form, input')) {
+            return;
+        }
+        window.location.href = url;
+    };
+
+    // Touch Swipe Left / Right Navigation on Member Profile View (Jeevansathi style)
+    const profileSec = document.querySelector('.member-profile-section');
+    if (profileSec) {
+        const prevUrl = profileSec.getAttribute('data-prev-url');
+        const nextUrl = profileSec.getAttribute('data-next-url');
+
+        let touchStartX = 0;
+        let touchStartY = 0;
+        let touchEndX = 0;
+        let touchEndY = 0;
+
+        profileSec.addEventListener('touchstart', (e) => {
+            if (!e.changedTouches || e.changedTouches.length === 0) return;
+            touchStartX = e.changedTouches[0].clientX;
+            touchStartY = e.changedTouches[0].clientY;
+        }, { passive: true });
+
+        profileSec.addEventListener('touchend', (e) => {
+            if (!e.changedTouches || e.changedTouches.length === 0) return;
+            touchEndX = e.changedTouches[0].clientX;
+            touchEndY = e.changedTouches[0].clientY;
+
+            const diffX = touchEndX - touchStartX;
+            const diffY = touchEndY - touchStartY;
+
+            // Ensure horizontal swipe is dominant (not vertical scrolling)
+            if (Math.abs(diffX) > 65 && Math.abs(diffX) > Math.abs(diffY) * 1.5) {
+                if (diffX < 0 && nextUrl) {
+                    // Swiped Left -> Go to Next Profile
+                    profileSec.classList.add('slide-out-left');
+                    setTimeout(() => { window.location.href = nextUrl; }, 180);
+                } else if (diffX > 0 && prevUrl) {
+                    // Swiped Right -> Go to Previous Profile
+                    profileSec.classList.add('slide-out-right');
+                    setTimeout(() => { window.location.href = prevUrl; }, 180);
+                }
+            }
+        }, { passive: true });
+
+        // Keyboard arrow navigation on desktop (Left Arrow -> Prev, Right Arrow -> Next)
+        document.addEventListener('keydown', (e) => {
+            if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA')) return;
+            if (e.key === 'ArrowLeft' && prevUrl) {
+                profileSec.classList.add('slide-out-right');
+                setTimeout(() => { window.location.href = prevUrl; }, 180);
+            } else if (e.key === 'ArrowRight' && nextUrl) {
+                profileSec.classList.add('slide-out-left');
+                setTimeout(() => { window.location.href = nextUrl; }, 180);
+            }
+        });
+    }
+
     // Show / Hide password toggle
     document.addEventListener('change', e => {
         if (!e.target || !e.target.classList.contains('show-password-checkbox')) return;
