@@ -67,7 +67,16 @@
 
 <?php include __DIR__ . '/../partials/bottom_nav.php'; ?>
 
-<?php include __DIR__ . '/../partials/footer.php'; ?>
+<?php
+$_footerUri = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH);
+$_isHome = ($_footerUri === '/' || $_footerUri === '');
+if ($_isHome): ?>
+    <?php include __DIR__ . '/../partials/footer.php'; ?>
+<?php else: ?>
+    <div class="footer-hide-mobile">
+        <?php include __DIR__ . '/../partials/footer.php'; ?>
+    </div>
+<?php endif; ?>
 <script src="<?= asset('js/app.js') ?>"></script>
 </body>
 </html>

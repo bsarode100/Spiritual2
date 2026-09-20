@@ -3045,10 +3045,112 @@ p {
     display: none;
 }
 
+/* Activity Tab Pills (Cross-navigation for Interests, Shortlist, Visitors) */
+.activity-tab-pills {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    padding: 0.25rem 0 1rem;
+    margin-bottom: 1.25rem;
+    scrollbar-width: none;
+}
+.activity-tab-pills::-webkit-scrollbar {
+    display: none;
+}
+.activity-tab-pill {
+    display: inline-flex;
+    align-items: center;
+    white-space: nowrap;
+    padding: 0.45rem 0.95rem;
+    border-radius: var(--r-pill);
+    font-size: 0.84rem;
+    font-weight: 500;
+    color: var(--c-muted);
+    background: rgba(255, 255, 255, 0.85);
+    border: 1px solid var(--c-line);
+    text-decoration: none;
+    transition: var(--tr-fast);
+}
+.activity-tab-pill:hover {
+    color: var(--c-ink);
+    border-color: rgba(212, 91, 122, 0.3);
+}
+.activity-tab-pill.active {
+    background: var(--c-rose);
+    color: #ffffff;
+    border-color: var(--c-rose);
+    font-weight: 600;
+    box-shadow: 0 2px 8px rgba(212, 91, 122, 0.25);
+}
+
+.mobile-filter-toggle {
+    display: none;
+}
+
 @media (max-width: 768px) {
     body {
         padding-bottom: calc(64px + env(safe-area-inset-bottom, 0px));
     }
+
+    /* Footer conditional hide on mobile inner pages */
+    .footer-hide-mobile {
+        display: none !important;
+    }
+
+    /* Mobile Filter Toggle Button on Browse */
+    .mobile-filter-toggle {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.45rem;
+        padding: 0.55rem 1.1rem;
+        background: rgba(255, 255, 255, 0.92);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        border: 1.5px solid var(--c-line);
+        border-radius: var(--r-pill);
+        font-size: 0.88rem;
+        font-weight: 600;
+        color: var(--c-ink);
+        cursor: pointer;
+        margin-bottom: 1rem;
+        box-shadow: var(--shadow-sm);
+        transition: var(--tr-fast);
+        -webkit-tap-highlight-color: transparent;
+    }
+    .mobile-filter-toggle:hover,
+    .mobile-filter-toggle.is-active {
+        background: #FFFDF9;
+        border-color: var(--c-rose);
+        color: var(--c-rose);
+    }
+    .mobile-filter-toggle .filter-count-badge {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 18px;
+        height: 18px;
+        padding: 0 4px;
+        background: var(--c-rose);
+        color: #fff;
+        font-size: 0.72rem;
+        font-weight: 700;
+        border-radius: 999px;
+    }
+    .mobile-filters-collapsible:not(.is-open) {
+        display: none !important;
+    }
+    .mobile-filters-collapsible.is-open {
+        display: grid !important;
+        margin-bottom: 1.5rem;
+        animation: filterSlideDown 0.25s ease-out;
+    }
+    @keyframes filterSlideDown {
+        from { opacity: 0; transform: translateY(-8px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
     .mobile-bottom-nav {
         display: flex;
         align-items: center;
@@ -3075,7 +3177,7 @@ p {
         height: 100%;
         color: var(--c-muted);
         text-decoration: none;
-        font-size: 0.72rem;
+        font-size: 0.68rem;
         font-weight: 500;
         gap: 0.2rem;
         transition: var(--tr-fast);
@@ -3093,8 +3195,8 @@ p {
         transition: var(--tr-fast);
     }
     .bottom-nav-icon svg {
-        width: 20px;
-        height: 20px;
+        width: 19px;
+        height: 19px;
         stroke: currentColor;
     }
     .bottom-nav-item.active {
@@ -3124,6 +3226,20 @@ p {
     .bottom-nav-join {
         color: var(--c-rose);
         font-weight: 600;
+    }
+    .bottom-nav-upgrade {
+        color: var(--c-saffron);
+    }
+    .bottom-nav-upgrade .bottom-nav-icon {
+        color: var(--c-saffron);
+    }
+    .bottom-nav-upgrade.active {
+        color: var(--c-saffron);
+        font-weight: 600;
+    }
+    .bottom-nav-upgrade.active .bottom-nav-icon {
+        background: rgba(217, 148, 32, 0.15);
+        color: var(--c-saffron);
     }
 }
 

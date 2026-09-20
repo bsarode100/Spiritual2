@@ -15,8 +15,22 @@
         </div>
     </div>
 
+    <!-- MOBILE FILTER TOGGLE (Jeevansathi-style) -->
+    <button type="button" class="mobile-filter-toggle" id="mobileFilterToggle">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+        Filters
+        <?php
+        $activeFilters = 0;
+        foreach (['city','religion','path','diet','min_age','max_age','education','profession','community','guru','organization','temple_frequency','scripture','lifestyle','min_height','max_height','vegetarian','vegan','no_smoking','no_alcohol'] as $_f) {
+            if (!empty($_GET[$_f])) $activeFilters++;
+        }
+        if ($activeFilters > 0): ?>
+            <span class="filter-count-badge"><?= $activeFilters ?></span>
+        <?php endif; ?>
+    </button>
+
     <!-- GLASS FILTER PANEL -->
-    <form method="get" class="filters filters-wide">
+    <form method="get" class="filters filters-wide mobile-filters-collapsible">
         <div class="field"><label>City / Location</label><input type="text" name="city" value="<?= e($_GET['city'] ?? '') ?>" placeholder="Any city"></div>
         <div class="field"><label>Religion</label><input type="text" name="religion" value="<?= e($_GET['religion'] ?? '') ?>" placeholder="Hindu, Buddhist..."></div>
         <div class="field">

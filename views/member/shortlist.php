@@ -7,6 +7,8 @@
             <a href="/dashboard" class="btn btn-ghost btn-sm">🏠 Dashboard</a>
         </div>
     </div>
+
+    <?php include __DIR__ . '/../partials/activity_tabs.php'; ?>
     <?php if (!$rows): ?>
         <div class="admin-card text-center" style="padding: 3rem;">
             <p style="color: var(--c-muted); margin: 0;">No shortlisted profiles yet. ⭐ Shortlist any profile you'd like to revisit.</p>

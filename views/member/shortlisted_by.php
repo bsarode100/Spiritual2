@@ -9,6 +9,8 @@
         </div>
     </div>
 
+    <?php include __DIR__ . '/../partials/activity_tabs.php'; ?>
+
     <?php if (!$rows): ?>
         <div class="admin-card text-center" style="padding: 3rem;">
             <p style="color: var(--c-muted); margin: 0;">No one has shortlisted your profile yet.</p>

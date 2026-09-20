@@ -9,6 +9,8 @@
         </div>
     </div>
 
+    <?php include __DIR__ . '/../partials/activity_tabs.php'; ?>
+
     <h2 style="font-size: 1.4rem;">Received <span style="color: var(--c-muted); font-size: 1rem;">(<?= count($received) ?>)</span></h2>
     <?php if (!$received): ?>
         <div class="admin-card mb-4"><p style="color: var(--c-muted); margin:0;">No interests received yet.</p></div>

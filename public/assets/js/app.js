@@ -398,16 +398,34 @@
         });
     }
 
+    // Mobile Matches / Browse Filter Drawer Toggle (Jeevansathi-style)
+    function initMobileFilters() {
+        const filterBtn = document.getElementById('mobileFilterToggle');
+        const filterForm = document.querySelector('.mobile-filters-collapsible');
+        if (!filterBtn || !filterForm) return;
+
+        filterBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            const isOpen = filterForm.classList.toggle('is-open');
+            filterBtn.classList.toggle('is-active', isOpen);
+            if (isOpen) {
+                filterForm.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+        });
+    }
+
     // Initialize on DOM ready
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', () => {
             initComboboxes();
             initLocationSelectors();
             initProfileValidation();
+            initMobileFilters();
         });
     } else {
         initComboboxes();
         initLocationSelectors();
         initProfileValidation();
+        initMobileFilters();
     }
 })();
