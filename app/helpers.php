@@ -1009,11 +1009,15 @@ function smtp_send_mail(array $cfg, string $from, string $fromName, string $to, 
             $user = substr($user, 1, -1);
         }
 
-        // Google App Passwords are 16 characters, often copied with spaces like "xxxx xxxx xxxx xxxx"
-        $noSpaces = str_replace(' ', '', $pass);
-        if (strlen($noSpaces) === 16) {
-            $pass = $noSpaces;
+        // Google App Passwords are 16 characters, often copied with spaces, non-breaking spaces (\xc2\xa0), or quotes
+        $cleanPass = preg_replace('/[^a-zA-Z0-9]/', '', $pass);
+        if (strlen($cleanPass) === 16) {
+            $pass = strtolower($cleanPass);
+        } else {
+            $pass = preg_replace('/^\s+|\s+$/u', '', $pass);
         }
+
+        $user = preg_replace('/^\s+|\s+$/u', '', $user);
 
         smtp_command($fp, 'AUTH LOGIN', [334]);
         smtp_command($fp, base64_encode($user), [334]);
