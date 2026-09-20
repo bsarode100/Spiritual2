@@ -2073,17 +2073,178 @@ p {
     margin-top: 0.2rem;
 }
 
+/* Desktop-only: hide mobile hub and pills */
+@media (min-width: 881px) {
+    .mobile-quick-pills,
+    .mobile-account-hub,
+    .mobile-back-row {
+        display: none !important;
+    }
+}
+
 @media (max-width: 880px) {
     .dash-grid {
         display: flex;
         flex-direction: column;
     }
     .dash-side {
-        position: static;
-        order: 2;
-        margin-top: 1.5rem;
+        display: none !important;
     }
     .stat-cards { grid-template-columns: 1fr 1fr; }
+
+    /* Jeevansathi-inspired Mobile Quick Action Scrollable Pills */
+    .mobile-quick-pills {
+        display: flex;
+        gap: 0.55rem;
+        overflow-x: auto;
+        padding: 0.2rem 0 0.85rem;
+        margin-bottom: 1.25rem;
+        scrollbar-width: none;
+        -webkit-overflow-scrolling: touch;
+    }
+    .mobile-quick-pills::-webkit-scrollbar {
+        display: none;
+    }
+    .quick-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+        padding: 0.5rem 0.85rem;
+        border-radius: var(--r-pill);
+        background: rgba(255, 255, 255, 0.9);
+        border: 1.5px solid rgba(234, 224, 212, 0.85);
+        font-size: 0.82rem;
+        font-weight: 600;
+        color: var(--c-ink);
+        white-space: nowrap;
+        box-shadow: var(--shadow-sm);
+        text-decoration: none;
+        flex-shrink: 0;
+        transition: var(--tr-fast);
+    }
+    .quick-pill:hover,
+    .quick-pill:active {
+        border-color: var(--c-rose);
+        background: #FFFFFF;
+        color: var(--c-rose);
+        transform: translateY(-1px);
+    }
+    .pill-icon {
+        font-size: 0.95rem;
+        line-height: 1;
+    }
+    .pill-count {
+        background: var(--c-rose);
+        color: #FFFFFF;
+        font-size: 0.65rem;
+        font-weight: 700;
+        padding: 0.1rem 0.4rem;
+        border-radius: 999px;
+        line-height: 1.2;
+    }
+
+    /* Jeevansathi-inspired Mobile Account & Activity Hub */
+    .mobile-account-hub {
+        margin-top: 1.5rem;
+    }
+    .mobile-hub-header {
+        margin-bottom: 0.85rem;
+    }
+    .mobile-hub-header h3 {
+        font-size: 1.15rem;
+        margin: 0 0 0.15rem;
+        color: var(--c-ink);
+        display: flex;
+        align-items: center;
+        gap: 0.4rem;
+    }
+    .mobile-hub-header small {
+        color: var(--c-muted);
+        font-size: 0.8rem;
+    }
+    .mobile-hub-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 0.65rem;
+    }
+    .mobile-hub-card {
+        display: flex;
+        align-items: center;
+        gap: 0.65rem;
+        padding: 0.75rem 0.75rem;
+        background: rgba(255, 255, 255, 0.9);
+        border: 1.5px solid rgba(234, 224, 212, 0.85);
+        border-radius: var(--r);
+        text-decoration: none;
+        box-shadow: var(--shadow-sm);
+        transition: var(--tr-fast);
+    }
+    .mobile-hub-card:hover,
+    .mobile-hub-card:active {
+        border-color: var(--c-rose);
+        background: #FFFFFF;
+        transform: translateY(-1px);
+    }
+    .hub-card-icon {
+        width: 36px;
+        height: 36px;
+        border-radius: 10px;
+        background: linear-gradient(135deg, rgba(246, 193, 119, 0.2), rgba(212, 91, 122, 0.12));
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.1rem;
+        flex-shrink: 0;
+    }
+    .hub-card-body {
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+    }
+    .hub-card-body strong {
+        font-size: 0.85rem;
+        color: var(--c-ink);
+        white-space: nowrap;
+        text-overflow: ellipsis;
+        overflow: hidden;
+        line-height: 1.25;
+    }
+    .hub-card-body span {
+        font-size: 0.72rem;
+        color: var(--c-muted);
+        white-space: nowrap;
+        text-overflow: ellipsis;
+        overflow: hidden;
+        line-height: 1.25;
+        margin-top: 2px;
+    }
+    .hub-card-logout .hub-card-icon {
+        background: rgba(212, 91, 122, 0.12);
+    }
+    .hub-card-logout strong {
+        color: var(--c-rose);
+    }
+
+    /* Mobile Back Button */
+    .mobile-back-row {
+        margin-bottom: 0.85rem;
+    }
+    .mobile-back-link {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+        font-size: 0.82rem;
+        font-weight: 600;
+        color: var(--c-rose);
+        text-decoration: none;
+        padding: 0.35rem 0.75rem;
+        background: rgba(212, 91, 122, 0.08);
+        border-radius: var(--r-pill);
+        transition: var(--tr-fast);
+    }
+    .mobile-back-link:hover {
+        background: rgba(212, 91, 122, 0.15);
+    }
 }
 
 /* Verified profile badge */

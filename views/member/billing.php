@@ -39,6 +39,9 @@ $statusPill = fn(string $s) => match ($s) {
         </aside>
 
         <div>
+            <div class="mobile-back-row">
+                <a href="/dashboard" class="mobile-back-link">← Back to Dashboard</a>
+            </div>
             <div class="flex-between mb-3">
                 <div>
                     <span class="eyebrow">Membership</span>

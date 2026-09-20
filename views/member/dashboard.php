@@ -44,6 +44,16 @@ $shortlistsText = $membership['shortlists_left'] === null ? 'Unlimited' : (strin
                 <a href="/profile/edit" class="btn btn-ghost btn-sm">Edit Profile</a>
             </div>
 
+            <!-- Jeevansathi-inspired Mobile Quick Action Pills -->
+            <div class="mobile-quick-pills">
+                <a href="/profile/photos" class="quick-pill"><span class="pill-icon">📸</span> Photos</a>
+                <a href="/verification" class="quick-pill"><span class="pill-icon">🛡️</span> Verify ID</a>
+                <a href="/shortlist" class="quick-pill"><span class="pill-icon">💖</span> Shortlists<?php if (!empty($stats['shortlisted'])): ?><span class="pill-count"><?= (int)$stats['shortlisted'] ?></span><?php endif; ?></a>
+                <a href="/visitors" class="quick-pill"><span class="pill-icon">👁️</span> Visitors<?php if (!empty($stats['profile_views'])): ?><span class="pill-count"><?= (int)$stats['profile_views'] ?></span><?php endif; ?></a>
+                <a href="/interests" class="quick-pill"><span class="pill-icon">💌</span> Interests<?php if (!empty($stats['interests_received'])): ?><span class="pill-count"><?= (int)$stats['interests_received'] ?></span><?php endif; ?></a>
+                <a href="/packages" class="quick-pill"><span class="pill-icon">💎</span> Plans</a>
+            </div>
+
             <div class="membership-card mb-4">
                 <div class="membership-main">
                     <span class="eyebrow">Membership</span>
@@ -165,6 +175,86 @@ $shortlistsText = $membership['shortlists_left'] === null ? 'Unlimited' : (strin
                 <?php endforeach; ?>
             </div>
             <?php endif; ?>
+
+            <!-- Jeevansathi-inspired Mobile Account & Activity Hub -->
+            <div class="mobile-account-hub mb-4">
+                <div class="mobile-hub-header">
+                    <h3><span>✨</span> Account &amp; Activity Hub</h3>
+                    <small>Quick tools &amp; profile management</small>
+                </div>
+                <div class="mobile-hub-grid">
+                    <a href="/profile/photos" class="mobile-hub-card">
+                        <div class="hub-card-icon">📸</div>
+                        <div class="hub-card-body">
+                            <strong>Manage Photos</strong>
+                            <span>Upload &amp; edit gallery</span>
+                        </div>
+                    </a>
+                    <a href="/verification" class="mobile-hub-card">
+                        <div class="hub-card-icon">🛡️</div>
+                        <div class="hub-card-body">
+                            <strong>Get Verified</strong>
+                            <span style="color: #1B7A43; font-weight: 600;">✓ Free Trust Badge</span>
+                        </div>
+                    </a>
+                    <a href="/shortlist" class="mobile-hub-card">
+                        <div class="hub-card-icon">💖</div>
+                        <div class="hub-card-body">
+                            <strong>My Shortlist</strong>
+                            <span><?= (int)$stats['shortlisted'] ?> saved profiles</span>
+                        </div>
+                    </a>
+                    <a href="/visitors" class="mobile-hub-card">
+                        <div class="hub-card-icon">👁️</div>
+                        <div class="hub-card-body">
+                            <strong>Profile Visitors</strong>
+                            <span><?= (int)$stats['profile_views'] ?> views</span>
+                        </div>
+                    </a>
+                    <a href="/shortlisted-by" class="mobile-hub-card">
+                        <div class="hub-card-icon">👥</div>
+                        <div class="hub-card-body">
+                            <strong>Shortlisted Me</strong>
+                            <span><?= (int)$stats['shortlisted_me'] ?> members</span>
+                        </div>
+                    </a>
+                    <a href="/interests" class="mobile-hub-card">
+                        <div class="hub-card-icon">💌</div>
+                        <div class="hub-card-body">
+                            <strong>Interests</strong>
+                            <span><?= (int)$stats['interests_received'] ?> received requests</span>
+                        </div>
+                    </a>
+                    <a href="/packages" class="mobile-hub-card">
+                        <div class="hub-card-icon">💎</div>
+                        <div class="hub-card-body">
+                            <strong>Membership</strong>
+                            <span><?= e($plan['name']) ?> · Upgrade</span>
+                        </div>
+                    </a>
+                    <a href="/billing" class="mobile-hub-card">
+                        <div class="hub-card-icon">💳</div>
+                        <div class="hub-card-body">
+                            <strong>Billing &amp; Receipts</strong>
+                            <span>Invoices &amp; history</span>
+                        </div>
+                    </a>
+                    <a href="/settings" class="mobile-hub-card">
+                        <div class="hub-card-icon">⚙️</div>
+                        <div class="hub-card-body">
+                            <strong>Settings</strong>
+                            <span>Privacy &amp; security</span>
+                        </div>
+                    </a>
+                    <a href="/logout" class="mobile-hub-card hub-card-logout">
+                        <div class="hub-card-icon">🚪</div>
+                        <div class="hub-card-body">
+                            <strong>Sign Out</strong>
+                            <span>End session</span>
+                        </div>
+                    </a>
+                </div>
+            </div>
         </div>
     </div>
 </div>
