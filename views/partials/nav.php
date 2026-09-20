@@ -11,6 +11,22 @@
         </a>
 
         <ul class="nav-links">
+            <?php if (Auth::check()): ?>
+                <li class="mobile-nav-user">
+                    <div class="mobile-user-greeting">
+                        <div class="mobile-user-avatar"><?= mb_strtoupper(mb_substr(Auth::user()['name'] ?? 'S', 0, 1)) ?></div>
+                        <div class="mobile-user-info">
+                            <strong><?= e(Auth::user()['name'] ?? 'Seeker') ?></strong>
+                            <span><?= e(Auth::user()['email'] ?? '') ?></span>
+                        </div>
+                    </div>
+                </li>
+                <li class="mobile-nav-item"><a href="<?= Auth::isAdmin() ? '/admin' : '/dashboard' ?>" class="<?= nav_active('/dashboard') ?>">Dashboard</a></li>
+                <li class="mobile-nav-item"><a href="/profile" class="<?= nav_active('/profile') ?>">My Profile</a></li>
+                <li class="mobile-nav-item"><a href="/messages" class="<?= nav_active('/messages') ?>">Messages</a></li>
+                <li class="mobile-nav-divider"></li>
+            <?php endif; ?>
+
             <li><a href="/" class="<?= nav_active('/') ?>">Home</a></li>
             <li><a href="/about" class="<?= nav_active('/about') ?>">About</a></li>
             <li><a href="/browse" class="<?= nav_active('/browse') ?>">Browse</a></li>
@@ -18,6 +34,17 @@
             <li><a href="/happy-stories" class="<?= nav_active('/happy-stories') ?>">Happy Stories</a></li>
             <li><a href="/blog" class="<?= nav_active('/blog') ?>">Blog</a></li>
             <li><a href="/contact" class="<?= nav_active('/contact') ?>">Contact</a></li>
+
+            <?php if (Auth::check()): ?>
+                <li class="mobile-nav-divider"></li>
+                <li class="mobile-nav-item"><a href="/logout" class="mobile-signout-link">Sign Out</a></li>
+            <?php else: ?>
+                <li class="mobile-nav-divider"></li>
+                <li class="mobile-nav-auth-buttons">
+                    <a href="/login" class="btn btn-ghost btn-sm" style="flex: 1; justify-content: center;">Sign In</a>
+                    <a href="/register" class="btn btn-primary btn-sm" style="flex: 1; justify-content: center;">Join Free</a>
+                </li>
+            <?php endif; ?>
         </ul>
 
         <div class="nav-cta">
@@ -27,10 +54,11 @@
                         <a href="/packages" class="nav-badge" title="<?= e($navBadge) ?> member"><?= e($navBadge) ?></a>
                     <?php endif; ?>
                 <?php endif; ?>
-                <a href="<?= Auth::isAdmin() ? '/admin' : '/dashboard' ?>" class="btn btn-ghost btn-sm"><?= Auth::isAdmin() ? 'Admin' : 'Dashboard' ?></a>
-                <a href="/logout" class="btn btn-primary btn-sm">Sign Out</a>
+                <a href="<?= Auth::isAdmin() ? '/admin' : '/dashboard' ?>" class="btn btn-ghost btn-sm nav-desktop-link"><?= Auth::isAdmin() ? 'Admin' : 'Dashboard' ?></a>
+                <a href="<?= Auth::isAdmin() ? '/admin' : '/dashboard' ?>" class="btn btn-primary btn-sm nav-mobile-dash" title="Dashboard">Dashboard</a>
+                <a href="/logout" class="btn btn-primary btn-sm nav-desktop-link">Sign Out</a>
             <?php else: ?>
-                <a href="/login" class="btn btn-ghost btn-sm">Sign In</a>
+                <a href="/login" class="btn btn-ghost btn-sm nav-desktop-link">Sign In</a>
                 <a href="/register" class="btn btn-primary btn-sm">Join Free</a>
             <?php endif; ?>
             <button class="mobile-toggle" aria-label="Menu">

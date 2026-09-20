@@ -332,6 +332,17 @@ function message_threads(int $userId): array {
     ]);
 }
 
+function unread_messages_count(int $userId): int {
+    static $cache = [];
+    if (isset($cache[$userId])) return $cache[$userId];
+    try {
+        $count = (int)(DB::val("SELECT COUNT(*) FROM messages WHERE receiver_id = ? AND read_at IS NULL", [$userId]) ?: 0);
+    } catch (\Throwable $e) {
+        $count = 0;
+    }
+    return $cache[$userId] = $count;
+}
+
 // =====================================================================
 // Premium Membership helpers
 //

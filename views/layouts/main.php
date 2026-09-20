@@ -65,6 +65,8 @@
     <?= $content ?>
 </main>
 
+<?php include __DIR__ . '/../partials/bottom_nav.php'; ?>
+
 <?php include __DIR__ . '/../partials/footer.php'; ?>
 <script src="<?= asset('js/app.js') ?>"></script>
 </body>
