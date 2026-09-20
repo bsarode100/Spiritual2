@@ -996,9 +996,28 @@ function smtp_send_mail(array $cfg, string $from, string $fromName, string $to, 
     }
 
     if (!empty($cfg['username'])) {
+        $user = trim((string) $cfg['username']);
+        $pass = trim((string) $cfg['password']);
+
+        // Strip enclosing quotes if copied with quotes (e.g. from .env or Coolify)
+        if ((str_starts_with($pass, '"') && str_ends_with($pass, '"')) ||
+            (str_starts_with($pass, "'") && str_ends_with($pass, "'"))) {
+            $pass = substr($pass, 1, -1);
+        }
+        if ((str_starts_with($user, '"') && str_ends_with($user, '"')) ||
+            (str_starts_with($user, "'") && str_ends_with($user, "'"))) {
+            $user = substr($user, 1, -1);
+        }
+
+        // Google App Passwords are 16 characters, often copied with spaces like "xxxx xxxx xxxx xxxx"
+        $noSpaces = str_replace(' ', '', $pass);
+        if (strlen($noSpaces) === 16) {
+            $pass = $noSpaces;
+        }
+
         smtp_command($fp, 'AUTH LOGIN', [334]);
-        smtp_command($fp, base64_encode((string) $cfg['username']), [334]);
-        smtp_command($fp, base64_encode((string) $cfg['password']), [235]);
+        smtp_command($fp, base64_encode($user), [334]);
+        smtp_command($fp, base64_encode($pass), [235]);
     }
 
     smtp_command($fp, 'MAIL FROM:<' . $from . '>', [250]);
