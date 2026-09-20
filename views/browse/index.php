@@ -112,32 +112,55 @@
                 <article class="profile-card">
                     <div class="profile-photo">
                         <img src="<?= e(avatar_url($user)) ?>" alt="<?= e($m['name']) ?>" loading="lazy">
-                        <?php if (!empty($m['spiritual_path'])): ?><span class="profile-badge"><?= e($m['spiritual_path']) ?></span><?php endif; ?>
-                        <?php if (!empty($m['is_boosted'])): ?><span class="profile-badge profile-badge-right">Boosted</span><?php elseif (!empty($m['is_featured'])): ?><span class="profile-badge profile-badge-right">Featured</span><?php endif; ?>
+                        <div class="photo-gradient-overlay"></div>
+                        
+                        <!-- Top Badges -->
+                        <div class="photo-top-badges">
+                            <?php if (!empty($m['spiritual_path'])): ?>
+                                <span class="profile-badge-path">🪷 <?= e($m['spiritual_path']) ?></span>
+                            <?php else: ?>
+                                <span></span>
+                            <?php endif; ?>
+                            <?php if (!empty($m['is_boosted'])): ?>
+                                <span class="profile-badge-status status-boosted">⚡ Boosted</span>
+                            <?php elseif (!empty($m['is_featured'])): ?>
+                                <span class="profile-badge-status status-featured">★ Featured</span>
+                            <?php endif; ?>
+                        </div>
+
+                        <!-- Floating Info Overlay at bottom of photo -->
+                        <div class="photo-bottom-info">
+                            <div class="photo-name-row">
+                                <h3 class="photo-name"><?= e($m['name']) ?><?php if ($age): ?>, <?= $age ?><?php endif; ?></h3>
+                                <?= verified_badge($m['verified_tier'] ?? null, 'sm') ?>
+                                <?php if (!empty($m['premium_badge'])): ?>
+                                    <span class="pill gold" style="font-size: .7rem; padding: .1rem .5rem;"><?= e($m['plan_name'] ?? 'Premium') ?></span>
+                                <?php endif; ?>
+                            </div>
+                            <div class="photo-sub">
+                                <?= e($m['profession'] ?: 'Seeker') ?> · <?= e($m['city'] ?: '-') ?>
+                            </div>
+                        </div>
                     </div>
+
                     <div class="profile-body">
-                        <h3><?= e($m['name']) ?><?php if ($age): ?>, <?= $age ?><?php endif; ?></h3>
-                        <div style="display: flex; flex-wrap: wrap; gap: .4rem; align-items: center; margin-bottom: .6rem;">
-                            <?php if (!empty($m['premium_badge'])): ?>
-                                <span class="pill gold" style="font-size: .74rem;"><?= e($m['plan_name'] ?? 'Premium') ?></span>
-                            <?php endif; ?>
-                            <?= verified_badge($m['verified_tier'] ?? null, 'sm') ?>
-                            <?php if (empty($m['profile_complete'])): ?>
-                                <span class="pill gold" style="font-size: .74rem;">Profile in progress</span>
-                            <?php endif; ?>
-                        </div>
-                        <div class="profile-meta"><?= e($m['profession'] ?: 'Seeker') ?> · <?= e($m['city'] ?: '-') ?></div>
+                        <!-- Spiritual & Lifestyle Highlights -->
                         <div class="profile-tags">
-                            <?php if (!empty($m['height_cm'])): ?><span class="tag"><?= cm_to_feet((int)$m['height_cm']) ?></span><?php endif; ?>
+                            <?php if (!empty($m['diet'])): ?><span class="tag tag-gold">🌿 <?= ucfirst(e($m['diet'])) ?></span><?php endif; ?>
+                            <?php if (!empty($m['guru'])): ?><span class="tag">🕉️ <?= e($m['guru']) ?></span><?php endif; ?>
+                            <?php if (!empty($m['height_cm'])): ?><span class="tag">📏 <?= cm_to_feet((int)$m['height_cm']) ?></span><?php endif; ?>
                             <?php if (!empty($m['community'])): ?><span class="tag"><?= e($m['community']) ?></span><?php endif; ?>
-                            <?php if (!empty($m['guru'])): ?><span class="tag tag-gold"><?= e($m['guru']) ?></span><?php endif; ?>
                         </div>
-                        <p class="profile-about"><?= e($m['about_me'] ?? '') ?></p>
+
+                        <?php if (!empty($m['about_me'])): ?>
+                            <p class="profile-about"><?= e($m['about_me']) ?></p>
+                        <?php endif; ?>
+
                         <div class="profile-card-actions">
                             <a href="/member/<?= (int)$m['id'] ?>" class="btn btn-ghost btn-sm" style="flex: 1;">View Profile</a>
-                            <form method="post" action="/interest/send/<?= (int)$m['id'] ?>">
+                            <form method="post" action="/interest/send/<?= (int)$m['id'] ?>" style="margin:0;">
                                 <?= csrf_field() ?>
-                                <button class="btn btn-primary btn-sm">
+                                <button class="btn btn-primary btn-sm" title="Express Interest">
                                     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
                                     Connect
                                 </button>
