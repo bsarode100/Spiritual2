@@ -2,6 +2,7 @@
 // Group by sensible prefix for the form
 $groups = [
     'Brand'       => ['site_name','site_tagline','footer_about'],
+    'Email & SMTP'=> ['mail_mailer','mail_host','mail_port','mail_username','mail_password','mail_encryption','mail_from_address','mail_from_name'],
     'Hero'        => ['hero_heading','hero_subheading','hero_cta_text'],
     'About'       => ['about_short'],
     'Stats'       => ['stat_members','stat_marriages','stat_paths','stat_countries'],

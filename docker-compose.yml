@@ -20,6 +20,15 @@ services:
       DB_DATABASE: "${DB_DATABASE:-spiritual}"
       DB_USERNAME: "${DB_USERNAME:-spiritual}"
       DB_PASSWORD: "${DB_PASSWORD:-spiritual_pw}"
+      MAIL_MAILER: "${MAIL_MAILER:-smtp}"
+      MAIL_HOST: "${MAIL_HOST:-}"
+      MAIL_PORT: "${MAIL_PORT:-587}"
+      MAIL_USERNAME: "${MAIL_USERNAME:-}"
+      MAIL_PASSWORD: "${MAIL_PASSWORD:-}"
+      MAIL_ENCRYPTION: "${MAIL_ENCRYPTION:-tls}"
+      MAIL_FROM_ADDRESS: "${MAIL_FROM_ADDRESS:-}"
+      MAIL_FROM_NAME: "${MAIL_FROM_NAME:-SpiritualShaadi}"
+      MAIL_TIMEOUT: "${MAIL_TIMEOUT:-15}"
     volumes:
       - uploads:/var/www/html/public/uploads
       # Verification documents (govt IDs / selfies) — private, outside the web root

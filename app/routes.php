@@ -595,7 +595,8 @@ $r->post('/register', function () {
     $_SESSION['signup_otp_email'] = $email;
     if (!issue_signup_otp($_SESSION['pending_signup'])) {
         clear_signup_otp_session();
-        flash('error', 'Could not send the verification email. Please check SMTP settings or contact support.');
+        $mailErr = !empty($GLOBALS['last_mail_error']) ? ': ' . $GLOBALS['last_mail_error'] : '.';
+        flash('error', 'Could not send the verification email' . $mailErr . ' Please check SMTP settings or contact support.');
         redirect('/register');
     }
     $_SESSION['signup_otp_last_sent'] = time();
@@ -785,7 +786,8 @@ $r->post('/resend-signup-otp', function () {
         redirect('/login');
     }
     if (!issue_signup_otp($_SESSION['pending_signup'])) {
-        flash('error', 'Could not send the verification email. Please check SMTP settings or contact support.');
+        $mailErr = !empty($GLOBALS['last_mail_error']) ? ': ' . $GLOBALS['last_mail_error'] : '.';
+        flash('error', 'Could not send the verification email' . $mailErr . ' Please check SMTP settings or contact support.');
         redirect('/verify-signup-otp');
     }
     $_SESSION['signup_otp_last_sent'] = time();
@@ -813,7 +815,8 @@ $r->post('/forgot-password', function () {
     if (filter_var($email, FILTER_VALIDATE_EMAIL)) {
         $u = DB::one('SELECT id, name, email FROM users WHERE email = ? AND status != "blocked"', [$email]);
         if ($u && !issue_password_otp($u)) {
-            flash('error', 'Could not send the verification email. Please check SMTP settings or contact support.');
+            $mailErr = !empty($GLOBALS['last_mail_error']) ? ': ' . $GLOBALS['last_mail_error'] : '.';
+            flash('error', 'Could not send the verification email' . $mailErr . ' Please check SMTP settings or contact support.');
             redirect('/forgot-password');
         }
     }

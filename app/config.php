@@ -2,33 +2,41 @@
 // Application configuration. Reads from environment (or .env).
 // Designed to work in both Coolify (env vars injected) and local docker-compose.
 
+$env = function(string $key, $default = null) {
+    $val = getenv($key);
+    if ($val !== false && $val !== '') return $val;
+    if (isset($_ENV[$key]) && $_ENV[$key] !== '') return $_ENV[$key];
+    if (isset($_SERVER[$key]) && $_SERVER[$key] !== '') return $_SERVER[$key];
+    return $default;
+};
+
 return [
     'app' => [
-        'name'     => getenv('APP_NAME')     ?: 'SpiritualShaadi',
-        'url'      => getenv('APP_URL')      ?: 'http://localhost:8080',
-        'env'      => getenv('APP_ENV')      ?: 'production',
-        'debug'    => filter_var(getenv('APP_DEBUG') ?: 'false', FILTER_VALIDATE_BOOLEAN),
-        'timezone' => getenv('APP_TIMEZONE') ?: 'Asia/Kolkata',
-        'key'      => getenv('APP_KEY')      ?: 'change-me-in-production',
+        'name'     => $env('APP_NAME', 'SpiritualShaadi'),
+        'url'      => $env('APP_URL', 'http://localhost:8080'),
+        'env'      => $env('APP_ENV', 'production'),
+        'debug'    => filter_var($env('APP_DEBUG', 'false'), FILTER_VALIDATE_BOOLEAN),
+        'timezone' => $env('APP_TIMEZONE', 'Asia/Kolkata'),
+        'key'      => $env('APP_KEY', 'change-me-in-production'),
     ],
     'db' => [
-        'host'     => getenv('DB_HOST') ?: 'db',
-        'port'     => getenv('DB_PORT') ?: '3306',
-        'database' => getenv('DB_DATABASE') ?: 'spiritual',
-        'username' => getenv('DB_USERNAME') ?: 'spiritual',
-        'password' => getenv('DB_PASSWORD') ?: 'spiritual',
+        'host'     => $env('DB_HOST', 'db'),
+        'port'     => $env('DB_PORT', '3306'),
+        'database' => $env('DB_DATABASE', 'spiritual'),
+        'username' => $env('DB_USERNAME', 'spiritual'),
+        'password' => $env('DB_PASSWORD', 'spiritual'),
         'charset'  => 'utf8mb4',
     ],
     'mail' => [
-        'mailer'     => getenv('MAIL_MAILER') ?: 'mail',
-        'host'       => getenv('MAIL_HOST') ?: '',
-        'port'       => (int)(getenv('MAIL_PORT') ?: 587),
-        'username'   => getenv('MAIL_USERNAME') ?: '',
-        'password'   => getenv('MAIL_PASSWORD') ?: '',
-        'encryption' => getenv('MAIL_ENCRYPTION') ?: 'tls',
-        'from'       => getenv('MAIL_FROM_ADDRESS') ?: '',
-        'from_name'  => getenv('MAIL_FROM_NAME') ?: (getenv('APP_NAME') ?: 'SpiritualShaadi'),
-        'timeout'    => (int)(getenv('MAIL_TIMEOUT') ?: 15),
+        'mailer'     => $env('MAIL_MAILER', 'mail'),
+        'host'       => $env('MAIL_HOST', ''),
+        'port'       => (int) $env('MAIL_PORT', 587),
+        'username'   => $env('MAIL_USERNAME', ''),
+        'password'   => $env('MAIL_PASSWORD', ''),
+        'encryption' => $env('MAIL_ENCRYPTION', 'tls'),
+        'from'       => $env('MAIL_FROM_ADDRESS', ''),
+        'from_name'  => $env('MAIL_FROM_NAME', $env('APP_NAME', 'SpiritualShaadi')),
+        'timeout'    => (int) $env('MAIL_TIMEOUT', 15),
     ],
     'uploads' => [
         'avatar_dir' => __DIR__ . '/../public/uploads/avatars',

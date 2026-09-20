@@ -906,15 +906,39 @@ function nav_active(string $path): string {
 
 function send_transactional_mail(string $to, string $subject, string $body, ?string $replyTo = null): bool {
     $cfg = $GLOBALS['CFG']['mail'] ?? [];
-    $siteName = $GLOBALS['CFG']['app']['name'] ?? 'SpiritualShaadi';
-    $from = ($cfg['from'] ?? '') ?: setting('contact_email', 'no-reply@' . ($_SERVER['SERVER_NAME'] ?? 'localhost'));
-    $fromName = ($cfg['from_name'] ?? '') ?: $siteName;
+
+    // Fall back to database site_settings if environment variables are not set
+    $mailer     = setting('mail_mailer', $cfg['mailer'] ?? 'mail');
+    $host       = setting('mail_host', $cfg['host'] ?? '');
+    $port       = (int) setting('mail_port', $cfg['port'] ?? 587);
+    $username   = setting('mail_username', $cfg['username'] ?? '');
+    $password   = setting('mail_password', $cfg['password'] ?? '');
+    $encryption = setting('mail_encryption', $cfg['encryption'] ?? 'tls');
+    $timeout    = (int) setting('mail_timeout', $cfg['timeout'] ?? 15);
+
+    $siteName = setting('site_name', $GLOBALS['CFG']['app']['name'] ?? 'SpiritualShaadi');
+    $from = setting('mail_from_address', ($cfg['from'] ?? '') ?: setting('contact_email', 'no-reply@' . ($_SERVER['SERVER_NAME'] ?? 'localhost')));
+    $fromName = setting('mail_from_name', ($cfg['from_name'] ?? '') ?: $siteName);
     $replyTo = $replyTo ?: $from;
     $GLOBALS['last_mail_error'] = null;
 
-    if (strtolower((string)($cfg['mailer'] ?? 'mail')) === 'smtp' && !empty($cfg['host'])) {
+    $resolvedCfg = [
+        'mailer'     => $mailer,
+        'host'       => $host,
+        'port'       => $port,
+        'username'   => $username,
+        'password'   => $password,
+        'encryption' => $encryption,
+        'timeout'    => $timeout,
+        'from'       => $from,
+        'from_name'  => $fromName,
+    ];
+
+    // If host is provided or mailer is smtp, use SMTP delivery
+    $useSmtp = (strtolower((string)$mailer) === 'smtp' || !empty($host)) && !empty($host);
+    if ($useSmtp) {
         try {
-            return smtp_send_mail($cfg, $from, $fromName, $to, $subject, $body, $replyTo);
+            return smtp_send_mail($resolvedCfg, $from, $fromName, $to, $subject, $body, $replyTo);
         } catch (Throwable $e) {
             $GLOBALS['last_mail_error'] = $e->getMessage();
             error_log('SMTP mail failed: ' . $e->getMessage());
@@ -931,7 +955,7 @@ function send_transactional_mail(string $to, string $subject, string $body, ?str
     ];
     $sent = @mail($to, $subject, $body, implode("\r\n", $headers));
     if (!$sent) {
-        $GLOBALS['last_mail_error'] = 'PHP mail() returned false.';
+        $GLOBALS['last_mail_error'] = 'PHP mail() returned false (no local mail transfer agent configured on server)';
     }
     return $sent;
 }
@@ -940,12 +964,23 @@ function smtp_send_mail(array $cfg, string $from, string $fromName, string $to, 
     $host = (string) $cfg['host'];
     $port = (int) ($cfg['port'] ?? 587);
     $encryption = strtolower((string) ($cfg['encryption'] ?? 'tls'));
+    if ($port === 465) {
+        $encryption = 'ssl';
+    }
     $remote = ($encryption === 'ssl' ? 'ssl://' : '') . $host . ':' . $port;
     $timeout = (int) ($cfg['timeout'] ?? 15);
 
-    $fp = @stream_socket_client($remote, $errno, $errstr, $timeout, STREAM_CLIENT_CONNECT);
+    $context = stream_context_create([
+        'ssl' => [
+            'verify_peer' => false,
+            'verify_peer_name' => false,
+            'allow_self_signed' => true,
+        ]
+    ]);
+
+    $fp = @stream_socket_client($remote, $errno, $errstr, $timeout, STREAM_CLIENT_CONNECT, $context);
     if (!$fp) {
-        throw new RuntimeException("Could not connect to SMTP server: {$errstr} ({$errno})");
+        throw new RuntimeException("Could not connect to SMTP server {$host}:{$port} - {$errstr} ({$errno})");
     }
     stream_set_timeout($fp, $timeout);
 
