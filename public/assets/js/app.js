@@ -80,9 +80,27 @@
         });
     });
 
-    // Auto-scroll messages pane to bottom
+    // Auto-scroll messages pane to bottom & keep pinned on keyboard open
     const msgBody = document.querySelector('.msg-pane-body');
-    if (msgBody) msgBody.scrollTop = msgBody.scrollHeight;
+    if (msgBody) {
+        msgBody.scrollTop = msgBody.scrollHeight;
+        // On mobile, when keyboard opens and viewport resizes, maintain scroll position
+        if (window.visualViewport) {
+            window.visualViewport.addEventListener('resize', () => {
+                msgBody.scrollTop = msgBody.scrollHeight;
+            });
+        }
+    }
+
+    // Dismiss profile card (Pass action)
+    window.dismissProfileCard = function (btn) {
+        const card = btn.closest('.profile-card');
+        if (!card) return;
+        card.classList.add('is-dismissed');
+        setTimeout(() => {
+            card.remove();
+        }, 360);
+    };
 
     // Show / Hide password toggle
     document.addEventListener('change', e => {

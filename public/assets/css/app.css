@@ -1520,6 +1520,53 @@ p {
     align-items: center;
     margin-top: auto;
 }
+.card-action-icon-btn {
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 1.5px solid var(--c-line);
+    background: #FFFFFF;
+    color: var(--c-muted);
+    cursor: pointer;
+    transition: var(--tr-fast);
+    flex-shrink: 0;
+    padding: 0;
+    -webkit-tap-highlight-color: transparent;
+}
+.card-action-icon-btn svg {
+    transition: transform 0.2s ease;
+}
+.card-action-icon-btn.btn-pass:hover,
+.card-action-icon-btn.btn-pass:active {
+    color: #d9383a;
+    background: rgba(217, 56, 58, 0.08);
+    border-color: rgba(217, 56, 58, 0.3);
+    transform: scale(1.06);
+}
+.card-action-icon-btn.btn-shortlist:hover,
+.card-action-icon-btn.btn-shortlist:active {
+    color: #d99420;
+    background: rgba(246, 193, 119, 0.16);
+    border-color: rgba(217, 148, 32, 0.4);
+    transform: scale(1.06);
+}
+.btn-interested {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+    font-weight: 600;
+    white-space: nowrap;
+}
+.profile-card.is-dismissed {
+    opacity: 0;
+    transform: scale(0.88) translateY(20px);
+    transition: opacity 0.35s ease, transform 0.35s ease;
+    pointer-events: none;
+}
 
 @media (max-width: 960px) {
     .profiles-grid { grid-template-columns: repeat(2, 1fr); gap: 1.4rem; }
@@ -2859,6 +2906,122 @@ p {
 }
 
 @media (max-width: 880px) {
+    /* Pinned Chat Viewport Lock on Mobile — Native App Messenger Experience */
+    body.is-chat-page {
+        height: 100vh;
+        height: 100dvh;
+        overflow: hidden !important;
+        position: fixed;
+        width: 100%;
+        top: 0;
+        left: 0;
+    }
+    body.is-chat-page .nav,
+    body.is-chat-page .mobile-bottom-nav,
+    body.is-chat-page .footer-hide-mobile,
+    body.is-chat-page footer,
+    body.is-chat-page .nav-desktop-link {
+        display: none !important;
+    }
+    body.is-chat-page main {
+        height: 100%;
+        height: 100dvh;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+    }
+    body.is-chat-page .chat-section {
+        padding: 0 !important;
+        height: 100%;
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+    }
+    body.is-chat-page .chat-container {
+        padding: 0 !important;
+        max-width: 100% !important;
+        height: 100%;
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+    }
+    body.is-chat-page .msg-grid {
+        grid-template-columns: 1fr;
+        min-height: 0;
+        height: 100%;
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        gap: 0;
+        overflow: hidden;
+    }
+    body.is-chat-page .msg-threads {
+        display: none !important;
+    }
+    body.is-chat-page .msg-pane {
+        border-radius: 0;
+        border: none;
+        box-shadow: none;
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+        flex: 1;
+        background: var(--c-bg);
+        overflow: hidden;
+    }
+    body.is-chat-page .msg-pane-head {
+        flex-shrink: 0;
+        padding: 0.65rem 0.9rem;
+        position: relative;
+        top: auto;
+        z-index: 10;
+        background: rgba(255, 253, 249, 0.98);
+        backdrop-filter: blur(24px);
+        -webkit-backdrop-filter: blur(24px);
+        border-bottom: 1px solid rgba(234, 224, 212, 0.9);
+    }
+    body.is-chat-page .chat-back-btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        color: var(--c-ink);
+        text-decoration: none;
+        background: rgba(0, 0, 0, 0.04);
+        flex-shrink: 0;
+    }
+    body.is-chat-page .msg-pane-body {
+        flex: 1;
+        max-height: none;
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+        padding: 1rem 1rem 1rem;
+    }
+    body.is-chat-page .msg-pane-form {
+        flex-shrink: 0;
+        position: relative;
+        bottom: auto;
+        left: auto;
+        right: auto;
+        padding: 0.65rem 0.9rem calc(0.65rem + env(safe-area-inset-bottom, 0px));
+        background: rgba(255, 253, 249, 0.98);
+        backdrop-filter: blur(24px);
+        -webkit-backdrop-filter: blur(24px);
+        border-top: 1px solid rgba(234, 224, 212, 0.9);
+        box-shadow: 0 -2px 10px rgba(72, 46, 99, 0.06);
+        z-index: 10;
+    }
+    body.is-chat-page .msg-bubble {
+        max-width: 85%;
+        font-size: 0.92rem;
+        padding: 0.75rem 1rem;
+    }
+
+    /* Fallback for general small screen chat */
     .chat-section {
         padding: 0 !important;
     }
@@ -2880,7 +3043,7 @@ p {
         box-shadow: none;
         display: flex;
         flex-direction: column;
-        height: calc(100vh - 65px);
+        min-height: calc(100vh - 65px);
         background: var(--c-bg);
     }
     .msg-pane-head {
@@ -3682,6 +3845,17 @@ p {
         border-color: var(--c-saffron);
         color: var(--c-saffron);
         background: rgba(246, 193, 119, 0.15);
+    }
+    .sticky-pass-btn {
+        background: #FFFFFF;
+        border: 1.5px solid var(--c-line);
+        color: var(--c-muted);
+        padding: 0 0.95rem;
+    }
+    .sticky-pass-btn:hover, .sticky-pass-btn:active {
+        color: #d9383a;
+        background: rgba(217, 56, 58, 0.08);
+        border-color: rgba(217, 56, 58, 0.3);
     }
     .sticky-secondary-btn {
         background: rgba(0, 0, 0, 0.06);

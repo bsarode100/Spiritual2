@@ -47,6 +47,14 @@ $canUnlockContact = plan_can($viewerPlan, 'view_contacts') && ($contactsLeft ===
             <?php endif; ?>
 
             <div class="actions">
+                <!-- Pass Button -->
+                <a href="/browse" class="btn btn-ghost" title="Pass / Not interested">✕ Pass</a>
+
+                <!-- Shortlist Button -->
+                <form method="post" action="/shortlist/<?= (int)$u['id'] ?>" style="display:inline;">
+                    <?= csrf_field() ?><button class="btn btn-ghost"><?= $shortlisted ? '★ Shortlisted' : '☆ Shortlist' ?></button>
+                </form>
+
                 <?php if ($canMessage): ?>
                     <a href="/messages/<?= (int)$u['id'] ?>" class="btn btn-primary">Send a Message</a>
                 <?php elseif ($interest && $interest['status'] === 'sent' && (int)$interest['receiver_id'] === Auth::id()): ?>
@@ -58,15 +66,11 @@ $canUnlockContact = plan_can($viewerPlan, 'view_contacts') && ($contactsLeft ===
                     </form>
                 <?php elseif (!$interest || $interest['status'] === 'cancelled' || $interest['status'] === 'declined'): ?>
                     <form method="post" action="/interest/send/<?= (int)$u['id'] ?>" style="display:inline;">
-                        <?= csrf_field() ?><button class="btn btn-primary">Express Interest</button>
+                        <?= csrf_field() ?><button class="btn btn-primary">💌 Interested</button>
                     </form>
                 <?php elseif ($interest['status'] === 'sent'): ?>
                     <span class="pill gold" style="padding: .8rem 1.4rem;">Interest sent - awaiting response</span>
                 <?php endif; ?>
-
-                <form method="post" action="/shortlist/<?= (int)$u['id'] ?>" style="display:inline;">
-                    <?= csrf_field() ?><button class="btn btn-ghost"><?= $shortlisted ? 'Shortlisted' : 'Shortlist' ?></button>
-                </form>
             </div>
         </div>
     </div>
@@ -176,10 +180,15 @@ $canUnlockContact = plan_can($viewerPlan, 'view_contacts') && ($contactsLeft ===
 
 <!-- Mobile Sticky Bottom Action Bar (Shaadi/Jeevansathi style) -->
 <div class="profile-sticky-actions">
+    <a href="/browse" class="sticky-action-btn sticky-pass-btn" title="Pass / Browse others">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        <span>Pass</span>
+    </a>
+
     <form method="post" action="/shortlist/<?= (int)$u['id'] ?>" style="margin:0;">
         <?= csrf_field() ?>
         <button type="submit" class="sticky-action-btn sticky-shortlist-btn <?= $shortlisted ? 'is-shortlisted' : '' ?>" title="<?= $shortlisted ? 'Shortlisted' : 'Shortlist' ?>">
-            <svg width="19" height="19" viewBox="0 0 24 24" fill="<?= $shortlisted ? 'currentColor' : 'none' ?>" stroke="currentColor" stroke-width="2">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="<?= $shortlisted ? 'currentColor' : 'none' ?>" stroke="currentColor" stroke-width="2">
                 <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
             </svg>
             <span><?= $shortlisted ? 'Saved' : 'Shortlist' ?></span>
@@ -213,7 +222,7 @@ $canUnlockContact = plan_can($viewerPlan, 'view_contacts') && ($contactsLeft ===
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
                     <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
                 </svg>
-                <span>Express Interest</span>
+                <span>Interested</span>
             </button>
         </form>
     <?php elseif ($interest['status'] === 'sent'): ?>

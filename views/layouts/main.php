@@ -51,7 +51,10 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,500;1,600&family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,500;1,600&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&family=Tangerine:wght@400;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="<?= asset('css/app.css') ?>">
 </head>
-<body>
+<?php
+$_isChatPage = preg_match('#^/messages/\d+#', parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH));
+?>
+<body class="<?= $_isChatPage ? 'is-chat-page' : '' ?>">
 <?php include __DIR__ . '/../partials/nav.php'; ?>
 
 <main>

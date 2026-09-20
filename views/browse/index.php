@@ -157,12 +157,28 @@
                         <?php endif; ?>
 
                         <div class="profile-card-actions">
-                            <a href="/member/<?= (int)$m['id'] ?>" class="btn btn-ghost btn-sm" style="flex: 1;">View Profile</a>
+                            <!-- Cancel / Pass Button -->
+                            <button type="button" class="card-action-icon-btn btn-pass" title="Pass / Not interested" onclick="dismissProfileCard(this)">
+                                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                            </button>
+
+                            <!-- Shortlist Button -->
+                            <form method="post" action="/shortlist/<?= (int)$m['id'] ?>" style="margin:0;">
+                                <?= csrf_field() ?>
+                                <button type="submit" class="card-action-icon-btn btn-shortlist" title="Shortlist profile">
+                                    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                                </button>
+                            </form>
+
+                            <!-- View Profile -->
+                            <a href="/member/<?= (int)$m['id'] ?>" class="btn btn-ghost btn-sm" style="flex: 1; text-align: center;">View Profile</a>
+
+                            <!-- Interested Button (Formerly Connect) -->
                             <form method="post" action="/interest/send/<?= (int)$m['id'] ?>" style="margin:0;">
                                 <?= csrf_field() ?>
-                                <button class="btn btn-primary btn-sm" title="Express Interest">
+                                <button type="submit" class="btn btn-primary btn-sm btn-interested" title="Express Interest">
                                     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
-                                    Connect
+                                    Interested
                                 </button>
                             </form>
                         </div>
