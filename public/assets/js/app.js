@@ -4,17 +4,24 @@
     const toggle = document.querySelector('.mobile-toggle');
     const links  = document.querySelector('.nav-links');
     if (toggle && links) {
-        toggle.addEventListener('click', (e) => {
-            e.stopPropagation();
+        const toggleMenu = (e) => {
+            if (e) {
+                e.preventDefault();
+                e.stopPropagation();
+            }
             const isOpen = links.classList.toggle('open');
             toggle.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
-        });
+            toggle.classList.toggle('is-active', isOpen);
+        };
+
+        toggle.addEventListener('click', toggleMenu);
 
         // Close on click outside
         document.addEventListener('click', (e) => {
             if (links.classList.contains('open') && !links.contains(e.target) && !toggle.contains(e.target)) {
                 links.classList.remove('open');
                 toggle.setAttribute('aria-expanded', 'false');
+                toggle.classList.remove('is-active');
             }
         });
 
@@ -23,6 +30,7 @@
             if (e.key === 'Escape' && links.classList.contains('open')) {
                 links.classList.remove('open');
                 toggle.setAttribute('aria-expanded', 'false');
+                toggle.classList.remove('is-active');
             }
         });
     }
