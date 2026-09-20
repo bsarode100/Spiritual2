@@ -99,8 +99,9 @@
 
             if (window.visualViewport) {
                 const vv = window.visualViewport;
-                // Bound the chat pane to exactly the visual viewport height
+                // Bound the chat pane to exactly the visual viewport height & full width
                 chatPane.style.height = `${vv.height}px`;
+                chatPane.style.width = '100%';
                 if (vv.offsetTop > 0) {
                     chatPane.style.transform = `translateY(${vv.offsetTop}px)`;
                 } else {
