@@ -4,6 +4,11 @@
 $currentUri = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH);
 $isAuth = Auth::check();
 $unreadCount = $isAuth ? unread_messages_count(Auth::id()) : 0;
+
+// On single profile detail view, the dedicated profile action bar takes over the bottom bar
+if (preg_match('#^/member/\d+#', $currentUri)) {
+    return;
+}
 ?>
 <nav class="mobile-bottom-nav" aria-label="Mobile Navigation">
     <a href="/" class="bottom-nav-item <?= $currentUri === '/' ? 'active' : '' ?>">
