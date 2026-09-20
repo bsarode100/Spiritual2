@@ -2,7 +2,7 @@
 // Group by sensible prefix for the form
 $groups = [
     'Brand'       => ['site_name','site_tagline','footer_about'],
-    'Email & SMTP'=> ['mail_mailer','mail_host','mail_port','mail_username','mail_password','mail_encryption','mail_from_address','mail_from_name'],
+    'Email & SMTP'=> ['mail_mailer','mail_host','mail_port','mail_username','mail_password','mail_encryption','mail_from_address','mail_from_name','allow_test_otp'],
     'Hero'        => ['hero_heading','hero_subheading','hero_cta_text'],
     'About'       => ['about_short'],
     'Stats'       => ['stat_members','stat_marriages','stat_paths','stat_countries'],
@@ -19,7 +19,13 @@ if ($extras) $groups['Other'] = array_values($extras);
 ?>
 <div class="admin-head">
     <h1>Site Settings</h1>
-    <a href="/admin/payment-details" class="btn btn-ghost btn-sm">💳 Dedicated Payment Details editor →</a>
+    <div style="display: flex; gap: .75rem; flex-wrap: wrap;">
+        <form method="post" action="/admin/test-mail" style="display: inline;">
+            <?= csrf_field() ?>
+            <button type="submit" class="btn btn-ghost btn-sm">✉️ Test Current SMTP Delivery</button>
+        </form>
+        <a href="/admin/payment-details" class="btn btn-ghost btn-sm">💳 Dedicated Payment Details editor →</a>
+    </div>
 </div>
 <form method="post" action="/admin/settings">
     <?= csrf_field() ?>
@@ -29,13 +35,28 @@ if ($extras) $groups['Other'] = array_values($extras);
             <?php foreach ($keys as $k):
                 $v = $lookup[$k] ?? '';
                 $isLong = in_array($k, ['hero_subheading','footer_about','about_short','contact_address','payment_instructions']);
+                $helpText = match($k) {
+                    'mail_host' => 'e.g. smtp.gmail.com',
+                    'mail_port' => '587 (TLS) or 465 (SSL)',
+                    'mail_username' => 'Your full email (e.g. you@gmail.com)',
+                    'mail_password' => '16-character Google App Password (from myaccount.google.com/apppasswords)',
+                    'mail_encryption' => 'tls or ssl',
+                    'mail_from_address' => 'Must match or be an authorized alias of your mail username',
+                    'allow_test_otp' => 'Set to 1 to show OTP on screen if email sending fails (great for testing)',
+                    default => null,
+                };
             ?>
                 <div class="field">
                     <label><?= e(ucfirst(str_replace('_',' ', $k))) ?></label>
                     <?php if ($isLong): ?>
                         <textarea name="settings[<?= e($k) ?>]" rows="3"><?= e($v) ?></textarea>
+                    <?php elseif ($k === 'mail_password'): ?>
+                        <input type="password" name="settings[<?= e($k) ?>]" value="<?= e($v) ?>" autocomplete="new-password">
                     <?php else: ?>
                         <input type="text" name="settings[<?= e($k) ?>]" value="<?= e($v) ?>">
+                    <?php endif; ?>
+                    <?php if ($helpText): ?>
+                        <small style="color: var(--c-muted); font-size: 0.8rem;"><?= e($helpText) ?></small>
                     <?php endif; ?>
                 </div>
             <?php endforeach; ?>
