@@ -25,7 +25,11 @@
 <link rel="stylesheet" href="<?= asset('css/app.css') ?>">
 </head>
 <body>
-<div class="auth-shell">
+<?php
+$isOnboarding = str_contains($_SERVER['REQUEST_URI'] ?? '', 'onboarding');
+?>
+<div class="auth-shell <?= $isOnboarding ? 'auth-shell-onboarding' : '' ?>">
+    <?php if (!$isOnboarding): ?>
     <aside class="auth-art">
         <a href="/" class="brand">
             <div class="brand-icon">
@@ -45,9 +49,28 @@
             🪷 25,000+ sincere seekers · 1,200+ marriages
         </div>
     </aside>
+    <?php endif; ?>
 
-    <div class="auth-form-shell">
-        <div class="auth-form-shell-inner">
+    <div class="auth-form-shell <?= $isOnboarding ? 'auth-form-shell-onboarding' : '' ?>">
+        <?php if ($isOnboarding): ?>
+        <header class="onboarding-top-nav">
+            <a href="/" class="brand">
+                <div class="brand-icon">
+                    <img src="<?= asset('images/logo.png') ?>" alt="SpiritualShaadi Logo" style="height: 38px; width: auto;">
+                </div>
+                <div class="brand-text">
+                    <span><?= e(setting('site_name', 'SpiritualShaadi')) ?></span>
+                    <small class="brand-motto"><?= e(setting('site_tagline', 'Find a Perfect Spiritual Life Partner')) ?></small>
+                </div>
+            </a>
+            <div class="onboarding-top-badge">
+                <span>🌸 Confidential &amp; Verified Seeker Network</span>
+            </div>
+        </header>
+        <?php endif; ?>
+
+        <div class="auth-form-shell-inner <?= $isOnboarding ? 'auth-form-shell-inner-onboarding' : '' ?>">
+            <?php if (!$isOnboarding): ?>
             <div class="auth-mobile-brand">
                 <a href="/" class="brand" style="justify-content: center;">
                     <div class="brand-icon">
@@ -59,6 +82,8 @@
                     </div>
                 </a>
             </div>
+            <?php endif; ?>
+
             <?php if ($msg = flash('success')): ?><div class="flash flash-success"><?= e($msg) ?></div><?php endif; ?>
             <?php if ($msg = flash('error')):   ?><div class="flash flash-error"><?= e($msg)   ?></div><?php endif; ?>
             <?= $content ?>

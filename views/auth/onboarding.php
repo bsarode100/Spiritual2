@@ -1,5 +1,10 @@
 <?php
 /** @var array $profile, $spiritual, $user; @var int $currentStep, $photoCount */
+$savedPath = trim((string)($spiritual['spiritual_path'] ?? ''));
+$savedOrg  = trim((string)($spiritual['spiritual_organization'] ?? ''));
+$savedCountry = trim((string)($profile['country'] ?? 'India'));
+$savedState = trim((string)($profile['state'] ?? ''));
+$isIndia = ($savedCountry === '' || strcasecmp($savedCountry, 'India') === 0);
 ?>
 <div class="onboarding-wrapper">
     <!-- Top Progress Bar (Shaadi/Jeevansathi Style) -->
@@ -32,7 +37,20 @@
                     <div class="step-title-box text-center mb-4">
                         <div class="spiritual-icon-badge">🪷</div>
                         <h2>Cultural &amp; Spiritual Roots</h2>
-                        <p class="text-muted">Tell us about your background and spiritual journey — this is the heart of SpiritualShaadi.</p>
+                        <p class="text-muted">Tell us about your background and spiritual journey — this is the sacred heart of your profile.</p>
+                    </div>
+
+                    <!-- Marital Status (Full Row for comfortable pill spacing) -->
+                    <div class="field mb-3">
+                        <label>Marital Status <span class="text-danger">*</span></label>
+                        <div class="pill-selector-group" role="radiogroup">
+                            <?php foreach (marital_status_options() as $val => $lbl): ?>
+                                <label class="pill-selector-item">
+                                    <input type="radio" name="marital_status" value="<?= $val ?>" <?= ($profile['marital_status'] ?? 'never_married') === $val ? 'checked' : '' ?> required>
+                                    <span class="pill-selector-btn"><?= e($lbl) ?></span>
+                                </label>
+                            <?php endforeach; ?>
+                        </div>
                     </div>
 
                     <div class="form-grid mb-3">
@@ -49,17 +67,15 @@
                             </select>
                         </div>
 
-                        <!-- Marital Status (Pills) -->
+                        <!-- Mother Tongue -->
                         <div class="field">
-                            <label>Marital Status <span class="text-danger">*</span></label>
-                            <div class="pill-selector-group" role="radiogroup">
-                                <?php foreach (marital_status_options() as $val => $lbl): ?>
-                                    <label class="pill-selector-item">
-                                        <input type="radio" name="marital_status" value="<?= $val ?>" <?= ($profile['marital_status'] ?? 'never_married') === $val ? 'selected checked' : '' ?> required>
-                                        <span class="pill-selector-btn"><?= e($lbl) ?></span>
-                                    </label>
+                            <label>Mother Tongue <span class="text-danger">*</span></label>
+                            <select name="mother_tongue" required>
+                                <option value="">Select language...</option>
+                                <?php foreach (['Hindi','Marathi','Gujarati','Bengali','Punjabi','Tamil','Telugu','Kannada','Malayalam','Odia','Assamese','Marwari','Sindhi','English','Other'] as $lang): ?>
+                                    <option value="<?= $lang ?>" <?= ($profile['mother_tongue'] ?? '') === $lang ? 'selected' : '' ?>><?= $lang ?></option>
                                 <?php endforeach; ?>
-                            </div>
+                            </select>
                         </div>
                     </div>
 
@@ -74,25 +90,40 @@
                             </select>
                         </div>
 
-                        <!-- Mother Tongue -->
+                        <!-- Caste / Community with Dropdown / Autocomplete Datalist -->
                         <div class="field">
-                            <label>Mother Tongue <span class="text-danger">*</span></label>
-                            <select name="mother_tongue" required>
-                                <option value="">Select language...</option>
-                                <?php foreach (['Hindi','Marathi','Gujarati','Bengali','Punjabi','Tamil','Telugu','Kannada','Malayalam','Odia','Assamese','Marwari','Sindhi','English','Other'] as $lang): ?>
-                                    <option value="<?= $lang ?>" <?= ($profile['mother_tongue'] ?? '') === $lang ? 'selected' : '' ?>><?= $lang ?></option>
-                                <?php endforeach; ?>
-                            </select>
-                        </div>
-                    </div>
-
-                    <!-- Caste / Community with Instant Chips -->
-                    <div class="field mb-4">
-                        <label>Caste / Community <span class="text-danger">*</span></label>
-                        <input type="text" name="community" id="communityInput" required placeholder="e.g. Brahmin, Vaishnav, Maratha, etc." value="<?= e($profile['community'] ?? '') ?>">
-                        <div class="quick-chips mt-2">
-                            <span class="quick-chip" onclick="setFieldValue('communityInput', 'Caste No Bar')">✨ Caste No Bar</span>
-                            <span class="quick-chip" onclick="setFieldValue('communityInput', 'Don\'t Know')">Don't Know</span>
+                            <label>Caste / Community <span class="text-danger">*</span></label>
+                            <input type="text" name="community" id="communityInput" list="communityList" required placeholder="e.g. Brahmin, Vaishnav, Maratha, etc." value="<?= e($profile['community'] ?? '') ?>">
+                            <datalist id="communityList">
+                                <option value="Caste No Bar">
+                                <option value="Brahmin">
+                                <option value="Vaishnav">
+                                <option value="Maratha">
+                                <option value="Agarwal">
+                                <option value="Gupta">
+                                <option value="Maheshwari">
+                                <option value="Jain - Digambar">
+                                <option value="Jain - Shwetambar">
+                                <option value="Patel / Patidar">
+                                <option value="Rajput">
+                                <option value="Kayastha">
+                                <option value="Khatri">
+                                <option value="Arora">
+                                <option value="Reddy">
+                                <option value="Nair">
+                                <option value="Lingayat">
+                                <option value="Yadav">
+                                <option value="Bania">
+                                <option value="Sindhi">
+                                <option value="Punjabi">
+                                <option value="Sikh - Jat">
+                                <option value="Sikh - Ramgarhia">
+                                <option value="Other">
+                            </datalist>
+                            <div class="quick-chips mt-2">
+                                <span class="quick-chip" onclick="setFieldValue('communityInput', 'Caste No Bar')">✨ Caste No Bar</span>
+                                <span class="quick-chip" onclick="setFieldValue('communityInput', 'Don\'t Know')">Don't Know</span>
+                            </div>
                         </div>
                     </div>
 
@@ -100,29 +131,77 @@
                     <div class="spiritual-highlight-box mb-4">
                         <label class="spiritual-section-label">
                             <span>🌟 Spiritual Path / Tradition <span class="text-danger">*</span></span>
-                            <small>Select the path that resonates with your daily practice</small>
+                            <small>Select the path or tradition that guides your daily spiritual practice</small>
                         </label>
-                        <div class="pill-selector-group spiritual-pills" role="radiogroup">
-                            <?php foreach (spiritual_paths_list() as $path): ?>
-                                <label class="pill-selector-item">
-                                    <input type="radio" name="spiritual_path" value="<?= $path ?>" <?= ($spiritual['spiritual_path'] ?? '') === $path ? 'checked' : '' ?> required>
-                                    <span class="pill-selector-btn spiritual-pill-btn"><?= e($path) ?></span>
-                                </label>
+
+                        <div class="field mb-3">
+                            <select name="spiritual_path" id="spiritualPathSelect" required onchange="handlePathChange(this.value)">
+                                <option value="">Select your spiritual path / tradition...</option>
+                                <optgroup label="Popular Spiritual Traditions">
+                                    <?php foreach (spiritual_paths_list() as $path): ?>
+                                        <?php if ($path !== 'Other'): ?>
+                                            <option value="<?= e($path) ?>" <?= $savedPath === $path ? 'selected' : '' ?>><?= e($path) ?></option>
+                                        <?php endif; ?>
+                                    <?php endforeach; ?>
+                                </optgroup>
+                                <optgroup label="Classical Yoga &amp; Philosophical Paths">
+                                    <?php foreach (['Advaita Vedanta','Bhakti Yoga','Karma Yoga','Jnana Yoga','Raja Yoga / Meditation','Kashmir Shaivism','Kriya Yoga','Kundalini Yoga','Mantra Sadhana / Chanting','Sikh Dharma','Pushtimarg','Ramanandi Sampradaya','Nimbarka Sampradaya','Lingayat / Veerashaiva'] as $extraPath): ?>
+                                        <?php if (!in_array($extraPath, spiritual_paths_list(), true)): ?>
+                                            <option value="<?= e($extraPath) ?>" <?= $savedPath === $extraPath ? 'selected' : '' ?>><?= e($extraPath) ?></option>
+                                        <?php endif; ?>
+                                    <?php endforeach; ?>
+                                </optgroup>
+                                <option value="Other" <?= (!empty($savedPath) && !in_array($savedPath, spiritual_paths_list(), true) && !in_array($savedPath, ['Advaita Vedanta','Bhakti Yoga','Karma Yoga','Jnana Yoga','Raja Yoga / Meditation','Kashmir Shaivism','Kriya Yoga','Kundalini Yoga','Mantra Sadhana / Chanting','Sikh Dharma','Pushtimarg','Ramanandi Sampradaya','Nimbarka Sampradaya','Lingayat / Veerashaiva'], true)) || $savedPath === 'Other' ? 'selected' : '' ?>>
+                                    ✏️ Other (Specify your tradition)
+                                </option>
+                            </select>
+                        </div>
+
+                        <!-- Quick-select chips for instant 1-tap choice -->
+                        <div class="quick-chips mb-2">
+                            <span style="font-size: 0.8rem; font-weight: 600; color: var(--c-maroon); display: inline-flex; align-items: center;">Quick Select:</span>
+                            <?php foreach (['ISKCON', 'Art of Living', 'Isha Yoga', 'Ramakrishna Mission / Vedanta', 'Vipassana', 'Swaminarayan', 'Self-Guided / Independent Sadhak'] as $quickP): ?>
+                                <span class="quick-chip" onclick="selectSpiritualPath('<?= e($quickP) ?>')"><?= e($quickP) ?></span>
                             <?php endforeach; ?>
+                        </div>
+
+                        <!-- Custom Path text input when "Other" is chosen -->
+                        <div id="pathOtherWrap" class="field mt-2" style="<?= (!empty($savedPath) && !in_array($savedPath, spiritual_paths_list(), true) && !in_array($savedPath, ['Advaita Vedanta','Bhakti Yoga','Karma Yoga','Jnana Yoga','Raja Yoga / Meditation','Kashmir Shaivism','Kriya Yoga','Kundalini Yoga','Mantra Sadhana / Chanting','Sikh Dharma','Pushtimarg','Ramanandi Sampradaya','Nimbarka Sampradaya','Lingayat / Veerashaiva'], true)) || $savedPath === 'Other' ? 'display:block;' : 'display:none;' ?>">
+                            <label style="font-size: 0.84rem; font-weight: 600; color: var(--c-rose-dark);">Specify your spiritual tradition name: <span class="text-danger">*</span></label>
+                            <input type="text" name="spiritual_path_other" id="pathOtherInput" placeholder="Enter name of your spiritual tradition or parampara" value="<?= e($savedPath) ?>">
                         </div>
                     </div>
 
-                    <!-- 🌟 Spiritual Organization / Guru -->
+                    <!-- 🌟 Spiritual Organization / Sangha & Guru -->
                     <div class="field mb-4">
-                        <label>Spiritual Organization / Guru <span style="opacity: .7;">(Recommended)</span></label>
-                        <input type="text" name="guru" id="guruInput" placeholder="e.g. ISKCON, Art of Living, Isha Foundation, Ramakrishna Math, or Mentor name" value="<?= e($spiritual['guru'] ?? '') ?>">
+                        <label>Spiritual Organization / Sangha <span style="opacity: .7;">(Recommended)</span></label>
+                        <select name="spiritual_organization" id="spiritualOrgSelect" onchange="handleOrgChange(this.value)">
+                            <option value="">Select spiritual organization / sangha...</option>
+                            <?php foreach (spiritual_organizations() as $org): ?>
+                                <option value="<?= e($org) ?>" <?= $savedOrg === $org ? 'selected' : '' ?>><?= e($org) ?></option>
+                            <?php endforeach; ?>
+                            <option value="Self-Guided / Independent" <?= $savedOrg === 'Self-Guided / Independent' ? 'selected' : '' ?>>Self-Guided / Independent Sangha</option>
+                            <option value="Other" <?= (!empty($savedOrg) && !in_array($savedOrg, spiritual_organizations(), true) && $savedOrg !== 'Self-Guided / Independent') || $savedOrg === 'Other' ? 'selected' : '' ?>>✏️ Other (Specify name)</option>
+                        </select>
+
                         <div class="quick-chips mt-2">
-                            <span class="quick-chip" onclick="setFieldValue('guruInput', 'ISKCON')">ISKCON</span>
-                            <span class="quick-chip" onclick="setFieldValue('guruInput', 'Art of Living')">Art of Living</span>
-                            <span class="quick-chip" onclick="setFieldValue('guruInput', 'Isha Foundation')">Isha Foundation</span>
-                            <span class="quick-chip" onclick="setFieldValue('guruInput', 'Ramakrishna Math')">Ramakrishna Math</span>
-                            <span class="quick-chip" onclick="setFieldValue('guruInput', 'Self-Guided')">Self-Guided</span>
+                            <span style="font-size: 0.8rem; font-weight: 600; color: #8A5A00; display: inline-flex; align-items: center;">Popular:</span>
+                            <span class="quick-chip" onclick="selectSpiritualOrg('ISKCON (International Society for Krishna Consciousness)')">ISKCON</span>
+                            <span class="quick-chip" onclick="selectSpiritualOrg('The Art of Living Foundation')">Art of Living</span>
+                            <span class="quick-chip" onclick="selectSpiritualOrg('Isha Foundation')">Isha Foundation</span>
+                            <span class="quick-chip" onclick="selectSpiritualOrg('Ramakrishna Math and Ramakrishna Mission')">Ramakrishna Math</span>
+                            <span class="quick-chip" onclick="selectSpiritualOrg('BAPS Swaminarayan Sanstha')">BAPS Swaminarayan</span>
+                            <span class="quick-chip" onclick="selectSpiritualOrg('Self-Guided / Independent')">Self-Guided</span>
                         </div>
+
+                        <div id="orgOtherWrap" class="mt-2" style="<?= (!empty($savedOrg) && !in_array($savedOrg, spiritual_organizations(), true) && $savedOrg !== 'Self-Guided / Independent') || $savedOrg === 'Other' ? 'display:block;' : 'display:none;' ?>">
+                            <input type="text" name="spiritual_organization_other" id="orgOtherInput" placeholder="Enter name of your organization / ashram / temple" value="<?= e($savedOrg) ?>">
+                        </div>
+                    </div>
+
+                    <div class="field mb-4">
+                        <label>Guru / Mentor / Spiritual Guide <span style="opacity: .7;">(Optional)</span></label>
+                        <input type="text" name="guru" id="guruInput" placeholder="e.g. Diksha Guru, Shiksha Guru, Mentor name, or Ashram center" value="<?= e($spiritual['guru'] ?? '') ?>">
                     </div>
 
                     <div class="wizard-btn-row">
@@ -145,20 +224,92 @@
                     <div class="form-grid mb-3">
                         <div class="field">
                             <label>Country of Residence <span class="text-danger">*</span></label>
-                            <select name="country" id="countrySelect" required>
-                                <?php foreach (['India','United States','United Kingdom','Canada','Australia','United Arab Emirates','Singapore','Other'] as $c): ?>
+                            <select name="country" id="countrySelect" required onchange="handleCountryChange(this.value)">
+                                <?php foreach (['India','United States','United Kingdom','Canada','Australia','United Arab Emirates','Singapore','Germany','New Zealand','Other'] as $c): ?>
                                     <option value="<?= $c ?>" <?= ($profile['country'] ?? 'India') === $c ? 'selected' : '' ?>><?= $c ?></option>
                                 <?php endforeach; ?>
                             </select>
                         </div>
+
                         <div class="field">
                             <label>State / Province <span class="text-danger">*</span></label>
-                            <input type="text" name="state" required placeholder="e.g. Maharashtra, Gujarat, Delhi" value="<?= e($profile['state'] ?? '') ?>">
+                            <!-- Indian States dropdown (active when country is India) -->
+                            <div id="stateIndiaWrap" style="<?= $isIndia ? 'display:block;' : 'display:none;' ?>">
+                                <select name="state" id="stateSelect">
+                                    <option value="">Select State / UT...</option>
+                                    <?php foreach (indian_states() as $st): ?>
+                                        <option value="<?= e($st) ?>" <?= (strcasecmp($savedState, $st) === 0) ? 'selected' : '' ?>><?= e($st) ?></option>
+                                    <?php endforeach; ?>
+                                    <option value="Other" <?= (!empty($savedState) && !in_array($savedState, indian_states(), true)) ? 'selected' : '' ?>>Other / Outside India</option>
+                                </select>
+                            </div>
+                            <!-- Other Country state text input -->
+                            <div id="stateOtherWrap" style="<?= (!$isIndia || (!empty($savedState) && !in_array($savedState, indian_states(), true))) ? 'display:block;' : 'display:none;' ?>">
+                                <input type="text" name="state_other" id="stateOtherInput" placeholder="e.g. California, Ontario, Greater London" value="<?= e($savedState) ?>">
+                            </div>
                         </div>
                     </div>
+
                     <div class="field mb-3">
                         <label>City <span class="text-danger">*</span></label>
-                        <input type="text" name="city" required placeholder="e.g. Mumbai, Pune, Ahmedabad, Bangalore" value="<?= e($profile['city'] ?? '') ?>">
+                        <input type="text" name="city" id="cityInput" list="citySuggestions" required placeholder="e.g. Mumbai, Pune, Bangalore, Delhi NCR, Ahmedabad" value="<?= e($profile['city'] ?? '') ?>">
+                        <datalist id="citySuggestions">
+                            <option value="Mumbai">
+                            <option value="Pune">
+                            <option value="Bengaluru / Bangalore">
+                            <option value="Delhi / New Delhi">
+                            <option value="Noida / Greater Noida">
+                            <option value="Gurugram / Gurgaon">
+                            <option value="Hyderabad">
+                            <option value="Chennai">
+                            <option value="Kolkata">
+                            <option value="Ahmedabad">
+                            <option value="Surat">
+                            <option value="Jaipur">
+                            <option value="Lucknow">
+                            <option value="Kanpur">
+                            <option value="Nagpur">
+                            <option value="Indore">
+                            <option value="Thane">
+                            <option value="Bhopal">
+                            <option value="Visakhapatnam">
+                            <option value="Vadodara">
+                            <option value="Ghaziabad">
+                            <option value="Ludhiana">
+                            <option value="Agra">
+                            <option value="Nashik">
+                            <option value="Faridabad">
+                            <option value="Meerut">
+                            <option value="Rajkot">
+                            <option value="Varanasi">
+                            <option value="Srinagar">
+                            <option value="Aurangabad / Chhatrapati Sambhajinagar">
+                            <option value="Amritsar">
+                            <option value="Navi Mumbai">
+                            <option value="Prayagraj / Allahabad">
+                            <option value="Ranchi">
+                            <option value="Howrah">
+                            <option value="Coimbatore">
+                            <option value="Jabalpur">
+                            <option value="Gwalior">
+                            <option value="Vijayawada">
+                            <option value="Jodhpur">
+                            <option value="Madurai">
+                            <option value="Raipur">
+                            <option value="Kota">
+                            <option value="Chandigarh">
+                            <option value="Rishikesh">
+                            <option value="Haridwar">
+                            <option value="Vrindavan / Mathura">
+                            <option value="Mayapur / Nabadwip">
+                            <option value="Dubai / Abu Dhabi (UAE)">
+                            <option value="London (UK)">
+                            <option value="San Francisco / Bay Area (USA)">
+                            <option value="New York / New Jersey (USA)">
+                            <option value="Toronto (Canada)">
+                            <option value="Singapore">
+                            <option value="Sydney / Melbourne (Australia)">
+                        </datalist>
                     </div>
 
                     <!-- Education & Profession -->
@@ -167,14 +318,51 @@
                             <label>Highest Education <span class="text-danger">*</span></label>
                             <select name="education" required>
                                 <option value="">Select education...</option>
-                                <?php foreach (['Bachelors (B.Tech / B.E / B.Sc / B.Com / B.A)','Masters (M.Tech / M.S / M.Sc / M.A)','MBA / PGDM','Doctorate / Ph.D','CA / CS / CFA','MBBS / MD / Dental','Law (LLB / LLM)','Diploma','High School','Other'] as $edu): ?>
-                                    <option value="<?= $edu ?>" <?= ($profile['education'] ?? '') === $edu ? 'selected' : '' ?>><?= $edu ?></option>
-                                <?php endforeach; ?>
+                                <optgroup label="Post Graduate / Doctorate">
+                                    <?php foreach (['Masters (M.Tech / M.S / M.Sc / M.A)','MBA / PGDM','Doctorate / Ph.D','CA / CS / CFA','MBBS / MD / Dental','Law (LLM / LLB)'] as $edu): ?>
+                                        <option value="<?= $edu ?>" <?= ($profile['education'] ?? '') === $edu ? 'selected' : '' ?>><?= $edu ?></option>
+                                    <?php endforeach; ?>
+                                </optgroup>
+                                <optgroup label="Graduate / Bachelors">
+                                    <?php foreach (['Bachelors (B.Tech / B.E / B.Sc / B.Com / B.A)','BCA / BBA','B.Arch','B.Pharm / Nursing'] as $edu): ?>
+                                        <option value="<?= $edu ?>" <?= ($profile['education'] ?? '') === $edu ? 'selected' : '' ?>><?= $edu ?></option>
+                                    <?php endforeach; ?>
+                                </optgroup>
+                                <optgroup label="Other">
+                                    <?php foreach (['Diploma','High School / Intermediate','Other'] as $edu): ?>
+                                        <option value="<?= $edu ?>" <?= ($profile['education'] ?? '') === $edu ? 'selected' : '' ?>><?= $edu ?></option>
+                                    <?php endforeach; ?>
+                                </optgroup>
                             </select>
                         </div>
+
                         <div class="field">
                             <label>Occupation / Profession <span class="text-danger">*</span></label>
-                            <input type="text" name="profession" required placeholder="e.g. Software Engineer, Doctor, Business Owner, Teacher" value="<?= e($profile['profession'] ?? '') ?>">
+                            <input type="text" name="profession" id="professionInput" list="professionSuggestions" required placeholder="e.g. Software Engineer, Doctor, Business Owner, Teacher" value="<?= e($profile['profession'] ?? '') ?>">
+                            <datalist id="professionSuggestions">
+                                <option value="Software Engineer / IT Professional">
+                                <option value="Data Scientist / AI Engineer">
+                                <option value="Doctor / Physician / Surgeon">
+                                <option value="Chartered Accountant (CA) / Finance">
+                                <option value="Business Owner / Entrepreneur">
+                                <option value="Civil Services / IAS / IPS / Govt Officer">
+                                <option value="Professor / Teacher / Educator">
+                                <option value="Banking / Financial Analyst">
+                                <option value="Architect / Interior Designer">
+                                <option value="Lawyer / Legal Consultant">
+                                <option value="Marketing / Advertising / PR">
+                                <option value="Human Resources (HR) Professional">
+                                <option value="Civil / Mechanical / Electrical Engineer">
+                                <option value="Yoga / Ayurveda / Wellness Practitioner">
+                                <option value="Full-time Sevak / Spiritual Mission">
+                                <option value="Scientific Researcher">
+                                <option value="Management Consultant">
+                                <option value="Artist / Designer / Content Creator">
+                                <option value="Defense / Armed Forces">
+                                <option value="Student">
+                                <option value="Homemaker">
+                                <option value="Other">
+                            </datalist>
                         </div>
                     </div>
 
@@ -284,6 +472,110 @@ function setFieldValue(fieldId, value) {
     }
 }
 
+function selectSpiritualPath(path) {
+    const sel = document.getElementById('spiritualPathSelect');
+    if (sel) {
+        let found = false;
+        for (let opt of sel.options) {
+            if (opt.value === path) {
+                sel.value = path;
+                found = true;
+                break;
+            }
+        }
+        if (!found) {
+            sel.value = 'Other';
+            const otherInput = document.getElementById('pathOtherInput');
+            if (otherInput) otherInput.value = path;
+        }
+        handlePathChange(sel.value);
+    }
+}
+
+function handlePathChange(val) {
+    const wrap = document.getElementById('pathOtherWrap');
+    if (wrap) {
+        if (val === 'Other') {
+            wrap.style.display = 'block';
+            const inp = document.getElementById('pathOtherInput');
+            if (inp) inp.focus();
+        } else {
+            wrap.style.display = 'none';
+        }
+    }
+}
+
+function selectSpiritualOrg(org) {
+    const sel = document.getElementById('spiritualOrgSelect');
+    if (sel) {
+        let found = false;
+        for (let opt of sel.options) {
+            if (opt.value === org) {
+                sel.value = org;
+                found = true;
+                break;
+            }
+        }
+        if (!found) {
+            sel.value = 'Other';
+            const otherInp = document.getElementById('orgOtherInput');
+            if (otherInp) otherInp.value = org;
+        }
+        handleOrgChange(sel.value);
+    }
+}
+
+function handleOrgChange(val) {
+    const wrap = document.getElementById('orgOtherWrap');
+    if (wrap) {
+        if (val === 'Other') {
+            wrap.style.display = 'block';
+            const inp = document.getElementById('orgOtherInput');
+            if (inp) inp.focus();
+        } else {
+            wrap.style.display = 'none';
+        }
+    }
+}
+
+function handleCountryChange(val) {
+    const indiaWrap = document.getElementById('stateIndiaWrap');
+    const otherWrap = document.getElementById('stateOtherWrap');
+    const stateSelect = document.getElementById('stateSelect');
+    const stateOther = document.getElementById('stateOtherInput');
+
+    if (val === 'India') {
+        if (indiaWrap) indiaWrap.style.display = 'block';
+        if (otherWrap) otherWrap.style.display = 'none';
+        if (stateSelect) stateSelect.setAttribute('required', 'required');
+        if (stateOther) stateOther.removeAttribute('required');
+    } else {
+        if (indiaWrap) indiaWrap.style.display = 'none';
+        if (otherWrap) otherWrap.style.display = 'block';
+        if (stateSelect) stateSelect.removeAttribute('required');
+        if (stateOther) stateOther.setAttribute('required', 'required');
+    }
+}
+
+// Watch for "Other" in state select dropdown
+document.addEventListener('DOMContentLoaded', function() {
+    const stateSel = document.getElementById('stateSelect');
+    if (stateSel) {
+        stateSel.addEventListener('change', function() {
+            const otherWrap = document.getElementById('stateOtherWrap');
+            if (this.value === 'Other') {
+                if (otherWrap) otherWrap.style.display = 'block';
+                const inp = document.getElementById('stateOtherInput');
+                if (inp) inp.focus();
+            } else {
+                if (otherWrap && document.getElementById('countrySelect')?.value === 'India') {
+                    otherWrap.style.display = 'none';
+                }
+            }
+        });
+    }
+});
+
 function appendSuggestion(text) {
     const area = document.getElementById('aboutMeText');
     if (!area) return;
@@ -301,6 +593,11 @@ function goToStep(stepNum) {
     if (currentPane) {
         const requiredInputs = currentPane.querySelectorAll('input[required], select[required], textarea[required]');
         for (let input of requiredInputs) {
+            // Ignore inputs inside hidden containers
+            if (input.offsetParent === null) {
+                continue;
+            }
+
             if (input.type === 'radio') {
                 const group = currentPane.querySelectorAll(`input[name="${input.name}"]`);
                 const anyChecked = Array.from(group).some(r => r.checked);

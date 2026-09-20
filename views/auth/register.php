@@ -64,9 +64,9 @@
 
     <div class="field">
         <label>Mobile Number <span class="text-danger">*</span></label>
-        <div class="input-phone-group" style="display: flex; gap: .5rem;">
-            <span class="phone-prefix" style="display: flex; align-items: center; justify-content: center; padding: 0 .85rem; background: rgba(0,0,0,0.04); border: 1.5px solid var(--c-line); border-radius: var(--r-sm); font-weight: 600; color: var(--c-ink-soft); font-size: .9rem;">+91</span>
-            <input type="tel" name="phone" required placeholder="98765 43210" pattern="[0-9]{10}" maxlength="10" title="Please enter a valid 10-digit mobile number" style="flex: 1;">
+        <div class="input-phone-group">
+            <span class="phone-prefix">+91</span>
+            <input type="tel" name="phone" required placeholder="98765 43210" pattern="[0-9]{10}" maxlength="10" title="Please enter a valid 10-digit mobile number">
         </div>
     </div>
 

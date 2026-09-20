@@ -711,6 +711,11 @@ $r->post('/onboarding', function () {
         }
     }
 
+    // If state is Other or non-India and state_other is provided, save that
+    if ((($pData['state'] ?? '') === 'Other' || ($pData['country'] ?? '') !== 'India') && !empty($_POST['state_other'])) {
+        $pData['state'] = trim((string)$_POST['state_other']);
+    }
+
     $profileExists = DB::val('SELECT id FROM profiles WHERE user_id = ?', [$uid]);
     if ($profileExists) {
         DB::update('profiles', $pData, ['user_id' => $uid]);
@@ -720,13 +725,23 @@ $r->post('/onboarding', function () {
     }
 
     // 2. Save Spiritual Details (Platform Core USP)
-    $spiritualFields = ['spiritual_path', 'guru'];
+    $spiritualFields = ['spiritual_path', 'guru', 'spiritual_organization'];
     $sData = [];
     foreach ($spiritualFields as $f) {
         if (isset($_POST[$f])) {
             $sData[$f] = trim((string)$_POST[$f]) === '' ? null : trim((string)$_POST[$f]);
         }
     }
+
+    // If spiritual_path is Other and spiritual_path_other is provided
+    if (($sData['spiritual_path'] ?? '') === 'Other' && !empty($_POST['spiritual_path_other'])) {
+        $sData['spiritual_path'] = trim((string)$_POST['spiritual_path_other']);
+    }
+    // If spiritual_organization is Other and spiritual_organization_other is provided
+    if (($sData['spiritual_organization'] ?? '') === 'Other' && !empty($_POST['spiritual_organization_other'])) {
+        $sData['spiritual_organization'] = trim((string)$_POST['spiritual_organization_other']);
+    }
+
     if (!empty($sData)) {
         $spExists = DB::val('SELECT id FROM spiritual_details WHERE user_id = ?', [$uid]);
         if ($spExists) {
