@@ -3,7 +3,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, interactive-widget=resizes-content">
 <title><?= e(setting('site_name', 'SpiritualShaadi')) ?><?= isset($title) ? ' — ' . e($title) : '' ?></title>
 <meta name="description" content="<?= e(setting('site_tagline', 'Find a Perfect Spiritual Life Partner')) ?>">
 

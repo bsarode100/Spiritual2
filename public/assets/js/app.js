@@ -80,16 +80,66 @@
         });
     });
 
-    // Auto-scroll messages pane to bottom & keep pinned on keyboard open
+    // Auto-scroll messages pane & keep chat header pinned at top when mobile keyboard opens
+    const isChatPage = document.body.classList.contains('is-chat-page');
     const msgBody = document.querySelector('.msg-pane-body');
+    const chatPane = document.querySelector('body.is-chat-page .msg-pane');
+    const chatInput = document.querySelector('body.is-chat-page .chat-input');
+
     if (msgBody) {
         msgBody.scrollTop = msgBody.scrollHeight;
-        // On mobile, when keyboard opens and viewport resizes, maintain scroll position
-        if (window.visualViewport) {
-            window.visualViewport.addEventListener('resize', () => {
+    }
+
+    if (isChatPage && chatPane) {
+        const lockChatViewport = () => {
+            // Force document scroll back to 0,0 so header never scrolls off top
+            window.scrollTo(0, 0);
+            if (document.documentElement) document.documentElement.scrollTop = 0;
+            if (document.body) document.body.scrollTop = 0;
+
+            if (window.visualViewport) {
+                const vv = window.visualViewport;
+                // Bound the chat pane to exactly the visual viewport height
+                chatPane.style.height = `${vv.height}px`;
+                if (vv.offsetTop > 0) {
+                    chatPane.style.transform = `translateY(${vv.offsetTop}px)`;
+                } else {
+                    chatPane.style.transform = 'none';
+                }
+            }
+
+            if (msgBody) {
                 msgBody.scrollTop = msgBody.scrollHeight;
+            }
+        };
+
+        if (window.visualViewport) {
+            window.visualViewport.addEventListener('resize', lockChatViewport);
+            window.visualViewport.addEventListener('scroll', lockChatViewport);
+        }
+
+        if (chatInput) {
+            chatInput.addEventListener('focus', () => {
+                // When keypad starts opening, immediately reset scroll and update
+                requestAnimationFrame(lockChatViewport);
+                setTimeout(lockChatViewport, 80);
+                setTimeout(lockChatViewport, 250);
+                setTimeout(lockChatViewport, 450);
+            });
+            chatInput.addEventListener('blur', () => {
+                requestAnimationFrame(lockChatViewport);
+                setTimeout(lockChatViewport, 120);
             });
         }
+
+        // Prevent window-level bounce/scroll on touchmove outside the message body
+        document.addEventListener('touchmove', (e) => {
+            if (!e.target.closest('.msg-pane-body')) {
+                if (e.target.closest('.msg-pane-head, .msg-pane-form')) {
+                    e.preventDefault();
+                }
+            }
+        }, { passive: false });
     }
 
     // Dismiss profile card (Pass action)
