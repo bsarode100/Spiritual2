@@ -140,6 +140,8 @@ try {
         "ALTER TABLE `users` ADD COLUMN `last_active_at`    DATETIME NULL AFTER `last_login_at`",
 
         // profiles: privacy + fields families ask for
+        "ALTER TABLE `profiles` ADD COLUMN `created_for` VARCHAR(30) DEFAULT 'self' AFTER `user_id`",
+        "ALTER TABLE `profiles` MODIFY `marital_status` VARCHAR(40) NOT NULL DEFAULT 'never_married'",
         "ALTER TABLE `profiles` ADD COLUMN `visibility` ENUM('public','members','hidden') NOT NULL DEFAULT 'members' AFTER `partner_pref`",
         "ALTER TABLE `profiles` ADD COLUMN `show_phone` TINYINT(1) NOT NULL DEFAULT 0 AFTER `visibility`",
         "ALTER TABLE `profiles` ADD COLUMN `show_email` TINYINT(1) NOT NULL DEFAULT 0 AFTER `show_phone`",

@@ -173,28 +173,95 @@ function opposite_gender(?string $gender): ?string {
     };
 }
 
-const PROFILE_PHOTO_MIN = 2;
+const PROFILE_PHOTO_MIN = 1;
 const PROFILE_PHOTO_MAX = 6;
 
-// Fields the user marks with an asterisk on the edit form. Order matters —
-// this is also the order the "please complete" banner lists them in.
+// Fields that define core matching & verification (Shaadi/Jeevansathi model + Spiritual USP)
 function profile_required_fields(): array {
     return [
-        'name'                  => 'Full name',
-        'gender'                => 'Gender',
-        'dob'                   => 'Date of birth',
-        'marital_status'        => 'Marital status',
-        'religion'              => 'Religion',
-        'country'               => 'Country',
-        'state'                 => 'State',
-        'city'                  => 'City',
-        'profession'            => 'Profession',
-        'annual_income'         => 'Annual income',
-        'spiritual_path'        => 'Spiritual path',
-        'ishta_devata'          => 'Isht Devta',
-        'lifestyle_commitments' => 'Spiritual lifestyle commitments',
-        'about_me'              => 'About you',
-        'photos'                => 'At least ' . PROFILE_PHOTO_MIN . ' profile photos',
+        'name'           => 'Full name',
+        'gender'         => 'Gender',
+        'dob'            => 'Date of birth',
+        'height_cm'      => 'Height',
+        'marital_status' => 'Marital status',
+        'religion'       => 'Religion',
+        'mother_tongue'  => 'Mother tongue',
+        'community'      => 'Caste / Community',
+        'spiritual_path' => 'Spiritual path',
+        'diet'           => 'Diet',
+        'country'        => 'Country',
+        'state'          => 'State',
+        'city'           => 'City',
+        'education'      => 'Highest education',
+        'profession'     => 'Profession',
+        'annual_income'  => 'Annual income',
+        'about_me'       => 'About you',
+        'photos'         => 'At least ' . PROFILE_PHOTO_MIN . ' profile photo',
+    ];
+}
+
+function created_for_options(): array {
+    return [
+        'self'     => 'Myself',
+        'parent'   => 'My Son / Daughter',
+        'sibling'  => 'My Brother / Sister',
+        'relative' => 'Relative / Friend',
+    ];
+}
+
+function marital_status_options(): array {
+    return [
+        'never_married'    => 'Never Married',
+        'divorced'         => 'Divorced',
+        'widowed'          => 'Widowed',
+        'awaiting_divorce' => 'Awaiting Divorce',
+    ];
+}
+
+function diet_options(): array {
+    return [
+        'sattvic'        => 'Sattvic',
+        'vegetarian'     => 'Vegetarian',
+        'jain'           => 'Jain',
+        'vegan'          => 'Vegan',
+        'eggetarian'     => 'Eggetarian',
+        'non_vegetarian' => 'Non-Vegetarian',
+    ];
+}
+
+function annual_income_options(): array {
+    return [
+        'Under ₹3 Lakh'      => 'Under ₹3 Lakh',
+        '₹3 - 5 Lakh'        => '₹3 - 5 Lakh',
+        '₹5 - 7 Lakh'        => '₹5 - 7 Lakh',
+        '₹7 - 10 Lakh'       => '₹7 - 10 Lakh',
+        '₹10 - 15 Lakh'      => '₹10 - 15 Lakh',
+        '₹15 - 20 Lakh'      => '₹15 - 20 Lakh',
+        '₹20 - 30 Lakh'      => '₹20 - 30 Lakh',
+        '₹30 - 50 Lakh'      => '₹30 - 50 Lakh',
+        '₹50 Lakh - 1 Crore' => '₹50 Lakh - 1 Crore',
+        '₹1 Crore & above'   => '₹1 Crore & above',
+        'Prefer not to say'  => 'Prefer not to say',
+    ];
+}
+
+function spiritual_paths_list(): array {
+    return [
+        'ISKCON',
+        'Gaudiya Vaishnavism',
+        'Art of Living',
+        'Isha Yoga',
+        'Ramakrishna Mission / Vedanta',
+        'Vipassana',
+        'Brahma Kumaris',
+        'Swaminarayan',
+        'Sahaja Yoga',
+        'Chinmaya Mission',
+        'Siddha Yoga',
+        'Kriya Yoga',
+        'Arya Samaj',
+        'Self-Guided / Independent Sadhak',
+        'Other',
     ];
 }
 
@@ -203,9 +270,10 @@ function profile_required_fields(): array {
 function profile_missing_fields(int $userId): array {
     $row = DB::one(
         "SELECT u.name,
-                p.gender, p.dob, p.marital_status, p.religion, p.country, p.state, p.city,
-                p.profession, p.annual_income, p.about_me,
-                s.spiritual_path, s.ishta_devata, s.vegetarian, s.vegan, s.no_smoking, s.no_alcohol,
+                p.created_for, p.gender, p.dob, p.height_cm, p.marital_status, p.religion, p.mother_tongue,
+                p.community, p.caste, p.country, p.state, p.city, p.education, p.profession, p.annual_income,
+                p.diet, p.about_me,
+                s.spiritual_path, s.guru, s.spiritual_organization, s.ishta_devata,
                 (SELECT COUNT(*) FROM photos WHERE user_id = u.id) AS photo_count
            FROM users u
            LEFT JOIN profiles p ON p.user_id = u.id
@@ -219,9 +287,10 @@ function profile_missing_fields(int $userId): array {
     foreach (profile_required_fields() as $key => $label) {
         if ($key === 'photos') {
             if ((int)($row['photo_count'] ?? 0) < PROFILE_PHOTO_MIN) $missing[$key] = $label;
-        } elseif ($key === 'lifestyle_commitments') {
-            $hasCommitment = !empty($row['vegetarian']) || !empty($row['vegan']) || !empty($row['no_smoking']) || !empty($row['no_alcohol']);
-            if (!$hasCommitment) $missing[$key] = $label;
+        } elseif ($key === 'community') {
+            // Community or caste counts as cultural background
+            $hasComm = !empty($row['community']) || !empty($row['caste']);
+            if (!$hasComm) $missing[$key] = $label;
         } elseif (empty($row[$key]) || trim((string)$row[$key]) === '') {
             $missing[$key] = $label;
         }

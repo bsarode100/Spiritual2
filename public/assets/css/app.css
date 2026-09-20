@@ -4071,4 +4071,358 @@ p {
     }
 }
 
+/* =====================================================================
+   Onboarding & Registration Wizard (Shaadi / Jeevansathi Style)
+   ===================================================================== */
+.onboarding-wrapper {
+    padding: 2rem 0 4rem;
+    min-height: calc(100vh - 80px);
+}
+
+.onboarding-progress-header {
+    margin-bottom: 2rem;
+}
+
+.wizard-progress-bar-wrap {
+    background: rgba(255, 255, 255, 0.82);
+    padding: 1.25rem 1.5rem;
+    border-radius: var(--r);
+    border: 1px solid var(--c-line);
+    box-shadow: var(--shadow-sm);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+}
+
+.wizard-progress-track {
+    height: 8px;
+    background: rgba(0, 0, 0, 0.06);
+    border-radius: var(--r-pill);
+    overflow: hidden;
+    margin-bottom: 0.75rem;
+}
+
+.wizard-progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--c-rose) 0%, var(--c-saffron) 100%);
+    border-radius: var(--r-pill);
+    transition: width 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.wizard-step-nav-info {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.9rem;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.wizard-step-badge {
+    font-weight: 700;
+    color: var(--c-maroon);
+    background: rgba(212, 91, 122, 0.12);
+    padding: 0.25rem 0.75rem;
+    border-radius: var(--r-pill);
+    font-size: 0.8rem;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+}
+
+.wizard-step-title {
+    font-weight: 600;
+    color: var(--c-ink);
+}
+
+.onboarding-card {
+    background: #FFFFFF;
+    border-radius: var(--r-xl);
+    padding: 2.5rem 2.8rem;
+    border: 1.5px solid var(--c-line);
+    box-shadow: var(--shadow-lg);
+    position: relative;
+}
+
+.onboarding-step-pane {
+    display: none;
+}
+
+.onboarding-step-pane.is-active {
+    display: block;
+    animation: fadeInWizard 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes fadeInWizard {
+    from {
+        opacity: 0;
+        transform: translateY(8px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.step-title-box {
+    text-align: center;
+    margin-bottom: 2rem;
+}
+
+.spiritual-icon-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 54px;
+    height: 54px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, rgba(246, 193, 119, 0.25), rgba(212, 91, 122, 0.18));
+    border: 1.5px solid rgba(212, 91, 122, 0.25);
+    font-size: 1.8rem;
+    margin-bottom: 0.85rem;
+    box-shadow: 0 4px 14px rgba(212, 91, 122, 0.15);
+}
+
+.step-title-box h2 {
+    font-size: 1.85rem;
+    color: var(--c-ink);
+    margin-bottom: 0.35rem;
+}
+
+.step-title-box p {
+    font-size: 0.95rem;
+    color: var(--c-muted);
+    max-width: 520px;
+    margin: 0 auto;
+    line-height: 1.5;
+}
+
+/* Interactive Pill Selector Group */
+.pill-selector-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.55rem;
+}
+
+.pill-selector-item {
+    display: inline-flex;
+    margin: 0;
+    cursor: pointer;
+}
+
+.pill-selector-item input[type="radio"] {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+    width: 0;
+    height: 0;
+}
+
+.pill-selector-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.6rem 1.15rem;
+    border-radius: var(--r-pill);
+    border: 1.5px solid var(--c-line);
+    background: rgba(255, 255, 255, 0.95);
+    color: var(--c-ink-soft);
+    font-size: 0.9rem;
+    font-weight: 500;
+    transition: var(--tr-fast);
+    user-select: none;
+    line-height: 1.25;
+}
+
+.pill-selector-item:hover .pill-selector-btn {
+    border-color: var(--c-rose);
+    background: rgba(212, 91, 122, 0.05);
+    color: var(--c-maroon);
+}
+
+.pill-selector-item input[type="radio"]:checked + .pill-selector-btn {
+    background: linear-gradient(135deg, rgba(212, 91, 122, 0.12), rgba(246, 193, 119, 0.16));
+    border-color: var(--c-rose);
+    color: var(--c-maroon);
+    font-weight: 600;
+    box-shadow: 0 2px 8px rgba(212, 91, 122, 0.18);
+}
+
+.pill-selector-btn.pill-muted {
+    font-size: 0.85rem;
+    opacity: 0.85;
+}
+
+/* Quick Chips & Suggestions */
+.quick-chips, .quick-suggestion-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.45rem;
+}
+
+.quick-chip, .suggestion-chip {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.3rem 0.8rem;
+    border-radius: var(--r-pill);
+    background: rgba(246, 193, 119, 0.14);
+    border: 1px solid rgba(217, 148, 32, 0.3);
+    color: #8A5A00;
+    font-size: 0.82rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: var(--tr-fast);
+    user-select: none;
+}
+
+.quick-chip:hover, .suggestion-chip:hover {
+    background: rgba(246, 193, 119, 0.28);
+    border-color: var(--c-saffron);
+    transform: translateY(-1px);
+}
+
+/* Spiritual Highlight Box (USP) */
+.spiritual-highlight-box {
+    background: linear-gradient(145deg, rgba(253, 244, 227, 0.55) 0%, rgba(250, 221, 230, 0.4) 100%);
+    border: 1.5px solid rgba(217, 148, 32, 0.38);
+    border-radius: var(--r-lg);
+    padding: 1.5rem;
+    position: relative;
+    box-shadow: 0 4px 18px rgba(217, 148, 32, 0.08);
+}
+
+.spiritual-section-label {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    margin-bottom: 0.95rem;
+}
+
+.spiritual-section-label span {
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: var(--c-maroon);
+}
+
+.spiritual-section-label small {
+    font-size: 0.84rem;
+    color: var(--c-muted);
+}
+
+.spiritual-pills .spiritual-pill-btn {
+    padding: 0.55rem 1.05rem;
+    font-size: 0.88rem;
+}
+
+/* Photo Upload Dropzone */
+.photo-upload-dropzone {
+    border: 2px dashed rgba(212, 91, 122, 0.4);
+    border-radius: var(--r-lg);
+    padding: 2.2rem 1.5rem;
+    text-align: center;
+    background: rgba(253, 242, 246, 0.4);
+    cursor: pointer;
+    transition: var(--tr-fast);
+    position: relative;
+}
+
+.photo-upload-dropzone:hover {
+    border-color: var(--c-rose);
+    background: rgba(253, 242, 246, 0.75);
+}
+
+.photo-dropzone-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.dropzone-icon {
+    font-size: 2.6rem;
+    line-height: 1;
+}
+
+.dropzone-text strong {
+    display: block;
+    font-size: 1.05rem;
+    color: var(--c-ink);
+    margin-bottom: 0.25rem;
+}
+
+.dropzone-text p {
+    font-size: 0.86rem;
+    color: var(--c-muted);
+    margin: 0 0 0.85rem;
+}
+
+.photo-preview-box {
+    position: relative;
+    display: inline-block;
+    max-width: 220px;
+    margin: 0 auto;
+}
+
+.photo-preview-box img {
+    width: 200px;
+    height: 240px;
+    object-fit: cover;
+    border-radius: var(--r);
+    border: 2px solid var(--c-line);
+    box-shadow: var(--shadow);
+}
+
+.btn-remove-preview {
+    margin-top: 0.75rem;
+    background: rgba(255, 255, 255, 0.95);
+    border: 1px solid var(--c-line);
+    border-radius: var(--r-pill);
+    padding: 0.4rem 1rem;
+    font-size: 0.84rem;
+    color: var(--c-rose-dark);
+    font-weight: 600;
+    cursor: pointer;
+    transition: var(--tr-fast);
+}
+
+.btn-remove-preview:hover {
+    background: #FFF;
+    border-color: var(--c-rose);
+    color: var(--c-rose);
+}
+
+/* Wizard Button Navigation Row */
+.wizard-btn-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 2.2rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--c-line-soft);
+    gap: 1rem;
+}
+
+@media (max-width: 640px) {
+    .onboarding-card {
+        padding: 1.5rem 1.15rem;
+        border-radius: var(--r-lg);
+    }
+    .wizard-progress-bar-wrap {
+        padding: 1rem 1.15rem;
+    }
+    .pill-selector-group {
+        gap: 0.4rem;
+    }
+    .pill-selector-btn {
+        padding: 0.5rem 0.85rem;
+        font-size: 0.84rem;
+    }
+    .wizard-btn-row {
+        flex-direction: column-reverse;
+        gap: 0.75rem;
+    }
+    .wizard-btn-row .btn {
+        width: 100%;
+    }
+}
+
+
 

@@ -560,6 +560,7 @@ $r->get('/register', function () {
 });
 
 $r->post('/register', function () {
+    $created_for = trim($_POST['created_for'] ?? 'self');
     $name   = trim($_POST['name'] ?? '');
     $email  = trim($_POST['email'] ?? '');
     $phone  = trim($_POST['phone'] ?? '');
@@ -582,13 +583,14 @@ $r->post('/register', function () {
         redirect('/register');
     }
     $_SESSION['pending_signup'] = [
+        'created_for'   => $created_for,
         'name'          => $name,
         'email'         => $email,
         'phone'         => $phone,
         'password_hash' => password_hash($pass, PASSWORD_BCRYPT),
-        'gender'          => $gender,
-        'dob'             => $dob,
-        'created_at'      => time(),
+        'gender'        => $gender,
+        'dob'           => $dob,
+        'created_at'    => time(),
     ];
     $_SESSION['signup_otp_email'] = $email;
     if (!issue_signup_otp($_SESSION['pending_signup'])) {
@@ -661,6 +663,7 @@ $r->post('/verify-signup-otp', function () {
     ]);
     DB::insert('profiles', [
         'user_id'          => $uid,
+        'created_for'      => $pending['created_for'] ?? 'self',
         'gender'           => $pending['gender'],
         'dob'              => $pending['dob'],
         'profile_complete' => 0,
@@ -668,8 +671,105 @@ $r->post('/verify-signup-otp', function () {
 
     clear_signup_otp_session();
     Auth::login($uid);
-    flash('success', 'Welcome! Complete your profile so others can find you.');
-    redirect('/profile/edit');
+    flash('success', 'Account verified! Complete your profile to discover compatible seekers.');
+    redirect('/onboarding');
+});
+
+// ------------------- ONBOARDING QUESTIONNAIRE WIZARD -------------------
+$r->get('/onboarding', function () {
+    Auth::require();
+    $uid = Auth::id();
+    $user = Auth::user();
+    $profile = DB::one('SELECT * FROM profiles WHERE user_id = ?', [$uid]) ?: [];
+    $spiritual = DB::one('SELECT * FROM spiritual_details WHERE user_id = ?', [$uid]) ?: [];
+    $photoCount = (int) DB::val('SELECT COUNT(*) FROM photos WHERE user_id = ?', [$uid]);
+
+    // If profile is already 100% complete, redirect to browse
+    if (!empty($profile['profile_complete'])) {
+        redirect('/browse');
+    }
+
+    $currentStep = 2; // Default to Step 2 (Physical, Cultural & Spiritual)
+    view('auth/onboarding', compact('profile', 'spiritual', 'user', 'photoCount', 'currentStep'), 'auth');
+});
+
+$r->post('/onboarding', function () {
+    Auth::require();
+    $uid = Auth::id();
+
+    // 1. Save Profiles table fields
+    $profileFields = [
+        'height_cm', 'marital_status', 'religion', 'mother_tongue', 'community',
+        'country', 'state', 'city', 'education', 'profession', 'annual_income',
+        'diet', 'about_me'
+    ];
+    $pData = [];
+    foreach ($profileFields as $f) {
+        if (isset($_POST[$f])) {
+            $pData[$f] = trim((string)$_POST[$f]) === '' ? null : trim((string)$_POST[$f]);
+        }
+    }
+
+    $profileExists = DB::val('SELECT id FROM profiles WHERE user_id = ?', [$uid]);
+    if ($profileExists) {
+        DB::update('profiles', $pData, ['user_id' => $uid]);
+    } else {
+        $pData['user_id'] = $uid;
+        DB::insert('profiles', $pData);
+    }
+
+    // 2. Save Spiritual Details (Platform Core USP)
+    $spiritualFields = ['spiritual_path', 'guru'];
+    $sData = [];
+    foreach ($spiritualFields as $f) {
+        if (isset($_POST[$f])) {
+            $sData[$f] = trim((string)$_POST[$f]) === '' ? null : trim((string)$_POST[$f]);
+        }
+    }
+    if (!empty($sData)) {
+        $spExists = DB::val('SELECT id FROM spiritual_details WHERE user_id = ?', [$uid]);
+        if ($spExists) {
+            DB::update('spiritual_details', $sData, ['user_id' => $uid]);
+        } else {
+            $sData['user_id'] = $uid;
+            DB::insert('spiritual_details', $sData);
+        }
+    }
+
+    // 3. Handle Photo Upload (Minimum 1 Photo Verification)
+    if (!empty($_FILES['photo']['name']) && $_FILES['photo']['error'] === UPLOAD_ERR_OK) {
+        $tmp = $_FILES['photo']['tmp_name'];
+        $ext = strtolower(pathinfo($_FILES['photo']['name'], PATHINFO_EXTENSION));
+        if (in_array($ext, ['jpg', 'jpeg', 'png', 'webp'])) {
+            $avatarDir = $GLOBALS['CFG']['uploads']['avatar_dir'] ?? (__DIR__ . '/../public/uploads/avatars');
+            if (!is_dir($avatarDir)) @mkdir($avatarDir, 0755, true);
+            $filename = 'user_' . $uid . '_' . time() . '.' . $ext;
+            $dest = $avatarDir . '/' . $filename;
+            if (move_uploaded_file($tmp, $dest)) {
+                $relPath = 'uploads/avatars/' . $filename;
+                $hasPrimary = (bool) DB::val('SELECT 1 FROM photos WHERE user_id = ? AND is_primary = 1', [$uid]);
+                DB::insert('photos', [
+                    'user_id'    => $uid,
+                    'path'       => $relPath,
+                    'is_primary' => $hasPrimary ? 0 : 1,
+                    'status'     => 'approved',
+                ]);
+            }
+        }
+    }
+
+    // 4. Recompute profile completeness
+    $isComplete = recompute_profile_complete($uid);
+    if ($isComplete) {
+        flash('success', '🪷 Haribol! Your profile is 100% complete. Discover your spiritual match!');
+        redirect('/browse');
+    } else {
+        $missing = profile_missing_fields($uid);
+        if ($missing) {
+            flash('success', 'Details saved! Please finish the remaining required fields to complete your profile.');
+        }
+        redirect('/onboarding');
+    }
 });
 
 $r->post('/resend-signup-otp', function () {
