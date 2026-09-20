@@ -84,7 +84,6 @@
                     <?php endif; ?>
                 <?php endif; ?>
                 <a href="<?= Auth::isAdmin() ? '/admin' : '/dashboard' ?>" class="btn btn-ghost btn-sm nav-desktop-link"><?= Auth::isAdmin() ? 'Admin' : 'Dashboard' ?></a>
-                <a href="<?= Auth::isAdmin() ? '/admin' : '/dashboard' ?>" class="btn btn-primary btn-sm nav-mobile-dash" title="Dashboard">Dashboard</a>
                 <a href="/logout" class="btn btn-primary btn-sm nav-desktop-link">Sign Out</a>
             <?php else: ?>
                 <a href="/login" class="btn btn-ghost btn-sm nav-desktop-link">Sign In</a>

@@ -164,42 +164,16 @@ $shortlistsText = $membership['shortlists_left'] === null ? 'Unlimited' : (strin
             </div>
             <?php endif; ?>
 
-            <!-- Daily Suggested Matches -->
-            <?php if ($matches): ?>
-            <div class="flex-between mb-3">
-                <h2 style="font-size: 1.5rem; margin: 0;">Suggested for you</h2>
-                <a href="/browse" class="btn btn-ghost btn-sm">Explore All Seekers →</a>
+            <!-- Discover Matches CTA Card (Replaces redundant card grid) -->
+            <div class="admin-card text-center mb-4" style="padding: 2.2rem 1.5rem; background: linear-gradient(135deg, rgba(246, 193, 119, 0.15), rgba(212, 91, 122, 0.08)); border: 1.5px dashed rgba(212, 91, 122, 0.28); border-radius: var(--r-lg);">
+                <div style="font-size: 2.2rem; margin-bottom: 0.5rem;">🪷</div>
+                <h3 style="font-family: var(--f-display); font-size: 1.4rem; color: var(--c-maroon); margin-bottom: 0.35rem;">Find Souls On Your Spiritual Path</h3>
+                <p style="color: var(--c-muted); max-width: 480px; margin: 0 auto 1.25rem; font-size: 0.92rem;">Explore seekers filtered by spiritual tradition, dietary vows, guru lineage, and sacred lifestyle.</p>
+                <a href="/browse" class="btn btn-primary btn-sm" style="display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.55rem 1.25rem;">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+                    Explore Matches In Matches Tab →
+                </a>
             </div>
-            <div class="profiles-grid">
-                <?php foreach ($matches as $m): $age = age_from_dob($m['dob']); ?>
-                    <article class="profile-card">
-                        <div class="profile-photo">
-                            <img src="<?= e(avatar_url($m)) ?>" alt="">
-                            <?php if ($m['spiritual_path']): ?><span class="profile-badge"><?= e($m['spiritual_path']) ?></span><?php endif; ?>
-                            <?php if (!empty($m['is_boosted'])): ?><span class="profile-badge profile-badge-right">Boosted</span><?php elseif (!empty($m['is_featured'])): ?><span class="profile-badge profile-badge-right">Featured</span><?php endif; ?>
-                        </div>
-                        <div class="profile-body">
-                            <h3><?= e($m['name']) ?><?php if ($age): ?>, <?= $age ?><?php endif; ?></h3>
-                            <?php if (!empty($m['premium_badge'])): ?>
-                                <span class="pill gold" style="font-size: .75rem; margin-bottom: .35rem;"><?= e($m['plan_name']) ?></span>
-                            <?php endif; ?>
-                            <?= verified_badge($m['verified_tier'] ?? null, 'sm') ?>
-                            <?php if (empty($m['profile_complete'])): ?>
-                                <span class="pill gold" style="font-size: .75rem; margin-bottom: .35rem;">Profile in progress</span>
-                            <?php endif; ?>
-                            <div class="profile-meta"><?= e($m['profession'] ?: 'Seeker') ?> - <?= e($m['city'] ?: '-') ?></div>
-                            <p class="profile-about"><?= e($m['about_me'] ?? '') ?></p>
-                            <div class="profile-card-actions">
-                                <a href="/member/<?= (int)$m['id'] ?>" class="btn btn-ghost btn-sm">View Profile</a>
-                                <form method="post" action="/interest/send/<?= (int)$m['id'] ?>">
-                                    <?= csrf_field() ?><button class="btn btn-primary btn-sm">Express Interest</button>
-                                </form>
-                            </div>
-                        </div>
-                    </article>
-                <?php endforeach; ?>
-            </div>
-            <?php endif; ?>
         </div>
     </div>
 </div>

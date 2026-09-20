@@ -2,7 +2,7 @@
 <section class="section-tight"><div class="container">
     <div class="flex-between mb-4" style="flex-wrap: wrap; gap: .5rem;">
         <div><span class="eyebrow">Conversations</span><h1 style="margin:0;">Messages</h1></div>
-        <div class="flex gap-1" style="flex-wrap: wrap;">
+        <div class="flex gap-1 nav-desktop-link" style="flex-wrap: wrap;">
             <a href="/browse" class="btn btn-ghost btn-sm">🔍 Browse Profiles</a>
             <a href="/dashboard" class="btn btn-ghost btn-sm">🏠 Dashboard</a>
         </div>
