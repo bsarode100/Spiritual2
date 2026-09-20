@@ -2,7 +2,7 @@
 // Group by sensible prefix for the form
 $groups = [
     'Brand'       => ['site_name','site_tagline','footer_about'],
-    'Email & SMTP'=> ['mail_mailer','mail_host','mail_port','mail_username','mail_password','mail_encryption','mail_from_address','mail_from_name','allow_test_otp'],
+    'Email & SMTP'=> ['mail_mailer','mail_host','mail_port','mail_username','mail_password','mail_encryption','mail_from_address','mail_from_name'],
     'Hero'        => ['hero_heading','hero_subheading','hero_cta_text'],
     'About'       => ['about_short'],
     'Stats'       => ['stat_members','stat_marriages','stat_paths','stat_countries'],
@@ -42,7 +42,6 @@ if ($extras) $groups['Other'] = array_values($extras);
                     'mail_password' => '16-character Google App Password (from myaccount.google.com/apppasswords)',
                     'mail_encryption' => 'tls or ssl',
                     'mail_from_address' => 'Must match or be an authorized alias of your mail username',
-                    'allow_test_otp' => 'Set to 1 to show OTP on screen if email sending fails (great for testing)',
                     default => null,
                 };
             ?>

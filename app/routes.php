@@ -607,9 +607,6 @@ $r->post('/register', function () {
 $r->get('/verify-signup-otp', function () {
     if (Auth::check()) redirect('/dashboard');
     if (empty($_SESSION['pending_signup']['email'])) redirect('/register');
-    if (!empty($_SESSION['test_signup_otp'])) {
-        flash('info', 'Testing Mode: Your verification code is ' . $_SESSION['test_signup_otp']);
-    }
     view('auth/verify_otp', [
         'email' => $_SESSION['pending_signup']['email'],
         'mode' => 'signup',
@@ -833,9 +830,6 @@ $r->post('/forgot-password', function () {
 $r->get('/verify-otp', function () {
     if (Auth::check()) redirect('/dashboard');
     if (empty($_SESSION['otp_email'])) redirect('/forgot-password');
-    if (!empty($_SESSION['test_password_otp'])) {
-        flash('info', 'Testing Mode: Your verification code is ' . $_SESSION['test_password_otp']);
-    }
     view('auth/verify_otp', ['email' => $_SESSION['otp_email']], 'auth');
 });
 
@@ -979,12 +973,7 @@ function issue_password_otp(array $user): bool {
         'expires_at'   => date('Y-m-d H:i:s', strtotime('+10 minutes')),
         'requested_ip' => $_SERVER['REMOTE_ADDR'] ?? null,
     ]);
-    $sent = send_password_reset_email($user, $otp);
-    if (!$sent && ($GLOBALS['CFG']['app']['debug'] || setting('allow_test_otp') === '1')) {
-        $_SESSION['test_password_otp'] = $otp;
-        return true;
-    }
-    return $sent;
+    return send_password_reset_email($user, $otp);
 }
 
 function issue_signup_otp(array $pending): bool {
@@ -1000,12 +989,7 @@ function issue_signup_otp(array $pending): bool {
         'expires_at'   => date('Y-m-d H:i:s', strtotime('+10 minutes')),
         'requested_ip' => $_SERVER['REMOTE_ADDR'] ?? null,
     ]);
-    $sent = send_signup_otp_email($pending, $otp);
-    if (!$sent && ($GLOBALS['CFG']['app']['debug'] || setting('allow_test_otp') === '1')) {
-        $_SESSION['test_signup_otp'] = $otp;
-        return true;
-    }
-    return $sent;
+    return send_signup_otp_email($pending, $otp);
 }
 
 function latest_signup_otp(string $email): ?array {
