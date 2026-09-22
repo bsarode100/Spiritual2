@@ -72,8 +72,18 @@ $_isChatPage = preg_match('#^/messages/\d+#', parse_url($_SERVER['REQUEST_URI'] 
 
 <?php
 $_footerUri = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH);
-$_isHome = ($_footerUri === '/' || $_footerUri === '');
-if ($_isHome): ?>
+$_publicFooterPages = [
+    '/', '', '/contact', '/about', '/payment-details', '/packages',
+    '/addons', '/verification', '/happy-stories', '/blog', '/login',
+    '/register', '/forgot-password', '/privacy', '/terms', '/refund-policy',
+    '/cookie-policy'
+];
+$_showFooterOnMobile = in_array($_footerUri, $_publicFooterPages, true)
+    || str_starts_with($_footerUri, '/page/')
+    || str_starts_with($_footerUri, '/blog/')
+    || str_starts_with($_footerUri, '/happy-stories/');
+
+if ($_showFooterOnMobile): ?>
     <?php include __DIR__ . '/../partials/footer.php'; ?>
 <?php else: ?>
     <div class="footer-hide-mobile">

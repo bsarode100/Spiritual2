@@ -127,6 +127,7 @@ try {
         'razorpay_key_id'         => '',
         'razorpay_key_secret'     => '',
         'razorpay_webhook_secret' => '',
+        'legal_owner'             => 'PRATIBHA SUDHAKAR SHERIKAR',
     ] as $k => $v) {
         DB::q("INSERT IGNORE INTO site_settings (setting_key, setting_value) VALUES (?, ?)", [$k, $v]);
     }

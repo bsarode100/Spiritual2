@@ -6,7 +6,7 @@ $groups = [
     'Hero'        => ['hero_heading','hero_subheading','hero_cta_text'],
     'About'       => ['about_short'],
     'Stats'       => ['stat_members','stat_marriages','stat_paths','stat_countries'],
-    'Contact'     => ['contact_email','contact_phone','contact_address'],
+    'Contact'     => ['contact_email','contact_phone','contact_address','legal_owner'],
     'Social'      => ['social_facebook','social_instagram','social_youtube'],
     'Payments'    => ['payment_payee_name','payment_upi_id','payment_upi_qr_url','payment_bank_name','payment_account_name','payment_account_number','payment_ifsc','payment_branch','payment_contact_phone','payment_contact_email','payment_instructions'],
 ];
