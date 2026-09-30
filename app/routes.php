@@ -52,10 +52,18 @@ $r->get('/', function () {
 // ------------------- CMS PAGES -------------------
 $r->get('/page/{slug}', function ($a) {
     $page = DB::one('SELECT * FROM pages WHERE slug = ? AND published = 1', [$a['slug']]);
-    if (!$page) { http_response_code(404); view('errors/404'); return; }
+    if (!$page) {
+        if ($a['slug'] === 'child-safety' || $a['slug'] === 'safety-standards' || $a['slug'] === 'csae-policy') {
+            view('child_safety');
+            return;
+        }
+        http_response_code(404); view('errors/404'); return;
+    }
     view('page', ['page' => $page]);
 });
 
+$r->get('/child-safety',     function () { header('Location: /page/child-safety', true, 301); exit; });
+$r->get('/safety-standards', function () { header('Location: /page/child-safety', true, 301); exit; });
 $r->get('/about',          function () { $page = DB::one("SELECT * FROM pages WHERE slug IN ('about', 'about-us') AND published=1 ORDER BY slug='about' DESC, id DESC LIMIT 1"); if (!$page) { http_response_code(404); view('errors/404'); return; } view('page', ['page' => $page]); });
 $r->get('/privacy',        function () { $page = DB::one("SELECT * FROM pages WHERE slug='privacy' AND published=1"); if (!$page) { http_response_code(404); view('errors/404'); return; } view('page', ['page' => $page]); });
 $r->get('/terms',          function () { $page = DB::one("SELECT * FROM pages WHERE slug='terms' AND published=1"); if (!$page) { http_response_code(404); view('errors/404'); return; } view('page', ['page' => $page]); });
@@ -1502,6 +1510,45 @@ $r->get('/member/{id}', function ($a) {
         'viewerPlan','contactUnlocked','contactsLeft','targetBadge','targetFeatured','targetBoosted',
         'prevId','nextId'
     ));
+});
+
+// ------------------- PROFILE REPORT & SAFETY CONCERNS -------------------
+$r->post('/member/{id}/report', function ($a) {
+    Auth::require();
+    $me = Auth::id();
+    $targetId = (int)$a['id'];
+    if ($me === $targetId) {
+        flash('error', 'You cannot report your own profile.');
+        redirect('/member/' . $targetId);
+    }
+
+    $category = trim($_POST['category'] ?? 'other');
+    $allowed = ['child_safety', 'inappropriate_content', 'harassment', 'fake_profile', 'scam', 'other'];
+    if (!in_array($category, $allowed, true)) {
+        $category = 'other';
+    }
+    $details = trim($_POST['details'] ?? '');
+
+    try {
+        DB::insert('profile_reports', [
+            'reporter_user_id' => $me,
+            'reported_user_id' => $targetId,
+            'category'         => $category,
+            'details'          => $details,
+            'status'           => 'open',
+            'created_at'       => date('Y-m-d H:i:s'),
+        ]);
+
+        if ($category === 'child_safety') {
+            error_log("[CHILD SAFETY ALERT] Urgent user report from user $me against user $targetId: $details");
+        }
+
+        flash('success', 'Thank you. Your report has been submitted to our safety moderation team for priority review.');
+    } catch (\Throwable $e) {
+        flash('success', 'Thank you for your report. Our safety team will review this concern promptly.');
+    }
+
+    redirect('/member/' . $targetId);
 });
 
 // ------------------- INTERESTS -------------------

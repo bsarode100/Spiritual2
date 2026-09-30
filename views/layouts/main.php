@@ -76,7 +76,7 @@ $_publicFooterPages = [
     '/', '', '/contact', '/about', '/payment-details', '/packages',
     '/addons', '/verification', '/happy-stories', '/blog', '/login',
     '/register', '/forgot-password', '/privacy', '/terms', '/refund-policy',
-    '/cookie-policy'
+    '/cookie-policy', '/child-safety', '/safety-standards'
 ];
 $_showFooterOnMobile = in_array($_footerUri, $_publicFooterPages, true)
     || str_starts_with($_footerUri, '/page/')

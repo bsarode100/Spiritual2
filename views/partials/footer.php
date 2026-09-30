@@ -45,6 +45,7 @@
                     <li><a href="/page/terms">Terms &amp; Conditions</a></li>
                     <li><a href="/page/refund-policy">Refund &amp; Cancellation</a></li>
                     <li><a href="/page/cookie-policy">Cookie Policy</a></li>
+                    <li><a href="/page/child-safety">Child Safety Standards</a></li>
                 </ul>
             </div>
             <div>

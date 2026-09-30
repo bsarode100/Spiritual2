@@ -110,6 +110,10 @@ $canUnlockContact = plan_can($viewerPlan, 'view_contacts') && ($contactsLeft ===
                 <?php elseif ($interest['status'] === 'sent'): ?>
                     <span class="pill gold" style="padding: .8rem 1.4rem;">Interest sent - awaiting response</span>
                 <?php endif; ?>
+
+                <button type="button" class="btn btn-ghost btn-sm" onclick="document.getElementById('reportProfileModal').style.display='flex';" title="Report profile or child safety concern" style="color: var(--c-muted); margin-left: 0.25rem;">
+                    🚩 Report
+                </button>
             </div>
         </div>
     </div>
@@ -271,3 +275,38 @@ $canUnlockContact = plan_can($viewerPlan, 'view_contacts') && ($contactsLeft ===
     <?php endif; ?>
 </div>
 </section>
+
+<!-- Report Profile / Safety Concern Modal -->
+<div id="reportProfileModal" class="modal-backdrop" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.55); z-index:9999; align-items:center; justify-content:center; padding:1rem;">
+    <div class="card" style="background:#fff; max-width:480px; width:100%; border-radius:12px; padding:1.75rem; box-shadow:0 10px 30px rgba(0,0,0,0.25); position:relative;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
+            <h3 style="margin:0; font-size:1.2rem; color:var(--c-ink);">Report Profile / Safety Concern</h3>
+            <button type="button" onclick="document.getElementById('reportProfileModal').style.display='none';" style="background:none; border:none; font-size:1.5rem; cursor:pointer; color:var(--c-muted); line-height:1;">&times;</button>
+        </div>
+        <p style="font-size:0.88rem; color:var(--c-muted); margin-bottom:1.25rem;">
+            SpiritualShaadi takes user trust and child protection very seriously. Reports involving child safety, underage accounts, or exploitation are prioritized immediately.
+        </p>
+        <form method="post" action="/member/<?= (int)$u['id'] ?>/report">
+            <?= csrf_field() ?>
+            <div style="margin-bottom:1rem;">
+                <label style="display:block; font-weight:600; font-size:0.88rem; margin-bottom:0.4rem;">Reason for Report *</label>
+                <select name="category" required style="width:100%; padding:0.6rem; border:1px solid var(--c-border); border-radius:6px; font-size:0.9rem;">
+                    <option value="child_safety">🚨 Child Safety / Underage Concern (Zero Tolerance)</option>
+                    <option value="inappropriate_content">Inappropriate / Obscene Photos or Content</option>
+                    <option value="harassment">Harassment or Abusive Behavior</option>
+                    <option value="fake_profile">Fake Profile or Impersonation</option>
+                    <option value="scam">Scam / Financial Solicitation</option>
+                    <option value="other">Other Community Guideline Violation</option>
+                </select>
+            </div>
+            <div style="margin-bottom:1.25rem;">
+                <label style="display:block; font-weight:600; font-size:0.88rem; margin-bottom:0.4rem;">Details (Optional)</label>
+                <textarea name="details" rows="3" placeholder="Please describe your concern so our safety team can investigate..." style="width:100%; padding:0.6rem; border:1px solid var(--c-border); border-radius:6px; font-size:0.9rem; font-family:inherit;"></textarea>
+            </div>
+            <div style="display:flex; justify-content:flex-end; gap:0.75rem;">
+                <button type="button" class="btn btn-ghost btn-sm" onclick="document.getElementById('reportProfileModal').style.display='none';">Cancel</button>
+                <button type="submit" class="btn btn-primary btn-sm" style="background:#b34a26; border-color:#b34a26;">Submit Report</button>
+            </div>
+        </form>
+    </div>
+</div>
