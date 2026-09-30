@@ -1,4 +1,4 @@
-package com.spiritualshaadi.app;
+package com.spiritualshaadi;
 
 import android.Manifest;
 import android.annotation.SuppressLint;

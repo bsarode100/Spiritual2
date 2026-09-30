@@ -3,11 +3,11 @@ plugins {
 }
 
 android {
-    namespace 'com.spiritualshaadi.app'
+    namespace 'com.spiritualshaadi'
     compileSdk 33
 
     defaultConfig {
-        applicationId "com.spiritualshaadi.app"
+        applicationId "com.spiritualshaadi"
         minSdk 24
         targetSdk 33
         versionCode 1
