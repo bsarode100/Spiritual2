@@ -583,13 +583,16 @@ try {
         } catch (Throwable $e) { /* safe */ }
     }
 
-    // Verification pricing exposed as settings so admin can tune them without a DB change.
+    // Verification is 100% free — trust and identity verification should not be behind a paywall.
     foreach ([
-        'verify_identity_price'      => '299',
-        'verify_selfie_price'        => '499',
+        'verify_identity_price'      => '0',
+        'verify_selfie_price'        => '0',
     ] as $k => $v) {
-        DB::q("INSERT IGNORE INTO site_settings (setting_key, setting_value) VALUES (?, ?)", [$k, $v]);
+        DB::q("INSERT INTO site_settings (setting_key, setting_value) VALUES (?, ?) ON DUPLICATE KEY UPDATE setting_value = ?", [$k, $v, $v]);
     }
+    try {
+        DB::q("UPDATE verification_requests SET status = 'pending_upload', amount = 0 WHERE status = 'pending_payment'");
+    } catch (Throwable $e) { /* safe */ }
 
     // Auto-expire subscriptions whose ends_at has passed. Runs cheaply once per request
     // and keeps the "downgrade to Free" behaviour honest without needing a cron.

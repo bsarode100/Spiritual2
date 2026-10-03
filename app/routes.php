@@ -148,12 +148,18 @@ $r->get('/addons', function () {
 
 // ------------------- VERIFICATION -------------------
 $r->get('/verification', function () {
-    $identity = (int) setting('verify_identity_price', '299');
-    $selfie   = (int) setting('verify_selfie_price', '499');
+    $identity = (int) setting('verify_identity_price', '0');
+    $selfie   = (int) setting('verify_selfie_price', '0');
     $me = null; $existing = null;
     if (Auth::check()) {
         $me = membership_summary(Auth::id());
         $existing = DB::one("SELECT * FROM verification_requests WHERE user_id = ? ORDER BY id DESC LIMIT 1", [Auth::id()]);
+        // If an existing request was stuck in pending_payment, upgrade to pending_upload
+        if ($existing && $existing['status'] === 'pending_payment' && $identity === 0 && $selfie === 0) {
+            DB::update('verification_requests', ['status' => 'pending_upload', 'amount' => 0], ['id' => $existing['id']]);
+            $existing['status'] = 'pending_upload';
+            $existing['amount'] = 0;
+        }
     }
     view('verification/index', ['identity_price' => $identity, 'selfie_price' => $selfie, 'me' => $me, 'existing' => $existing]);
 });
@@ -162,27 +168,35 @@ $r->post('/verification/start', function () {
     Auth::require();
     $uid = Auth::id();
 
-    // One request in flight at a time; approved members don't need to pay again
+    $tier = ($_POST['tier'] ?? '') === 'selfie' ? 'selfie' : 'identity';
+    $amount = $tier === 'selfie'
+        ? (int) setting('verify_selfie_price', '0')
+        : (int) setting('verify_identity_price', '0');
+
+    // One request in flight at a time; approved members don't need to submit again
     // unless they're upgrading identity -> selfie.
     $open = DB::one("SELECT * FROM verification_requests
                       WHERE user_id = ? AND status IN ('pending_payment','pending_upload','pending_review')
                       ORDER BY id DESC LIMIT 1", [$uid]);
     if ($open) {
-        if ($open['status'] === 'pending_payment') { redirect('/checkout/verification/' . (int)$open['id']); }
+        if ($open['status'] === 'pending_payment') {
+            if ($amount === 0) {
+                DB::update('verification_requests', ['status' => 'pending_upload', 'amount' => 0], ['id' => $open['id']]);
+                flash('success', 'Verification is free — please submit your documents below.');
+                redirect('/verification');
+            }
+            redirect('/checkout/verification/' . (int)$open['id']);
+        }
         flash('error', 'You already have a verification request in progress.');
         redirect('/verification');
     }
 
-    $tier = ($_POST['tier'] ?? '') === 'selfie' ? 'selfie' : 'identity';
     $current = DB::val('SELECT verified_tier FROM profiles WHERE user_id = ?', [$uid]) ?: 'none';
     if ($current === 'selfie' || $current === $tier) {
         flash('success', 'Your profile is already ' . $current . ' verified.');
         redirect('/verification');
     }
 
-    $amount = $tier === 'selfie'
-        ? (int) setting('verify_selfie_price', '499')
-        : (int) setting('verify_identity_price', '299');
     $vid = DB::insert('verification_requests', [
         'user_id' => $uid,
         'tier'    => $tier,
@@ -333,6 +347,11 @@ function checkout_start(string $kind, int $itemId): void {
     } else { // verification
         $item = DB::one('SELECT * FROM verification_requests WHERE id = ? AND user_id = ?', [$itemId, Auth::id()]);
         if (!$item) { http_response_code(404); view('errors/404'); return; }
+        if ((float)$item['amount'] <= 0 || $item['status'] !== 'pending_payment') {
+            DB::update('verification_requests', ['status' => 'pending_upload', 'amount' => 0], ['id' => $item['id']]);
+            flash('success', 'Verification is free — please submit your documents below.');
+            redirect('/verification');
+        }
         $amount = (float) $item['amount'];
         $label = $item['tier'] === 'selfie' ? 'Selfie + Identity Verification' : 'Identity Verification';
     }

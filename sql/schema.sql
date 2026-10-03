@@ -573,7 +573,10 @@ INSERT INTO `site_settings` (`setting_key`,`setting_value`) VALUES
 ('razorpay_mode','test'),
 ('razorpay_key_id',''),
 ('razorpay_key_secret',''),
-('razorpay_webhook_secret','');
+('razorpay_webhook_secret',''),
+-- Verification pricing (0 = 100% Free)
+('verify_identity_price','0'),
+('verify_selfie_price','0');
 
 -- Default packages
 INSERT INTO `packages` (`name`,`tagline`,`price`,`currency`,`duration_days`,`contacts_limit`,`features`,`highlighted`,`display_order`) VALUES

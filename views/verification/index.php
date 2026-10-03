@@ -15,7 +15,7 @@ $statusLabels = [
     <div class="section-head">
         <span class="eyebrow">Trust service</span>
         <h1>Get the Verified badge</h1>
-        <p class="lead">Share a live selfie (photo or short video) and any government ID. Our team reviews every submission by hand — the badge tells other seekers your profile is genuinely you. Verification is independent from membership plans.</p>
+        <p class="lead">Share a live selfie (photo or short video) and any government ID. Verification is <strong>100% Free for all members</strong> — trust, authenticity, and safety should never be behind a paywall. Our team hand-reviews every submission to give you the verified trust badge.</p>
     </div>
 
     <?php if ($existing): [$pillCls, $pillLabel] = $statusLabels[$status] ?? ['gold', $status]; ?>
@@ -26,8 +26,12 @@ $statusLabels = [
             <div class="info-row"><span class="k">Requested</span><span class="v"><?= e(date('M j, Y', strtotime($existing['created_at']))) ?></span></div>
 
             <?php if ($status === 'pending_payment'): ?>
-                <p style="color: var(--c-muted); margin: .8rem 0 0;">Your payment is pending — complete it to continue.</p>
-                <a href="/checkout/verification/<?= (int)$existing['id'] ?>" class="btn btn-primary btn-sm" style="margin-top: .6rem;">Complete Payment</a>
+                <p style="color: var(--c-muted); margin: .8rem 0 0;">Verification is completely free! Please proceed to upload your documents.</p>
+                <form method="post" action="/verification/start" style="margin-top: .6rem;">
+                    <?= csrf_field() ?>
+                    <input type="hidden" name="tier" value="<?= e($existing['tier'] ?? 'identity') ?>">
+                    <button class="btn btn-primary btn-sm">Proceed to Upload Documents</button>
+                </form>
             <?php elseif ($status === 'pending_review'): ?>
                 <p style="color: var(--c-muted); margin: .8rem 0 0;">Documents received<?= $existing['submitted_at'] ? ' on ' . e(date('M j, Y g:i a', strtotime($existing['submitted_at']))) : '' ?>. Our team usually completes reviews within 24–48 hours — we'll email you either way.</p>
             <?php elseif ($status === 'approved'): ?>

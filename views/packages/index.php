@@ -21,7 +21,7 @@ $currentPlanSlug = $me['plan']['slug'] ?? null;
     <div class="container text-center">
         <span class="eyebrow">Membership</span>
         <h1>Choose your <em style="color: var(--c-saffron); font-family: var(--f-display);">path</em></h1>
-        <p class="pkg-hero-lead">Five plans. Real value. Cancel anytime. Verification is separate — pay only for the trust badge you need.</p>
+        <p class="pkg-hero-lead">Five plans. Real value. Cancel anytime. Profile verification is 100% free for all members to build authentic trust.</p>
         <?php if ($loggedIn && $me): ?>
             <div class="pkg-hero-meta">
                 You are on <strong><?= e($me['plan']['name']) ?></strong>

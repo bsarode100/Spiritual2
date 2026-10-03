@@ -368,8 +368,8 @@ $r->get('/admin/verification', $admin(function () {
         'revenue'  => DB::val("SELECT COALESCE(SUM(amount), 0) FROM payments WHERE status = 'paid' AND purchase_type = 'verification'"),
     ];
     $prices = [
-        'identity' => setting('verify_identity_price', '299'),
-        'selfie'   => setting('verify_selfie_price', '499'),
+        'identity' => setting('verify_identity_price', '0'),
+        'selfie'   => setting('verify_selfie_price', '0'),
     ];
     view('admin/verification', compact('rows','stats','prices','filter'), 'admin');
 }));
@@ -402,8 +402,8 @@ $r->get('/admin/verification/{id}/media/{kind}', $admin(function ($a) {
 
 $r->post('/admin/verification/pricing', $admin(function () {
     foreach ([
-        'verify_identity_price' => max(0, (int)($_POST['verify_identity_price'] ?? 299)),
-        'verify_selfie_price'   => max(0, (int)($_POST['verify_selfie_price'] ?? 499)),
+        'verify_identity_price' => max(0, (int)($_POST['verify_identity_price'] ?? 0)),
+        'verify_selfie_price'   => max(0, (int)($_POST['verify_selfie_price'] ?? 0)),
     ] as $key => $value) {
         if (DB::val('SELECT 1 FROM site_settings WHERE setting_key = ?', [$key])) {
             DB::update('site_settings', ['setting_value' => (string)$value], ['setting_key' => $key]);
