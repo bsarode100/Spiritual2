@@ -3,7 +3,10 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#FAF7F2">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
 <title><?= e(setting('site_name', 'SpiritualShaadi')) ?> — Welcome</title>
 <meta name="description" content="<?= e(setting('site_tagline', 'Find a Perfect Spiritual Life Partner')) ?>">
 

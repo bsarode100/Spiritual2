@@ -6,12 +6,14 @@ import android.content.ActivityNotFoundException;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
+import android.graphics.Color;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
 import android.provider.MediaStore;
 import android.view.View;
+import android.view.ViewGroup;
 import android.webkit.CookieManager;
 import android.webkit.ValueCallback;
 import android.webkit.WebChromeClient;
@@ -31,6 +33,11 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import androidx.core.content.FileProvider;
+import androidx.core.graphics.Insets;
+import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowCompat;
+import androidx.core.view.WindowInsetsCompat;
+import androidx.core.view.WindowInsetsControllerCompat;
 
 import java.io.File;
 import java.io.IOException;
@@ -57,7 +64,50 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        // Enable edge-to-edge window drawing
+        WindowCompat.setDecorFitsSystemWindows(getWindow(), false);
+
         setContentView(R.layout.activity_main);
+
+        // Configure system bar icons (dark icons for light cream background)
+        WindowInsetsControllerCompat insetsController = WindowCompat.getInsetsController(getWindow(), getWindow().getDecorView());
+        if (insetsController != null) {
+            insetsController.setAppearanceLightStatusBars(true);
+            insetsController.setAppearanceLightNavigationBars(true);
+        }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            getWindow().setStatusBarColor(Color.TRANSPARENT);
+            getWindow().setNavigationBarColor(Color.TRANSPARENT);
+        }
+
+        View rootLayout = findViewById(R.id.rootLayout);
+        View statusBarSpacer = findViewById(R.id.statusBarSpacer);
+        View navigationBarSpacer = findViewById(R.id.navigationBarSpacer);
+
+        // Dynamically adjust top and bottom spacer heights based on device status bar & cutout insets
+        ViewCompat.setOnApplyWindowInsetsListener(rootLayout, (v, windowInsets) -> {
+            Insets statusBars = windowInsets.getInsets(
+                    WindowInsetsCompat.Type.statusBars() | WindowInsetsCompat.Type.displayCutout()
+            );
+            Insets navBars = windowInsets.getInsets(
+                    WindowInsetsCompat.Type.navigationBars()
+            );
+
+            if (statusBarSpacer != null) {
+                ViewGroup.LayoutParams lp = statusBarSpacer.getLayoutParams();
+                lp.height = statusBars.top;
+                statusBarSpacer.setLayoutParams(lp);
+            }
+
+            if (navigationBarSpacer != null) {
+                ViewGroup.LayoutParams lp = navigationBarSpacer.getLayoutParams();
+                lp.height = navBars.bottom;
+                navigationBarSpacer.setLayoutParams(lp);
+            }
+
+            return windowInsets;
+        });
 
         webView = findViewById(R.id.webView);
         progressBar = findViewById(R.id.progressBar);
