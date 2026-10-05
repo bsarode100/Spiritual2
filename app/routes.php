@@ -789,7 +789,7 @@ $r->post('/onboarding', function () {
             $filename = 'user_' . $uid . '_' . time() . '.' . $ext;
             $dest = $avatarDir . '/' . $filename;
             if (move_uploaded_file($tmp, $dest)) {
-                $relPath = 'uploads/avatars/' . $filename;
+                $relPath = 'avatars/' . $filename;
                 $hasPrimary = (bool) DB::val('SELECT 1 FROM photos WHERE user_id = ? AND is_primary = 1', [$uid]);
                 DB::insert('photos', [
                     'user_id'    => $uid,

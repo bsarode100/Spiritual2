@@ -157,6 +157,8 @@ try {
         // photos: moderation + private-photo gating (default approved so nothing existing hides)
         "ALTER TABLE `photos` ADD COLUMN `status` ENUM('pending','approved','rejected') NOT NULL DEFAULT 'approved' AFTER `is_primary`",
         "ALTER TABLE `photos` ADD COLUMN `is_private` TINYINT(1) NOT NULL DEFAULT 0 AFTER `status`",
+        // Normalize any photos stored with duplicate "uploads/" prefix
+        "UPDATE `photos` SET `path` = SUBSTRING(`path`, 9) WHERE `path` LIKE 'uploads/%'",
     ] as $stmt) {
         try { DB::pdo()->exec($stmt); } catch (Throwable $e) { /* already migrated */ }
     }

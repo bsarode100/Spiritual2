@@ -32,8 +32,12 @@ function asset(string $path): string {
 
 function upload_url(string $path): string {
     if (!$path) return '';
-    if (str_starts_with($path, 'http')) return $path;
-    return '/uploads/' . ltrim($path, '/');
+    if (str_starts_with($path, 'http://') || str_starts_with($path, 'https://')) return $path;
+    $clean = ltrim($path, '/');
+    if (str_starts_with($clean, 'uploads/')) {
+        return '/' . $clean;
+    }
+    return '/uploads/' . $clean;
 }
 
 function redirect(string $path): void {

@@ -9,7 +9,7 @@ mkdir -p /var/www/html/public/uploads/avatars \
 
 # Ensure Apache www-data user owns the persistent volumes
 chown -R www-data:www-data /var/www/html/public/uploads /var/www/html/storage 2>/dev/null || true
-chmod -R 775 /var/www/html/public/uploads /var/www/html/storage 2>/dev/null || true
+chmod -R 777 /var/www/html/public/uploads /var/www/html/storage 2>/dev/null || true
 
 # Export container environment variables to /etc/apache2/envvars so Apache/PHP always receive Coolify variables
 if [ -f /etc/apache2/envvars ]; then
