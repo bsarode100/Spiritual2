@@ -1024,23 +1024,45 @@ function smtp_send_mail(array $cfg, string $from, string $fromName, string $to, 
         smtp_command($fp, base64_encode($pass), [235]);
     }
 
-    smtp_command($fp, 'MAIL FROM:<' . $from . '>', [250]);
-    smtp_command($fp, 'RCPT TO:<' . $to . '>', [250, 251]);
+    $fromClean    = trim(preg_replace('/[<>"\'\s]/', '', $from));
+    $toClean      = trim(preg_replace('/[<>"\'\s]/', '', $to));
+    $replyToClean = trim(preg_replace('/[<>"\'\s]/', '', $replyTo ?: $fromClean));
+
+    smtp_command($fp, 'MAIL FROM:<' . $fromClean . '>', [250]);
+    smtp_command($fp, 'RCPT TO:<' . $toClean . '>', [250, 251]);
     smtp_command($fp, 'DATA', [354]);
+
+    $domain = 'spiritualshaadi.com';
+    if (str_contains($fromClean, '@')) {
+        $parts = explode('@', $fromClean, 2);
+        if (!empty($parts[1])) $domain = $parts[1];
+    }
+    $messageId = sprintf('<%s.%s@%s>', time(), bin2hex(random_bytes(8)), $domain);
 
     $headers = [
         'Date: ' . date(DATE_RFC2822),
-        'From: ' . mail_address_header($from, $fromName),
-        'To: <' . $to . '>',
-        'Reply-To: ' . $replyTo,
+        'From: ' . mail_address_header($fromClean, $fromName),
+        'To: ' . mail_address_header($toClean, ''),
+        'Reply-To: ' . mail_address_header($replyToClean, ''),
         'Subject: ' . smtp_header_encode($subject),
+        'Message-ID: ' . $messageId,
         'MIME-Version: 1.0',
         'Content-Type: text/plain; charset=UTF-8',
         'Content-Transfer-Encoding: 8bit',
     ];
-    $message = implode("\r\n", $headers) . "\r\n\r\n" . str_replace(["\r\n", "\r"], "\n", $body);
-    $message = str_replace("\n.", "\n..", $message);
-    fwrite($fp, str_replace("\n", "\r\n", $message) . "\r\n.\r\n");
+
+    // Normalize all line endings to single \n first
+    $normBody = str_replace(["\r\n", "\r"], "\n", $body);
+    // Dot-stuffing per RFC 5321 (prevent premature termination if line begins with a dot)
+    $normBody = preg_replace('/^\./m', '..', $normBody);
+
+    // Build the raw message with single \n
+    $rawMsg = implode("\n", $headers) . "\n\n" . $normBody;
+
+    // Convert all \n to canonical SMTP CRLF (\r\n) exactly once to avoid \r\r\n header errors
+    $networkMsg = str_replace("\n", "\r\n", $rawMsg) . "\r\n.\r\n";
+    fwrite($fp, $networkMsg);
+
     smtp_expect($fp, [250]);
     smtp_command($fp, 'QUIT', [221]);
     fclose($fp);
@@ -1073,9 +1095,16 @@ function smtp_hostname(): string {
 }
 
 function mail_address_header(string $email, string $name): string {
-    $email = trim(str_replace(["\r", "\n"], '', $email));
-    $name = trim(str_replace(['"', "\r", "\n"], '', $name));
-    return $name !== '' ? '"' . $name . '" <' . $email . '>' : '<' . $email . '>';
+    $email = trim(preg_replace('/[<>"\'\s]/', '', $email));
+    $name = trim(str_replace(["\r", "\n"], '', $name));
+    if ($name === '') {
+        return '<' . $email . '>';
+    }
+    if (preg_match('/[^\x20-\x7E]/', $name)) {
+        return '=?UTF-8?B?' . base64_encode($name) . '?= <' . $email . '>';
+    }
+    $name = str_replace('"', '', $name);
+    return '"' . $name . '" <' . $email . '>';
 }
 
 function smtp_header_encode(string $value): string {
