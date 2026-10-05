@@ -83,27 +83,17 @@ public class MainActivity extends AppCompatActivity {
 
         View rootLayout = findViewById(R.id.rootLayout);
         View statusBarSpacer = findViewById(R.id.statusBarSpacer);
-        View navigationBarSpacer = findViewById(R.id.navigationBarSpacer);
 
-        // Dynamically adjust top and bottom spacer heights based on device status bar & cutout insets
+        // Dynamically adjust top status bar spacer height based on device status bar & cutout insets
         ViewCompat.setOnApplyWindowInsetsListener(rootLayout, (v, windowInsets) -> {
             Insets statusBars = windowInsets.getInsets(
                     WindowInsetsCompat.Type.statusBars() | WindowInsetsCompat.Type.displayCutout()
-            );
-            Insets navBars = windowInsets.getInsets(
-                    WindowInsetsCompat.Type.navigationBars()
             );
 
             if (statusBarSpacer != null) {
                 ViewGroup.LayoutParams lp = statusBarSpacer.getLayoutParams();
                 lp.height = statusBars.top;
                 statusBarSpacer.setLayoutParams(lp);
-            }
-
-            if (navigationBarSpacer != null) {
-                ViewGroup.LayoutParams lp = navigationBarSpacer.getLayoutParams();
-                lp.height = navBars.bottom;
-                navigationBarSpacer.setLayoutParams(lp);
             }
 
             return windowInsets;

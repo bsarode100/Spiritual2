@@ -23,21 +23,13 @@
         android:progressDrawable="@color/accent"
         android:visibility="gone" />
 
-    <!-- Web Content (positioned between status bar and navigation bar) -->
+    <!-- Web Content (fills smoothly from below status bar to bottom of screen without extra blank space) -->
     <WebView
         android:id="@+id/webView"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:layout_below="@id/statusBarSpacer"
-        android:layout_above="@id/navigationBarSpacer" />
-
-    <!-- Bottom Navigation Bar Spacer (prevents gesture bar / nav buttons overlap) -->
-    <View
-        android:id="@+id/navigationBarSpacer"
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_alignParentBottom="true"
-        android:background="@color/background" />
+        android:layout_alignParentBottom="true" />
 
     <!-- Offline State Screen -->
     <LinearLayout
@@ -45,7 +37,7 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:layout_below="@id/statusBarSpacer"
-        android:layout_above="@id/navigationBarSpacer"
+        android:layout_alignParentBottom="true"
         android:gravity="center"
         android:orientation="vertical"
         android:padding="32dp"
