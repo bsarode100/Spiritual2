@@ -127,10 +127,13 @@ try {
         'razorpay_key_id'         => '',
         'razorpay_key_secret'     => '',
         'razorpay_webhook_secret' => '',
-        'legal_owner'             => 'PRATIBHA SUDHAKAR SHERIKAR',
+        'legal_owner'             => '',
     ] as $k => $v) {
         DB::q("INSERT IGNORE INTO site_settings (setting_key, setting_value) VALUES (?, ?)", [$k, $v]);
     }
+    try {
+        DB::pdo()->exec("UPDATE `site_settings` SET `setting_value` = '' WHERE `setting_key` = 'legal_owner' AND `setting_value` LIKE '%SHERIKAR%'");
+    } catch (Throwable $e) {}
 
     // ---- Additive columns for durable data capture (safe on both fresh + existing installs) ----
     // Each ALTER is wrapped so pre-existing columns don't throw.

@@ -54,7 +54,6 @@
                     <li>📧 <a href="mailto:<?= e(setting('contact_email','hello@spiritualmatrimony.com')) ?>"><?= e(setting('contact_email','hello@spiritualmatrimony.com')) ?></a></li>
                     <li>📞 <?= e(setting('contact_phone','+91 98XXX XXXXX')) ?></li>
                     <li>📍 <?= e(setting('contact_address','Rishikesh, India')) ?></li>
-                    <li>Legal Owner: <?= e(setting('legal_owner', 'PRATIBHA SUDHAKAR SHERIKAR')) ?></li>
                 </ul>
             </div>
         </div>
