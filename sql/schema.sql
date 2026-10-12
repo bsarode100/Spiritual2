@@ -547,7 +547,7 @@ INSERT INTO `site_settings` (`setting_key`,`setting_value`) VALUES
 ('contact_email','hello@spiritualmatrimony.com'),
 ('contact_phone','+91 98XXX XXXXX'),
 ('contact_address','Rishikesh, Uttarakhand, India'),
-('legal_owner',''),
+('legal_owner','Vaishnavi Gajanan Sarode'),
 ('social_facebook','https://facebook.com/'),
 ('social_instagram','https://instagram.com/'),
 ('social_youtube','https://youtube.com/'),
