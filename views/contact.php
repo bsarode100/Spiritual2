@@ -16,10 +16,9 @@
         <div style="display: grid; grid-template-columns: 1fr 1.4fr; gap: 3.5rem; align-items: start;">
             <aside class="admin-card" style="padding: 2.4rem;">
                 <h3 style="color: var(--c-ink); margin-bottom: 1.4rem;">Our Office &amp; Sanctuary</h3>
-                <p style="color: var(--c-ink-soft); margin-bottom: .8rem;">📍 <?= e(setting('contact_address','Rishikesh, Uttarakhand, India')) ?></p>
-                <p style="color: var(--c-ink-soft); margin-bottom: .8rem;">📞 <?= e(setting('contact_phone','+91 98XXX XXXXX')) ?></p>
-                <p style="color: var(--c-ink-soft); margin-bottom: .8rem;">📧 <a href="mailto:<?= e(setting('contact_email')) ?>"><?= e(setting('contact_email','hello@spiritualmatrimony.com')) ?></a></p>
-                <p style="color: var(--c-ink-soft); margin-bottom: 1.4rem;">🏛️ <strong>Legal Owner:</strong> <?= e(setting('legal_owner', 'Vaishnavi Gajanan Sarode')) ?></p>
+                <p style="color: var(--c-ink-soft); margin-bottom: .8rem;">📍 <?= e(setting('contact_address','At Wagdari, Tq Deoni, Dist Latur, Maharashtra. Pincode - 413519.')) ?></p>
+                <p style="color: var(--c-ink-soft); margin-bottom: .8rem;">📞 <a href="tel:<?= preg_replace('/[^+0-9]/', '', setting('contact_phone','+91 7744922099')) ?>" style="color: inherit; text-decoration: none;"><?= e(setting('contact_phone','+91 7744922099')) ?></a></p>
+                <p style="color: var(--c-ink-soft); margin-bottom: 1.4rem;">📧 <a href="mailto:<?= e(setting('contact_email')) ?>"><?= e(setting('contact_email','hello@spiritualmatrimony.com')) ?></a></p>
                 <div class="deco-divider"><span class="om">ॐ</span></div>
                 <p style="font-style: italic; font-family: var(--f-display); font-size: 1.25rem; color: var(--c-maroon); line-height: 1.5; margin-bottom: 0;">
                     "The guest is divine." — Taittiriya Upanishad

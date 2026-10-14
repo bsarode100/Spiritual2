@@ -127,12 +127,16 @@ try {
         'razorpay_key_id'         => '',
         'razorpay_key_secret'     => '',
         'razorpay_webhook_secret' => '',
-        'legal_owner'             => 'Vaishnavi Gajanan Sarode',
+        'legal_owner'             => '',
+        'contact_address'         => 'At Wagdari, Tq Deoni, Dist Latur, Maharashtra. Pincode - 413519.',
+        'contact_phone'           => '+91 7744922099',
     ] as $k => $v) {
         DB::q("INSERT IGNORE INTO site_settings (setting_key, setting_value) VALUES (?, ?)", [$k, $v]);
     }
     try {
-        DB::pdo()->exec("UPDATE `site_settings` SET `setting_value` = 'Vaishnavi Gajanan Sarode' WHERE `setting_key` = 'legal_owner' AND (`setting_value` = '' OR `setting_value` LIKE '%SHERIKAR%')");
+        DB::pdo()->exec("UPDATE `site_settings` SET `setting_value` = '' WHERE `setting_key` = 'legal_owner'");
+        DB::pdo()->exec("UPDATE `site_settings` SET `setting_value` = 'At Wagdari, Tq Deoni, Dist Latur, Maharashtra. Pincode - 413519.' WHERE `setting_key` = 'contact_address'");
+        DB::pdo()->exec("UPDATE `site_settings` SET `setting_value` = '+91 7744922099' WHERE `setting_key` = 'contact_phone'");
     } catch (Throwable $e) {}
 
     // ---- Additive columns for durable data capture (safe on both fresh + existing installs) ----
