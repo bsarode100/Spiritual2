@@ -42,11 +42,8 @@
                     </ul>
 
                     <div class="pkg-cta-modern">
-                        <?php if ($loggedIn && $rzp_enabled): ?>
+                        <?php if ($loggedIn): ?>
                             <a href="/checkout/addon/<?= (int)$a['id'] ?>" class="btn btn-primary btn-block">Buy Add-on</a>
-                            <a href="/payment-details" class="btn btn-ghost btn-block btn-quiet">Or pay via UPI / Bank →</a>
-                        <?php elseif ($loggedIn): ?>
-                            <a href="/payment-details" class="btn btn-primary btn-block">Pay Manually</a>
                         <?php else: ?>
                             <a href="/register" class="btn btn-primary btn-block">Sign Up to Buy</a>
                         <?php endif; ?>

@@ -28,8 +28,26 @@ $webhookUrl = ($appUrl ?: 'https://' . ($_SERVER['HTTP_HOST'] ?? 'spiritualshaad
 <form method="post" action="/admin/youpi">
     <?= csrf_field() ?>
 
+    <div class="admin-card mb-3" style="border: 2px solid #22c55e;">
+        <h3 style="color: #15803d;">1. Your Receiving UPI ID (VPA)</h3>
+        <p style="color: var(--c-muted);">Money paid by customers goes directly to this UPI address into your bank account.</p>
+
+        <div class="form-grid">
+            <div class="field">
+                <label><strong>Receiver UPI ID (VPA) *</strong></label>
+                <input type="text" name="payment_upi_id" value="<?= e($values['payment_upi_id'] ?? '') ?>" placeholder="e.g. yourbusiness@okaxis or 9876543210@paytm" required style="font-weight: 600; font-size: 1.05rem;">
+                <small style="color: #0369a1;">Must be an active UPI ID registered in Google Pay, PhonePe, Paytm, or your bank app.</small>
+            </div>
+            <div class="field">
+                <label>Payee / Business Name</label>
+                <input type="text" name="payment_payee_name" value="<?= e($values['payment_payee_name'] ?? 'SpiritualShaadi') ?>" placeholder="e.g. SpiritualShaadi">
+                <small style="color: var(--c-muted);">The name customers see when their UPI app opens.</small>
+            </div>
+        </div>
+    </div>
+
     <div class="admin-card mb-3">
-        <h3>1. Gateway Connectivity</h3>
+        <h3>2. Gateway Connectivity</h3>
         <p style="color: var(--c-muted);">Configure the address of your self-hosted YouPI services running on your VPS.</p>
 
         <div class="form-grid">
@@ -47,7 +65,7 @@ $webhookUrl = ($appUrl ?: 'https://' . ($_SERVER['HTTP_HOST'] ?? 'spiritualshaad
     </div>
 
     <div class="admin-card mb-3">
-        <h3>2. Webhook & Security</h3>
+        <h3>3. Webhook & Security</h3>
         <p style="color: var(--c-muted);">When a customer pays, your Android Observer phone detects the SMS / UPI notification, and YouPI notifies SpiritualShaadi instantly via this webhook.</p>
         
         <div style="background: var(--c-cream-2, #faf6ee); padding: 1rem 1.25rem; border-radius: 8px; border: 1px dashed var(--c-border, #e2d9cc); margin-bottom: 1.25rem;">

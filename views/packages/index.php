@@ -113,20 +113,13 @@ $currentPlanSlug = $me['plan']['slug'] ?? null;
                         <span class="btn btn-ghost btn-block" style="cursor:default;">Current Plan</span>
                     <?php elseif ($isFree): ?>
                         <a href="<?= $loggedIn ? '/dashboard' : '/register' ?>" class="btn btn-ghost btn-block">Start Free</a>
-                    <?php elseif ($rzp_enabled): ?>
-                        <?php if ($loggedIn): ?>
-                            <a href="/checkout/<?= (int)$p['id'] ?>" class="btn <?= !empty($p['highlighted']) ? 'btn-primary' : 'btn-ghost' ?> btn-block">
-                                <?= e($p['name']) ?>
-                            </a>
-                            <a href="/payment-details" class="btn btn-ghost btn-block btn-quiet">UPI / Bank →</a>
-                        <?php else: ?>
-                            <a href="/register" class="btn <?= !empty($p['highlighted']) ? 'btn-primary' : 'btn-ghost' ?> btn-block">
-                                <?= e($p['name']) ?>
-                            </a>
-                        <?php endif; ?>
+                    <?php elseif ($loggedIn): ?>
+                        <a href="/checkout/<?= (int)$p['id'] ?>" class="btn <?= !empty($p['highlighted']) ? 'btn-primary' : 'btn-ghost' ?> btn-block">
+                            Choose <?= e($p['name']) ?>
+                        </a>
                     <?php else: ?>
-                        <a href="<?= $loggedIn ? '/payment-details' : '/register' ?>" class="btn <?= !empty($p['highlighted']) ? 'btn-primary' : 'btn-ghost' ?> btn-block">
-                            <?= e($p['name']) ?>
+                        <a href="/register" class="btn <?= !empty($p['highlighted']) ? 'btn-primary' : 'btn-ghost' ?> btn-block">
+                            Get Started
                         </a>
                     <?php endif; ?>
                 </div>

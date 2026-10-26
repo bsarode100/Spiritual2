@@ -697,7 +697,7 @@ $r->post('/admin/razorpay', $admin(function () use ($RAZORPAY_KEYS) {
 }));
 
 // ---------- YOUPI UPI GATEWAY ----------
-$YOUPI_KEYS = ['youpi_enabled', 'youpi_portal_url', 'youpi_admin_url', 'youpi_webhook_secret'];
+$YOUPI_KEYS = ['youpi_enabled', 'youpi_portal_url', 'youpi_admin_url', 'youpi_webhook_secret', 'payment_upi_id', 'payment_payee_name'];
 
 $r->get('/admin/youpi', $admin(function () use ($YOUPI_KEYS) {
     $values = [];
