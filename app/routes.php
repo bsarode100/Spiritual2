@@ -130,20 +130,24 @@ $r->get('/blog/{slug}', function ($a) {
 // ------------------- PACKAGES -------------------
 $r->get('/packages', function () {
     $packages = DB::all('SELECT * FROM packages WHERE is_active = 1 ORDER BY display_order, id');
-    $rzp_enabled = setting('razorpay_enabled') === '1'
+    $youpi_enabled = setting('youpi_enabled', '1') === '1';
+    $rzp_enabled = (setting('razorpay_enabled') === '1'
                 && setting('razorpay_key_id') !== ''
-                && setting('razorpay_key_secret') !== '';
+                && setting('razorpay_key_secret') !== '');
+    $online_enabled = $youpi_enabled || $rzp_enabled;
     $me = Auth::check() ? membership_summary(Auth::id()) : null;
-    view('packages/index', ['packages' => $packages, 'rzp_enabled' => $rzp_enabled, 'me' => $me]);
+    view('packages/index', ['packages' => $packages, 'rzp_enabled' => $online_enabled, 'me' => $me]);
 });
 
 // ------------------- ADD-ONS -------------------
 $r->get('/addons', function () {
     $addons = DB::all('SELECT * FROM addons WHERE is_active = 1 ORDER BY display_order, id');
-    $rzp_enabled = setting('razorpay_enabled') === '1'
+    $youpi_enabled = setting('youpi_enabled', '1') === '1';
+    $rzp_enabled = (setting('razorpay_enabled') === '1'
                 && setting('razorpay_key_id') !== ''
-                && setting('razorpay_key_secret') !== '';
-    view('addons/index', ['addons' => $addons, 'rzp_enabled' => $rzp_enabled]);
+                && setting('razorpay_key_secret') !== '');
+    $online_enabled = $youpi_enabled || $rzp_enabled;
+    view('addons/index', ['addons' => $addons, 'rzp_enabled' => $online_enabled]);
 });
 
 // ------------------- VERIFICATION -------------------
@@ -547,6 +551,52 @@ $r->get('/checkout/success', function () {
 $r->get('/checkout/failed', function () {
     Auth::require();
     view('checkout/failed');
+});
+
+$r->get('/checkout/status/{id}', function ($a) {
+    Auth::require();
+    $pid = (int)($a['id'] ?? 0);
+    $pmt = DB::one('SELECT id, status, gateway_payment_id FROM payments WHERE id = ? AND user_id = ?', [$pid, Auth::id()]);
+    header('Content-Type: application/json');
+    if (!$pmt) {
+        http_response_code(404);
+        echo json_encode(['error' => 'Payment not found']);
+        return;
+    }
+    echo json_encode([
+        'status' => $pmt['status'],
+        'is_paid' => $pmt['status'] === 'paid',
+        'payment_id' => (int)$pmt['id'],
+    ]);
+});
+
+$r->post('/checkout/verify-utr', function () {
+    Auth::require();
+    $pid = (int)($_POST['payment_id'] ?? 0);
+    $utr = trim((string)($_POST['utr'] ?? ''));
+    $pmt = DB::one('SELECT * FROM payments WHERE id = ? AND user_id = ?', [$pid, Auth::id()]);
+    if (!$pmt) {
+        flash('error', 'Payment not found.');
+        redirect('/packages');
+        return;
+    }
+    if ($pmt['status'] === 'paid') {
+        redirect('/checkout/success?p=' . $pmt['id']);
+        return;
+    }
+    if (!empty($utr)) {
+        grant_purchase_by_payment($pmt, $utr);
+        DB::update('payments', [
+            'status'             => 'paid',
+            'gateway'            => 'youpi',
+            'gateway_payment_id' => $utr,
+        ], ['id' => $pmt['id']]);
+        flash('success', 'Payment confirmed! Your plan is now active.');
+        redirect('/checkout/success?p=' . $pmt['id']);
+        return;
+    }
+    flash('error', 'Please enter your 12-digit UPI reference number.');
+    redirect('/checkout/' . (int)($pmt['package_id'] ?? 1));
 });
 
 // ------------------- RAZORPAY WEBHOOK -------------------

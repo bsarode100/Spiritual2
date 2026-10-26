@@ -201,7 +201,7 @@ $currentPlanSlug = $me['plan']['slug'] ?? null;
         <a href="/addons">See add-ons →</a> or <a href="/verification">verify your profile →</a>.
     </p>
     <?php if ($rzp_enabled): ?>
-        <p style="color: var(--c-muted);">🔒 Secure payments by <strong>Razorpay</strong> — UPI, cards, netbanking and wallets. Or <a href="/payment-details"><strong>pay manually via UPI / bank transfer →</strong></a></p>
+        <p style="color: var(--c-muted);">🔒 Instant 0% fee payments via <strong>UPI</strong> (Google Pay, PhonePe, Paytm, BHIM). Or <a href="/payment-details"><strong>view bank transfer details →</strong></a></p>
     <?php else: ?>
         <p style="color: var(--c-muted);">Ready to upgrade? See <a href="/payment-details"><strong>payment details →</strong></a> for UPI ID and bank account.</p>
     <?php endif; ?>
