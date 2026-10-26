@@ -1,7 +1,16 @@
 <?php /** @var array $pkg @var array $payment @var string $portal_url @var array $user @var string $kind */
-$upiId = trim(setting('payment_upi_id') ?: setting('youpi_vpa') ?: '');
-$payeeName = trim(setting('payment_payee_name') ?: setting('site_name', 'SpiritualShaadi'));
-$isConfigured = !empty($upiId) && !str_contains($upiId, 'example.com') && $upiId !== 'spiritualmatrimony@upi';
+$upiId = trim((string)(setting('payment_upi_id') ?: setting('youpi_vpa') ?: ''));
+// Sanitize UPI ID: remove spaces and accidental prefixes like "upi:" or "id:"
+$upiId = preg_replace('/\s+/', '', $upiId);
+$upiId = preg_replace('/^(upi|vpa|id)[:\s-]+/i', '', $upiId);
+
+$payeeName = trim((string)(setting('payment_payee_name') ?: setting('site_name', 'SpiritualShaadi')));
+$cleanPayee = preg_replace('/[^a-zA-Z0-9 ]/', '', substr($payeeName, 0, 25));
+if (empty($cleanPayee)) {
+    $cleanPayee = 'SpiritualShaadi';
+}
+
+$isConfigured = !empty($upiId) && str_contains($upiId, '@') && $upiId !== 'spiritualmatrimony@upi';
 
 $amount = number_format((float)$pkg['price'], 2, '.', '');
 $orderRef = $payment['gateway_order_id'] ?? ('SS' . $payment['id']);
@@ -10,24 +19,28 @@ if (strlen($cleanNote) > 20) {
     $cleanNote = substr($cleanNote, 0, 20);
 }
 
-// NPCI standard parameters
-$encodedUpi = rawurlencode($upiId);
-$encodedPayee = rawurlencode(substr($payeeName, 0, 25));
-$upiParams = "pa={$encodedUpi}&pn={$encodedPayee}&am={$amount}&cu=INR&tn={$cleanNote}&tr={$cleanNote}";
+// NPCI Standard Universal UPI URI (Works for both Personal & Merchant accounts)
+// Note: pa MUST contain literal '@' symbol (NOT %40) so banking apps don't reject it.
+// Note: Do NOT include 'tr=' for personal accounts, as NPCI forbids tr on P2P accounts.
+$encodedPayee = rawurlencode($cleanPayee);
+$upiParams = "pa={$upiId}&pn={$encodedPayee}&am={$amount}&cu=INR&tn={$cleanNote}";
 
-$upiUriGeneric = "upi://pay?{$upiParams}";
-$upiUriPhonepe = "phonepe://pay?{$upiParams}";
-$upiUriPaytm   = "paytmmp://pay?{$upiParams}";
-$upiUriGpay    = "upi://pay?{$upiParams}";
+$upiUriUniversal = "upi://pay?{$upiParams}";
 
-$qrUrl = "https://api.qrserver.com/v1/create-qr-code/?size=240x240&margin=8&data=" . urlencode($upiUriGeneric);
+// Direct Android Intents (Uses official 'upi' scheme directly into specific app packages without merchant PG errors)
+$intentPhonepe = "intent://pay?{$upiParams}#Intent;scheme=upi;package=com.phonepe.app;end";
+$intentGpay    = "intent://pay?{$upiParams}#Intent;scheme=upi;package=com.google.android.apps.nbu.paisa.user;end";
+$intentPaytm   = "intent://pay?{$upiParams}#Intent;scheme=upi;package=net.one97.paytm;end";
+
+// QR code contains the clean universal UPI URI (single URL-encoded for the QR API parameter)
+$qrUrl = "https://api.qrserver.com/v1/create-qr-code/?size=260x260&margin=8&data=" . rawurlencode($upiUriUniversal);
 ?>
 <!doctype html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-<title>Pay ₹<?= e(number_format((float)$pkg['price'], 0)) ?> — <?= e($payeeName) ?></title>
+<title>Pay ₹<?= e(number_format((float)$pkg['price'], 0)) ?> — <?= e($cleanPayee) ?></title>
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body {
@@ -169,23 +182,51 @@ body {
 }
 .btn-upi-app:active { transform: scale(0.98); opacity: 0.9; }
 
-.btn-gpay {
-    background: #1a73e8;
+.btn-any-upi {
+    background: linear-gradient(135deg, #059669 0%, #047857 100%);
     color: #ffffff;
+    box-shadow: 0 4px 12px rgba(5,150,105,0.25);
+    font-size: 1rem;
 }
 .btn-phonepe {
     background: #5f259f;
+    color: #ffffff;
+}
+.btn-gpay {
+    background: #1a73e8;
     color: #ffffff;
 }
 .btn-paytm {
     background: #002e6e;
     color: #ffffff;
 }
-.btn-any-upi {
-    background: linear-gradient(135deg, #059669 0%, #047857 100%);
-    color: #ffffff;
-    box-shadow: 0 4px 12px rgba(5,150,105,0.25);
+
+/* Copy UPI ID Box */
+.copy-upi-box {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    padding: 0.65rem 0.85rem;
+    margin: 0.85rem 0;
+    text-align: left;
 }
+.copy-upi-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+}
+.btn-copy {
+    background: #ffffff;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    padding: 0.35rem 0.65rem;
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: #0f172a;
+    cursor: pointer;
+}
+.btn-copy:active { background: #e2e8f0; }
 
 /* QR Code Toggle */
 .qr-toggle-btn {
@@ -198,7 +239,7 @@ body {
     border: 1px dashed #cbd5e1;
     border-radius: 10px;
     padding: 0.65rem;
-    margin-top: 1rem;
+    margin-top: 0.85rem;
     font-size: 0.85rem;
     font-weight: 600;
     color: #475569;
@@ -213,8 +254,8 @@ body {
     border: 1px solid #e2e8f0;
 }
 .qr-wrapper img {
-    width: 200px;
-    height: 200px;
+    width: 220px;
+    height: 220px;
     border-radius: 8px;
     display: block;
     margin: 0 auto;
@@ -325,30 +366,41 @@ body {
         <?php if (!$isConfigured): ?>
             <div class="warning-box">
                 <strong>⚠️ Merchant Setup Required:</strong><br/>
-                Your receiver UPI ID is not configured. Please open <a href="/admin/youpi" style="color:#991b1b; font-weight:700;">Admin → ⚡ YouPI Gateway</a> and paste your active UPI ID (e.g. your Google Pay / PhonePe UPI ID).
+                Your receiver UPI ID is not configured. Please open <a href="/admin/youpi" style="color:#991b1b; font-weight:700;">Admin → ⚡ YouPI Gateway</a> and paste your active UPI ID.
             </div>
         <?php endif; ?>
 
         <!-- One-Tap UPI App Buttons -->
-        <div class="upi-section-title">Tap to Pay via Installed App</div>
+        <div class="upi-section-title">Tap to Pay via UPI App</div>
         <div class="btn-app-grid">
-            <a href="<?= e($upiUriGeneric) ?>" class="btn-upi-app btn-any-upi">
+            <a href="<?= e($upiUriUniversal) ?>" class="btn-upi-app btn-any-upi">
                 <span>⚡ Pay with Any UPI App</span>
                 <span>→</span>
             </a>
-            <a href="<?= e($upiUriPhonepe) ?>" class="btn-upi-app btn-phonepe">
+            <button type="button" onclick="payWithApp('phonepe')" class="btn-upi-app btn-phonepe">
                 <span>PhonePe</span>
                 <span>Pay ₹<?= e(number_format((float)$pkg['price'], 0)) ?></span>
-            </a>
-            <a href="<?= e($upiUriGpay) ?>" class="btn-upi-app btn-gpay">
+            </button>
+            <button type="button" onclick="payWithApp('gpay')" class="btn-upi-app btn-gpay">
                 <span>Google Pay</span>
                 <span>Pay ₹<?= e(number_format((float)$pkg['price'], 0)) ?></span>
-            </a>
-            <a href="<?= e($upiUriPaytm) ?>" class="btn-upi-app btn-paytm">
+            </button>
+            <button type="button" onclick="payWithApp('paytm')" class="btn-upi-app btn-paytm">
                 <span>Paytm</span>
                 <span>Pay ₹<?= e(number_format((float)$pkg['price'], 0)) ?></span>
-            </a>
+            </button>
         </div>
+
+        <!-- Copy UPI ID Feature -->
+        <?php if (!empty($upiId)): ?>
+            <div class="copy-upi-box">
+                <div style="font-size:0.75rem; color:#64748b; margin-bottom:0.35rem;">Or transfer to this UPI ID:</div>
+                <div class="copy-upi-row">
+                    <code id="upiIdText" style="font-weight:700; color:#0f172a; font-size:0.92rem;"><?= e($upiId) ?></code>
+                    <button type="button" class="btn-copy" id="copyBtn" onclick="copyUpi()">📋 Copy</button>
+                </div>
+            </div>
+        <?php endif; ?>
 
         <!-- Collapsible QR Code for Desktop / Scanner -->
         <button type="button" class="qr-toggle-btn" onclick="toggleQr()">
@@ -356,9 +408,9 @@ body {
             <span id="qrToggleText">Show QR Code (to scan from another phone)</span>
         </button>
         <div class="qr-wrapper" id="qrWrapper">
-            <img src="<?= e($qrUrl) ?>" alt="UPI QR Code">
+            <img src="<?= e($qrUrl) ?>" alt="UPI QR Code" id="qrImage">
             <p style="font-size:0.75rem; color:#64748b; margin-top:0.4rem;">
-                Scan using any UPI App
+                Scan with PhonePe, Google Pay, Paytm, or BHIM
             </p>
         </div>
 
@@ -378,7 +430,7 @@ body {
                 <?= csrf_field() ?>
                 <input type="hidden" name="payment_id" value="<?= (int)$payment['id'] ?>">
                 <p style="font-size:0.75rem; color:#64748b; margin:0.35rem 0 0.5rem;">
-                    Enter the 12-digit UTR / UPI Reference Number from your payment SMS:
+                    Enter the 12-digit UTR / UPI Reference Number from your payment receipt:
                 </p>
                 <input type="text" name="utr" class="utr-field" placeholder="e.g. 429812345678" maxlength="25" required>
                 <button type="submit" class="utr-submit-btn">Verify &amp; Activate Plan</button>
@@ -394,7 +446,50 @@ body {
 <script>
 const paymentId = <?= json_encode((int)$payment['id']) ?>;
 const successUrl = '/checkout/success?p=' + encodeURIComponent(paymentId);
+const universalUri = <?= json_encode($upiUriUniversal) ?>;
+const intentPhonepe = <?= json_encode($intentPhonepe) ?>;
+const intentGpay = <?= json_encode($intentGpay) ?>;
+const intentPaytm = <?= json_encode($intentPaytm) ?>;
+
 let pollTimer = null;
+
+function payWithApp(app) {
+    const isAndroid = /android/i.test(navigator.userAgent);
+    let target = universalUri;
+    
+    if (isAndroid) {
+        if (app === 'phonepe') target = intentPhonepe;
+        else if (app === 'gpay') target = intentGpay;
+        else if (app === 'paytm') target = intentPaytm;
+    }
+    
+    window.location.href = target;
+    
+    // Fallback to universal UPI if the specific intent didn't launch
+    if (isAndroid && target !== universalUri) {
+        setTimeout(() => {
+            window.location.href = universalUri;
+        }, 1500);
+    }
+}
+
+function copyUpi() {
+    const text = document.getElementById('upiIdText')?.textContent;
+    if (!text) return;
+    navigator.clipboard.writeText(text).then(() => {
+        const btn = document.getElementById('copyBtn');
+        if (btn) {
+            btn.textContent = '✓ Copied!';
+            btn.style.color = '#059669';
+            setTimeout(() => {
+                btn.textContent = '📋 Copy';
+                btn.style.color = '#0f172a';
+            }, 2500);
+        }
+    }).catch(() => {
+        alert('UPI ID: ' + text);
+    });
+}
 
 // Poll backend for real-time payment confirmation
 function checkStatus() {
