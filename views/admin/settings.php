@@ -8,7 +8,7 @@ $groups = [
     'Stats'       => ['stat_members','stat_marriages','stat_paths','stat_countries'],
     'Contact'     => ['contact_email','contact_phone','contact_address','legal_owner'],
     'Social'      => ['social_facebook','social_instagram','social_youtube'],
-    'Payments'    => ['payment_payee_name','payment_upi_id','payment_upi_qr_url','payment_bank_name','payment_account_name','payment_account_number','payment_ifsc','payment_branch','payment_contact_phone','payment_contact_email','payment_instructions'],
+    'Payments'    => ['youpi_enabled','youpi_portal_url','youpi_admin_url','youpi_webhook_secret','payment_payee_name','payment_upi_id','payment_upi_qr_url','payment_bank_name','payment_account_name','payment_account_number','payment_ifsc','payment_branch','payment_contact_phone','payment_contact_email','payment_instructions'],
 ];
 $lookup = [];
 foreach ($rows as $r) $lookup[$r['setting_key']] = $r['setting_value'];

@@ -356,6 +356,39 @@ function checkout_start(string $kind, int $itemId): void {
         $label = $item['tier'] === 'selfie' ? 'Selfie + Identity Verification' : 'Identity Verification';
     }
 
+    // Prioritize YouPI UPI Gateway if enabled (default on)
+    $youpiEnabled = setting('youpi_enabled', '1') === '1';
+    if ($youpiEnabled) {
+        $paymentId = DB::insert('payments', [
+            'user_id'          => Auth::id(),
+            'package_id'       => $kind === 'package' ? (int)$item['id'] : null,
+            'purchase_type'    => $kind,
+            'item_id'          => (int)($item['id'] ?? 0),
+            'gateway'          => 'youpi',
+            'gateway_order_id' => 'SS_' . Auth::id() . '_' . time(),
+            'amount'           => $amount,
+            'currency'         => 'INR',
+            'status'           => 'created',
+            'notes'            => json_encode($notes),
+        ]);
+        $payment = DB::one('SELECT * FROM payments WHERE id = ?', [$paymentId]);
+
+        view('checkout/youpi', [
+            'pkg'        => [
+                'name'          => $label,
+                'price'         => $amount,
+                'currency'      => 'INR',
+                'duration_days' => (int)($item['duration_days'] ?? 0),
+                'tagline'       => $item['tagline'] ?? ($kind === 'verification' ? 'Independent trust verification' : ''),
+            ],
+            'payment'    => $payment,
+            'portal_url' => setting('youpi_portal_url', 'http://66.116.241.172:7000'),
+            'user'       => Auth::user(),
+            'kind'       => $kind,
+        ], null);
+        return;
+    }
+
     $enabled = setting('razorpay_enabled') === '1';
     $keyId   = setting('razorpay_key_id');
     $secret  = setting('razorpay_key_secret');
@@ -551,6 +584,58 @@ $r->post('/razorpay/webhook', function () {
     }
 
     http_response_code(200); echo 'ok';
+});
+
+// ------------------- YOUPI UPI GATEWAY WEBHOOK -------------------
+$r->post('/youpi/webhook', function () {
+    $body = file_get_contents('php://input');
+    $payload = json_decode($body, true);
+    if (!$payload) {
+        http_response_code(400);
+        header('Content-Type: application/json');
+        echo json_encode(['error' => 'Invalid JSON body']);
+        return;
+    }
+
+    // Webhook signature verification (if secret configured)
+    $secret = setting('youpi_webhook_secret');
+    $sig = $_SERVER['HTTP_X_YOUPI_SIGNATURE'] ?? $_SERVER['HTTP_X_SIGNATURE'] ?? $_SERVER['HTTP_SIGNATURE'] ?? '';
+    if (!empty($secret) && !empty($sig)) {
+        $expected = hash_hmac('sha256', $body, $secret);
+        if (!hash_equals($expected, $sig)) {
+            http_response_code(401);
+            header('Content-Type: application/json');
+            echo json_encode(['error' => 'Invalid signature']);
+            return;
+        }
+    }
+
+    $data = $payload['data'] ?? $payload;
+    $status = strtoupper((string)($data['status'] ?? $payload['event'] ?? ''));
+    $orderId = $data['order_id'] ?? $data['orderId'] ?? ($data['metadata']['payment_id'] ?? null);
+    $utr = $data['utr'] ?? $data['reference'] ?? ($data['id'] ?? 'UPI_' . time());
+
+    $isSuccess = in_array($status, ['SUCCESS', 'PAID', 'PAYMENT.SUCCESS', 'COMPLETED', 'SESSION.COMPLETED'], true)
+                 || str_contains($status, 'SUCCESS');
+
+    if ($isSuccess && $orderId) {
+        $pmt = is_numeric($orderId)
+            ? DB::one('SELECT * FROM payments WHERE id = ?', [(int)$orderId])
+            : DB::one('SELECT * FROM payments WHERE gateway_order_id = ? OR id = ?', [$orderId, (int)$orderId]);
+
+        if ($pmt && $pmt['status'] !== 'paid') {
+            grant_purchase_by_payment($pmt, (string)$utr);
+            DB::update('payments', [
+                'status'             => 'paid',
+                'gateway'            => 'youpi',
+                'gateway_payment_id' => (string)$utr,
+            ], ['id' => $pmt['id']]);
+        }
+    }
+
+    http_response_code(200);
+    header('Content-Type: application/json');
+    echo json_encode(['received' => true]);
 });
 
 // ------------------- HAPPY STORIES -------------------

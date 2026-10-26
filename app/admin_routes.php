@@ -696,6 +696,59 @@ $r->post('/admin/razorpay', $admin(function () use ($RAZORPAY_KEYS) {
     redirect('/admin/razorpay');
 }));
 
+// ---------- YOUPI UPI GATEWAY ----------
+$YOUPI_KEYS = ['youpi_enabled', 'youpi_portal_url', 'youpi_admin_url', 'youpi_webhook_secret'];
+
+$r->get('/admin/youpi', $admin(function () use ($YOUPI_KEYS) {
+    $values = [];
+    foreach ($YOUPI_KEYS as $k) {
+        $values[$k] = (string) DB::val('SELECT setting_value FROM site_settings WHERE setting_key = ?', [$k]);
+    }
+    if (empty($values['youpi_portal_url'])) {
+        $values['youpi_portal_url'] = 'http://66.116.241.172:7000';
+    }
+    if (empty($values['youpi_admin_url'])) {
+        $values['youpi_admin_url'] = 'http://66.116.241.172:7010';
+    }
+    if (!isset($values['youpi_enabled']) || $values['youpi_enabled'] === '') {
+        $values['youpi_enabled'] = '1';
+    }
+
+    $recent = DB::all("SELECT p.*, u.name AS user_name, u.email AS user_email,
+                              COALESCE(
+                                  pk.name,
+                                  ad.name,
+                                  CASE
+                                      WHEN vr.tier = 'selfie' THEN 'Selfie + Identity Verification'
+                                      WHEN vr.tier = 'identity' THEN 'Identity Verification'
+                                      ELSE NULL
+                                  END
+                              ) AS package_name
+                       FROM payments p
+                       LEFT JOIN users u ON u.id = p.user_id
+                       LEFT JOIN packages pk ON pk.id = p.package_id
+                       LEFT JOIN addons ad ON ad.id = p.item_id AND p.purchase_type = 'addon'
+                       LEFT JOIN verification_requests vr ON vr.id = p.item_id AND p.purchase_type = 'verification'
+                       WHERE p.gateway = 'youpi'
+                       ORDER BY p.created_at DESC LIMIT 25");
+    view('admin/youpi', ['values' => $values, 'recent' => $recent], 'admin');
+}));
+
+$r->post('/admin/youpi', $admin(function () use ($YOUPI_KEYS) {
+    foreach ($YOUPI_KEYS as $k) {
+        $v = trim((string)($_POST[$k] ?? ''));
+        if ($k === 'youpi_enabled') $v = isset($_POST[$k]) ? '1' : '0';
+        $exists = DB::val('SELECT 1 FROM site_settings WHERE setting_key = ?', [$k]);
+        if ($exists) {
+            DB::update('site_settings', ['setting_value' => $v], ['setting_key' => $k]);
+        } else {
+            DB::insert('site_settings', ['setting_key' => $k, 'setting_value' => $v]);
+        }
+    }
+    flash('success', 'YouPI UPI Gateway settings saved.');
+    redirect('/admin/youpi');
+}));
+
 // ---------- CONTACT MESSAGES ----------
 $r->get('/admin/messages', $admin(function () {
     $rows = DB::all('SELECT * FROM contact_messages ORDER BY created_at DESC');
