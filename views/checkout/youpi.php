@@ -19,21 +19,22 @@ if (strlen($cleanNote) > 20) {
     $cleanNote = substr($cleanNote, 0, 20);
 }
 
-// NPCI Standard Universal UPI URI (Works for both Personal & Merchant accounts)
-// Note: pa MUST contain literal '@' symbol (NOT %40) so banking apps don't reject it.
-// Note: Do NOT include 'tr=' for personal accounts, as NPCI forbids tr on P2P accounts.
+// 1. Clean P2P URI for QR Code:
+// PhonePe scanner strictly rejects personal (@axl/@ybl/@okhdfcbank) QR codes if they contain "am=" or "tr=".
+// Omitting am= creates a 100% valid P2P QR code that PhonePe/GPay/Paytm will scan without "Invalid QR Code" error.
 $encodedPayee = rawurlencode($cleanPayee);
-$upiParams = "pa={$upiId}&pn={$encodedPayee}&am={$amount}&cu=INR&tn={$cleanNote}";
+$upiUriQr = "upi://pay?pa={$upiId}&pn={$encodedPayee}&cu=INR";
 
-$upiUriUniversal = "upi://pay?{$upiParams}";
+// 2. Intent URI for Mobile Buttons (Where pre-filled amount works):
+$upiUriButtons = "upi://pay?pa={$upiId}&pn={$encodedPayee}&am={$amount}&cu=INR&tn={$cleanNote}";
 
-// Direct Android Intents (Uses official 'upi' scheme directly into specific app packages without merchant PG errors)
-$intentPhonepe = "intent://pay?{$upiParams}#Intent;scheme=upi;package=com.phonepe.app;end";
-$intentGpay    = "intent://pay?{$upiParams}#Intent;scheme=upi;package=com.google.android.apps.nbu.paisa.user;end";
-$intentPaytm   = "intent://pay?{$upiParams}#Intent;scheme=upi;package=net.one97.paytm;end";
+// Direct Android Intents
+$intentPhonepe = "intent://pay?pa={$upiId}&pn={$encodedPayee}&am={$amount}&cu=INR&tn={$cleanNote}#Intent;scheme=upi;package=com.phonepe.app;end";
+$intentGpay    = "intent://pay?pa={$upiId}&pn={$encodedPayee}&am={$amount}&cu=INR&tn={$cleanNote}#Intent;scheme=upi;package=com.google.android.apps.nbu.paisa.user;end";
+$intentPaytm   = "intent://pay?pa={$upiId}&pn={$encodedPayee}&am={$amount}&cu=INR&tn={$cleanNote}#Intent;scheme=upi;package=net.one97.paytm;end";
 
-// QR code contains the clean universal UPI URI (single URL-encoded for the QR API parameter)
-$qrUrl = "https://api.qrserver.com/v1/create-qr-code/?size=260x260&margin=8&data=" . rawurlencode($upiUriUniversal);
+// QR code uses clean P2P format (single rawurlencode for API parameter)
+$qrUrl = "https://api.qrserver.com/v1/create-qr-code/?size=260x260&margin=8&data=" . rawurlencode($upiUriQr);
 ?>
 <!doctype html>
 <html lang="en">
@@ -373,7 +374,7 @@ body {
         <!-- One-Tap UPI App Buttons -->
         <div class="upi-section-title">Tap to Pay via UPI App</div>
         <div class="btn-app-grid">
-            <a href="<?= e($upiUriUniversal) ?>" class="btn-upi-app btn-any-upi">
+            <a href="<?= e($upiUriButtons) ?>" class="btn-upi-app btn-any-upi">
                 <span>⚡ Pay with Any UPI App</span>
                 <span>→</span>
             </a>
@@ -409,9 +410,16 @@ body {
         </button>
         <div class="qr-wrapper" id="qrWrapper">
             <img src="<?= e($qrUrl) ?>" alt="UPI QR Code" id="qrImage">
-            <p style="font-size:0.75rem; color:#64748b; margin-top:0.4rem;">
-                Scan with PhonePe, Google Pay, Paytm, or BHIM
+            <p style="font-size:0.85rem; font-weight:700; color:#0f172a; margin-top:0.5rem;">
+                Scan with PhonePe, GPay, Paytm &amp; pay ₹<?= e(number_format((float)$pkg['price'], 0)) ?>
             </p>
+            <p style="font-size:0.72rem; color:#64748b; margin-top:0.25rem;">
+                Account: <?= e($cleanPayee) ?> (<code><?= e($upiId) ?></code>)
+            </p>
+        </div>
+
+        <div style="font-size:0.75rem; color:#64748b; background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:0.5rem 0.65rem; margin-top:0.75rem; line-height:1.4; text-align:left;">
+            💡 <strong>Testing tip:</strong> If testing on your phone, pay using a different bank account / second phone. (UPI apps block transfers to yourself).
         </div>
 
         <!-- Live Auto-Confirmation Status -->
@@ -446,7 +454,7 @@ body {
 <script>
 const paymentId = <?= json_encode((int)$payment['id']) ?>;
 const successUrl = '/checkout/success?p=' + encodeURIComponent(paymentId);
-const universalUri = <?= json_encode($upiUriUniversal) ?>;
+const universalUri = <?= json_encode($upiUriButtons) ?>;
 const intentPhonepe = <?= json_encode($intentPhonepe) ?>;
 const intentGpay = <?= json_encode($intentGpay) ?>;
 const intentPaytm = <?= json_encode($intentPaytm) ?>;
