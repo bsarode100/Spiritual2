@@ -697,20 +697,49 @@ $r->post('/youpi/webhook', function () {
     $data = $payload['data'] ?? $payload;
     $status = strtoupper((string)($data['status'] ?? $payload['event'] ?? ''));
     $orderId = $data['order_id'] ?? $data['orderId'] ?? ($data['metadata']['payment_id'] ?? null);
-    $utr = $data['utr'] ?? $data['reference'] ?? ($data['id'] ?? 'UPI_' . time());
+    $utr = $data['utr'] ?? $data['reference'] ?? ($data['id'] ?? null);
+    $amount = (float)($data['amount'] ?? $payload['amount'] ?? 0);
 
-    $isSuccess = in_array($status, ['SUCCESS', 'PAID', 'PAYMENT.SUCCESS', 'COMPLETED', 'SESSION.COMPLETED'], true)
-                 || str_contains($status, 'SUCCESS');
+    // If UTR or amount not parsed by observer, try extracting from raw SMS message
+    $rawMsg = (string)($data['message'] ?? $data['sms_body'] ?? $data['body'] ?? $payload['message'] ?? '');
+    if (empty($utr) && !empty($rawMsg)) {
+        if (preg_match('/(?:ref(?:erence)?|utr|rrn|txn|upi)[\s\/:]*([0-9]{12})/i', $rawMsg, $um)) {
+            $utr = $um[1];
+        }
+    }
+    if ($amount <= 0 && !empty($rawMsg)) {
+        if (preg_match('/(?:rs\.?|inr)\s*([0-9]+(?:\.[0-9]{2})?)/i', $rawMsg, $am)) {
+            $amount = (float)$am[1];
+        }
+    }
 
-    if ($isSuccess) {
+    if (empty($utr)) {
+        $utr = 'UPI_' . time();
+    }
+
+    $isSuccess = in_array($status, ['SUCCESS', 'PAID', 'PAYMENT.SUCCESS', 'COMPLETED', 'SESSION.COMPLETED', 'CREDITED'], true)
+                 || str_contains($status, 'SUCCESS')
+                 || str_contains($status, 'CREDIT')
+                 || (!empty($rawMsg) && stripos($rawMsg, 'credited') !== false);
+
+    if ($isSuccess || $amount > 0) {
         $pmt = null;
+
+        // 1. Match by Order ID if present
         if ($orderId) {
             $pmt = is_numeric($orderId)
                 ? DB::one('SELECT * FROM payments WHERE id = ?', [(int)$orderId])
                 : DB::one('SELECT * FROM payments WHERE gateway_order_id = ? OR id = ?', [$orderId, (int)$orderId]);
         }
-        if (!$pmt && !empty($utr)) {
+
+        // 2. Match by exact UTR if user submitted it on page
+        if (!$pmt && !empty($utr) && !str_starts_with($utr, 'UPI_')) {
             $pmt = DB::one('SELECT * FROM payments WHERE gateway_payment_id = ? AND status != "paid"', [(string)$utr]);
+        }
+
+        // 3. Match by exact Amount for the most recent pending checkout session (auto-confirmation)
+        if (!$pmt && $amount > 0) {
+            $pmt = DB::one('SELECT * FROM payments WHERE amount = ? AND status != "paid" ORDER BY id DESC LIMIT 1', [$amount]);
         }
 
         if ($pmt && $pmt['status'] !== 'paid') {
@@ -719,6 +748,7 @@ $r->post('/youpi/webhook', function () {
                 'status'             => 'paid',
                 'gateway'            => 'youpi',
                 'gateway_payment_id' => (string)$utr,
+                'notes'              => trim(($pmt['notes'] ?? '') . ' | Auto-confirmed by YouPI observer at ' . date('Y-m-d H:i:s')),
             ], ['id' => $pmt['id']]);
         }
     }
