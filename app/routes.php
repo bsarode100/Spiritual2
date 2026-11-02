@@ -671,22 +671,47 @@ $r->post('/razorpay/webhook', function () {
 });
 
 // ------------------- YOUPI UPI GATEWAY WEBHOOK -------------------
+$r->get('/youpi/webhook', function () {
+    header('Content-Type: application/json');
+    echo json_encode([
+        'status'       => 'active',
+        'service'      => 'YouPI UPI Webhook Gateway',
+        'timestamp'    => date('Y-m-d H:i:s'),
+        'message'      => 'Webhook endpoint is active and listening for bank credit notifications (JSON or Form POST).',
+    ]);
+});
+
 $r->post('/youpi/webhook', function () {
-    $body = file_get_contents('php://input');
+    $body = (string)file_get_contents('php://input');
     $payload = json_decode($body, true);
-    if (!$payload) {
+
+    // Support Form POST data if not JSON
+    if (!is_array($payload)) {
+        if (!empty($_POST)) {
+            $payload = $_POST;
+        } elseif (!empty($body)) {
+            parse_str($body, $parsed);
+            if (!empty($parsed) && is_array($parsed)) {
+                $payload = $parsed;
+            }
+        }
+    }
+
+    if (empty($payload) || !is_array($payload)) {
         http_response_code(400);
         header('Content-Type: application/json');
-        echo json_encode(['error' => 'Invalid JSON body']);
+        echo json_encode(['error' => 'No payload received. Send JSON or Form POST with payment details.']);
         return;
     }
 
     // Webhook signature verification (if secret configured)
     $secret = setting('youpi_webhook_secret');
-    $sig = $_SERVER['HTTP_X_YOUPI_SIGNATURE'] ?? $_SERVER['HTTP_X_SIGNATURE'] ?? $_SERVER['HTTP_SIGNATURE'] ?? '';
+    $sig = $_SERVER['HTTP_X_YOUPI_SIGNATURE'] ?? $_SERVER['HTTP_X_GATEWAY_SIGNATURE'] ?? $_SERVER['HTTP_X_SIGNATURE'] ?? $_SERVER['HTTP_SIGNATURE'] ?? '';
     if (!empty($secret) && !empty($sig)) {
+        // Support "sha256=..." prefix if present
+        $cleanSig = str_starts_with($sig, 'sha256=') ? substr($sig, 7) : $sig;
         $expected = hash_hmac('sha256', $body, $secret);
-        if (!hash_equals($expected, $sig)) {
+        if (!hash_equals($expected, $cleanSig) && !hash_equals($expected, $sig)) {
             http_response_code(401);
             header('Content-Type: application/json');
             echo json_encode(['error' => 'Invalid signature']);
@@ -700,8 +725,8 @@ $r->post('/youpi/webhook', function () {
     $utr = $data['utr'] ?? $data['reference'] ?? ($data['id'] ?? null);
     $amount = (float)($data['amount'] ?? $payload['amount'] ?? 0);
 
-    // If UTR or amount not parsed by observer, try extracting from raw SMS message
-    $rawMsg = (string)($data['message'] ?? $data['sms_body'] ?? $data['body'] ?? $payload['message'] ?? '');
+    // If UTR or amount not parsed by observer, try extracting from all common text field names
+    $rawMsg = (string)($data['message'] ?? $data['sms_body'] ?? $data['body'] ?? $data['content'] ?? $data['text'] ?? $data['msg'] ?? $data['sms'] ?? $payload['message'] ?? $payload['text'] ?? '');
     if (empty($utr) && !empty($rawMsg)) {
         if (preg_match('/(?:ref(?:erence)?|utr|rrn|txn|upi)[\s\/:]*([0-9]{12})/i', $rawMsg, $um)) {
             $utr = $um[1];
