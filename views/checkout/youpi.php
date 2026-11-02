@@ -290,19 +290,47 @@ body {
     cursor: pointer;
 }
 .qr-wrapper {
-    display: none;
-    margin-top: 0.85rem;
-    padding: 0.85rem;
-    background: #f8fafc;
-    border-radius: 12px;
-    border: 1px solid #e2e8f0;
+    display: block;
+    margin-top: 1rem;
+    padding: 1rem;
+    background: #ffffff;
+    border-radius: 16px;
+    border: 2px solid #e2e8f0;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
 }
 .qr-wrapper img {
     width: 220px;
     height: 220px;
-    border-radius: 8px;
+    border-radius: 12px;
     display: block;
     margin: 0 auto;
+    border: 1px solid #e2e8f0;
+}
+.btn-save-qr {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    background: #047857;
+    color: #ffffff;
+    font-size: 0.84rem;
+    font-weight: 700;
+    padding: 0.55rem 0.95rem;
+    border-radius: 9999px;
+    text-decoration: none;
+    box-shadow: 0 2px 6px rgba(4,120,87,0.25);
+    transition: opacity 0.15s;
+}
+.btn-save-qr:hover { opacity: 0.92; }
+.qr-mobile-guide {
+    margin-top: 0.75rem;
+    background: #ecfdf5;
+    border: 1px solid #a7f3d0;
+    border-radius: 10px;
+    padding: 0.65rem 0.85rem;
+    font-size: 0.78rem;
+    color: #065f46;
+    line-height: 1.45;
+    text-align: left;
 }
 
 /* Polling Live Status */
@@ -431,41 +459,57 @@ body {
             </div>
         <?php endif; ?>
 
-        <!-- One-Tap UPI App Buttons -->
-        <div class="upi-section-title">Tap to Pay via UPI App</div>
-        <div class="btn-app-grid">
-            <a href="<?= e($upiUriButtons) ?>" class="btn-upi-app btn-any-upi">
-                <span>⚡ Pay with Any UPI App</span>
-                <span>→</span>
-            </a>
-            <a href="<?= e($linkPhonepe) ?>" class="btn-upi-app btn-phonepe">
-                <span>PhonePe</span>
-                <span>Pay ₹<?= e(number_format((float)$pkg['price'], 0)) ?></span>
-            </a>
-            <a href="<?= e($linkGpay) ?>" class="btn-upi-app btn-gpay">
-                <span>Google Pay</span>
-                <span>Pay ₹<?= e(number_format((float)$pkg['price'], 0)) ?></span>
-            </a>
-            <a href="<?= e($linkPaytm) ?>" class="btn-upi-app btn-paytm">
-                <span>Paytm</span>
-                <span>Pay ₹<?= e(number_format((float)$pkg['price'], 0)) ?></span>
-            </a>
-        </div>
-
-        <!-- Fallback if receiver bank blocks locked amounts on personal accounts -->
-        <div style="margin-top: 0.75rem; text-align: center; background: #f8fafc; border: 1px dashed #cbd5e1; border-radius: 10px; padding: 0.6rem 0.8rem;">
-            <div style="font-size: 0.78rem; color: #64748b; margin-bottom: 0.25rem;">
-                Bank declined the locked amount?
+        <!-- Option 1: 100% Reliable Dynamic QR Code (Works with All Banks) -->
+        <div class="qr-wrapper" id="qrWrapper" style="margin-top: 0.5rem;">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.75rem;">
+                <span style="font-size: 0.85rem; font-weight: 700; color: #0f172a; text-transform: uppercase; letter-spacing: 0.03em;">
+                    ⚡ Scan &amp; Pay (Recommended)
+                </span>
+                <span style="font-size: 0.72rem; font-weight: 700; color: #047857; background: #ecfdf5; border: 1px solid #a7f3d0; padding: 0.2rem 0.55rem; border-radius: 9999px;">
+                    ✓ 100% Accepted by All Banks
+                </span>
             </div>
-            <a href="<?= e($upiUriOpen) ?>" style="font-size: 0.84rem; color: #4338ca; font-weight: 700; text-decoration: underline;">
-                Tap here to pay with manual amount (enter ₹<?= e(number_format((float)$pkg['price'], 0)) ?>) →
-            </a>
+
+            <img src="<?= e($displayQrUrl) ?>" 
+                 onerror="if(this.src!=='<?= e($fallbackQrUrl) ?>'){this.src='<?= e($fallbackQrUrl) ?>';}" 
+                 alt="UPI QR Code" id="qrImage">
+            
+            <p style="font-size:0.95rem; font-weight:800; color:#0f172a; margin-top:0.65rem;">
+                Scan to pay ₹<?= e(number_format((float)$pkg['price'], 0)) ?>
+            </p>
+            <p style="font-size:0.75rem; color:#64748b; margin-top:0.2rem;">
+                Payee: <strong><?= e($cleanPayee) ?></strong> (<code><?= e($upiId) ?></code>)
+            </p>
+
+            <!-- Save / Download QR for Single Phone Mobile Users -->
+            <div style="margin-top: 0.85rem; display: flex; flex-direction: column; align-items: center; gap: 0.5rem;">
+                <a href="<?= e($displayQrUrl) ?>" download="SpiritualShaadi-QR-<?= e(number_format((float)$pkg['price'], 0)) ?>.png" target="_blank" class="btn-save-qr">
+                    <span>📥</span> Save QR Image to Gallery
+                </a>
+            </div>
+
+            <!-- Single Phone Instructions -->
+            <div class="qr-mobile-guide">
+                <strong>📱 Paying from this phone?</strong>
+                <ol style="margin: 0.35rem 0 0 1.15rem; padding: 0; line-height: 1.45;">
+                    <li>Tap <strong>Save QR Image</strong> above (or take a screenshot).</li>
+                    <li>Open <strong>PhonePe, Google Pay, or Paytm</strong>.</li>
+                    <li>Tap the <strong>Scan 📷</strong> icon, then select the <strong>Gallery 🖼️</strong> icon to pick this QR code.</li>
+                    <li>The amount <strong>₹<?= e(number_format((float)$pkg['price'], 0)) ?></strong> is auto-filled. Enter UPI PIN to complete!</li>
+                </ol>
+            </div>
+
+            <?php if (!empty($uploadedQrUrl)): ?>
+                <div style="margin-top:0.55rem;">
+                    <a href="javascript:void(0)" onclick="toggleQrType()" id="qrSwitchLink" style="font-size:0.75rem; color:#4338ca; text-decoration:underline;">Switch to store / merchant QR</a>
+                </div>
+            <?php endif; ?>
         </div>
 
         <!-- Copy UPI ID Feature -->
         <?php if (!empty($upiId)): ?>
             <div class="copy-upi-box">
-                <div style="font-size:0.75rem; color:#64748b; margin-bottom:0.35rem;">Or transfer to this UPI ID:</div>
+                <div style="font-size:0.75rem; color:#64748b; margin-bottom:0.35rem;">Or transfer directly to this UPI ID:</div>
                 <div class="copy-upi-row">
                     <code id="upiIdText" style="font-weight:700; color:#0f172a; font-size:0.92rem;"><?= e($upiId) ?></code>
                     <button type="button" class="btn-copy" id="copyBtn" onclick="copyUpi()">📋 Copy</button>
@@ -473,26 +517,42 @@ body {
             </div>
         <?php endif; ?>
 
-        <!-- Collapsible QR Code for Desktop / Scanner -->
-        <button type="button" class="qr-toggle-btn" onclick="toggleQr()">
-            <span>📷</span>
-            <span id="qrToggleText">Show QR Code (to scan from another phone)</span>
-        </button>
-        <div class="qr-wrapper" id="qrWrapper">
-            <img src="<?= e($displayQrUrl) ?>" 
-                 onerror="if(this.src!=='<?= e($fallbackQrUrl) ?>'){this.src='<?= e($fallbackQrUrl) ?>';}" 
-                 alt="UPI QR Code" id="qrImage">
-            <p style="font-size:0.85rem; font-weight:700; color:#0f172a; margin-top:0.5rem;">
-                Scan with PhonePe, GPay, Paytm &amp; pay ₹<?= e(number_format((float)$pkg['price'], 0)) ?>
-            </p>
-            <p style="font-size:0.75rem; color:#64748b; margin-top:0.25rem;">
-                Account: <?= e($cleanPayee) ?> (<code><?= e($upiId) ?></code>)
-            </p>
-            <?php if (!empty($uploadedQrUrl)): ?>
-                <div style="margin-top:0.4rem;">
-                    <a href="javascript:void(0)" onclick="toggleQrType()" id="qrSwitchLink" style="font-size:0.75rem; color:#4338ca; text-decoration:underline;">Switch to store / merchant QR</a>
-                </div>
-            <?php endif; ?>
+        <!-- Option 2: Direct UPI App Buttons -->
+        <div style="margin-top: 1.25rem; border-top: 1px solid #e2e8f0; padding-top: 1rem;">
+            <div class="upi-section-title" style="margin-top: 0; display: flex; align-items: center; justify-content: space-between;">
+                <span>Option 2: Tap UPI App Button</span>
+                <span style="font-size: 0.7rem; color: #64748b; font-weight: normal; text-transform: none;">Direct web intent</span>
+            </div>
+
+            <div class="btn-app-grid">
+                <a href="<?= e($upiUriButtons) ?>" class="btn-upi-app btn-any-upi">
+                    <span>⚡ Pay with Any UPI App</span>
+                    <span>→</span>
+                </a>
+                <a href="<?= e($linkPhonepe) ?>" class="btn-upi-app btn-phonepe">
+                    <span>PhonePe</span>
+                    <span>Pay ₹<?= e(number_format((float)$pkg['price'], 0)) ?></span>
+                </a>
+                <a href="<?= e($linkGpay) ?>" class="btn-upi-app btn-gpay">
+                    <span>Google Pay</span>
+                    <span>Pay ₹<?= e(number_format((float)$pkg['price'], 0)) ?></span>
+                </a>
+                <a href="<?= e($linkPaytm) ?>" class="btn-upi-app btn-paytm">
+                    <span>Paytm</span>
+                    <span>Pay ₹<?= e(number_format((float)$pkg['price'], 0)) ?></span>
+                </a>
+            </div>
+
+            <div style="margin-top: 0.65rem; background: #fffbeb; border: 1px solid #fef3c7; border-radius: 8px; padding: 0.55rem 0.75rem; font-size: 0.74rem; color: #92400e; text-align: left; line-height: 1.4;">
+                <strong>ℹ️ Bank Security Notice:</strong> If your bank declines button clicks with <em>"declined for security reason"</em>, your bank restricts web links to personal UPI accounts. Please use <strong>Option 1 (Scan QR via Gallery)</strong> or <strong>Copy UPI ID</strong> above, which are 100% accepted by all banks.
+            </div>
+
+            <!-- Manual Amount Link if Bank blocks locked amounts on web links -->
+            <div style="margin-top: 0.5rem; text-align: center;">
+                <a href="<?= e($upiUriOpen) ?>" style="font-size: 0.78rem; color: #4338ca; font-weight: 600; text-decoration: underline;">
+                    Or tap here to pay with open amount (enter ₹<?= e(number_format((float)$pkg['price'], 0)) ?> manually) →
+                </a>
+            </div>
         </div>
 
         <!-- Live Auto-Confirmation Status -->
@@ -598,6 +658,7 @@ pollTimer = setInterval(checkStatus, 2500);
 function toggleQr() {
     const w = document.getElementById('qrWrapper');
     const t = document.getElementById('qrToggleText');
+    if (!w || !t) return;
     if (w.style.display === 'block') {
         w.style.display = 'none';
         t.textContent = 'Show QR Code (to scan from another phone)';
