@@ -16,7 +16,12 @@ class Router {
 
         foreach ($this->routes as [$m, $pat, $h]) {
             if ($m !== strtoupper($method)) continue;
-            $regex = '#^' . preg_replace('#\{([a-zA-Z_][a-zA-Z0-9_]*)\}#', '(?P<$1>[^/]+)', $pat) . '$#';
+            $regex = '#^' . preg_replace_callback('#\{([a-zA-Z_][a-zA-Z0-9_]*)\}#', function ($m) {
+                $param = $m[1];
+                return ($param === 'id' || str_ends_with($param, '_id'))
+                    ? '(?P<' . $param . '>\d+)'
+                    : '(?P<' . $param . '>[^/]+)';
+            }, $pat) . '$#';
             if (preg_match($regex, $path, $matches)) {
                 $args = array_filter($matches, 'is_string', ARRAY_FILTER_USE_KEY);
                 $h($args);

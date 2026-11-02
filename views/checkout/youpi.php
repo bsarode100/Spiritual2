@@ -48,19 +48,20 @@ $encodedPayee = rawurlencode($cleanPayee);
 $uploadedQrUrl = trim((string)setting('payment_upi_qr_url', ''));
 
 // Universal YouPI-PG standard UPI format (accepted by Google Pay, PhonePe, Paytm without bank fraud refusal)
-// NOTE: We do NOT append mode=02 or arbitrary mc=5499 on online button intents.
-// mode=02 is specifically for physical POS terminal QRs and triggers bank fraud refusal when launched via app/intent.
-$baseUpiQuery = "pa={$upiId}&pn={$encodedPayee}&am={$amount}&cu=INR&tn={$cleanNote}";
+// NOTE: We do NOT append mode=02, arbitrary mc=5499, or e-commerce order codes in tn=
+// because personal savings bank accounts decline commercial order codes for security reasons.
+$baseUpiQuery     = "pa={$upiId}&pn={$encodedPayee}&am={$amount}&cu=INR";
+$baseUpiQueryOpen = "pa={$upiId}&pn={$encodedPayee}&cu=INR";
 
 // Universal generic URI
 $upiUriButtons = "upi://pay?{$baseUpiQuery}";
+$upiUriOpen    = "upi://pay?{$baseUpiQueryOpen}";
 $upiUriQr      = "upi://pay?{$baseUpiQuery}";
 
-// Direct Android App Intents targeting each app's official package name
+// Direct Android App Intents
 $intentPhonepe = "intent://pay?{$baseUpiQuery}#Intent;scheme=upi;package=com.phonepe.app;end";
 $intentGpay    = "intent://pay?{$baseUpiQuery}#Intent;scheme=upi;package=com.google.android.apps.nbu.paisa.user;end";
 $intentPaytm   = "intent://pay?{$baseUpiQuery}#Intent;scheme=upi;package=net.one97.paytm;end";
-$intentCred    = "intent://pay?{$baseUpiQuery}#Intent;scheme=upi;package=com.dreamplug.androidapp;end";
 
 // Generate reliable dynamic QR codes with exact amount pre-filled
 $generatedQrUrl = "https://quickchart.io/qr?size=260&margin=2&text=" . rawurlencode($upiUriQr);
@@ -69,11 +70,13 @@ $fallbackQrUrl  = "https://api.qrserver.com/v1/create-qr-code/?size=260x260&marg
 // Default to dynamic QR so scanning auto-fills the exact price!
 $displayQrUrl   = $generatedQrUrl;
 
-// Detect Android for native intent links
-$isAndroid = isset($_SERVER['HTTP_USER_AGENT']) && stripos($_SERVER['HTTP_USER_AGENT'], 'Android') !== false;
-$linkPhonepe = $isAndroid ? $intentPhonepe : $upiUriButtons;
-$linkGpay    = $isAndroid ? $intentGpay    : $upiUriButtons;
-$linkPaytm   = $isAndroid ? $intentPaytm   : $upiUriButtons;
+// For installed mobile app WebViews, upi:// is universally supported without intent resolution issues
+$ua = $_SERVER['HTTP_USER_AGENT'] ?? '';
+$isWebView = (stripos($ua, 'wv') !== false || stripos($ua, 'Version/4.0') !== false || stripos($ua, 'SpiritualShaadi') !== false);
+
+$linkPhonepe = $isWebView ? $upiUriButtons : $intentPhonepe;
+$linkGpay    = $isWebView ? $upiUriButtons : $intentGpay;
+$linkPaytm   = $isWebView ? $upiUriButtons : $intentPaytm;
 $alreadySubmittedUtr = !empty($payment['gateway_payment_id']) ? $payment['gateway_payment_id'] : '';
 ?>
 <!doctype html>
@@ -446,6 +449,16 @@ body {
             <a href="<?= e($linkPaytm) ?>" class="btn-upi-app btn-paytm">
                 <span>Paytm</span>
                 <span>Pay ₹<?= e(number_format((float)$pkg['price'], 0)) ?></span>
+            </a>
+        </div>
+
+        <!-- Fallback if receiver bank blocks locked amounts on personal accounts -->
+        <div style="margin-top: 0.75rem; text-align: center; background: #f8fafc; border: 1px dashed #cbd5e1; border-radius: 10px; padding: 0.6rem 0.8rem;">
+            <div style="font-size: 0.78rem; color: #64748b; margin-bottom: 0.25rem;">
+                Bank declined the locked amount?
+            </div>
+            <a href="<?= e($upiUriOpen) ?>" style="font-size: 0.84rem; color: #4338ca; font-weight: 700; text-decoration: underline;">
+                Tap here to pay with manual amount (enter ₹<?= e(number_format((float)$pkg['price'], 0)) ?>) →
             </a>
         </div>
 

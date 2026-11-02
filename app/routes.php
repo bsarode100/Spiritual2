@@ -323,7 +323,25 @@ $r->post('/member/{id}/unlock-contact', function ($a) {
     redirect('/member/' . $targetId);
 });
 
-// ------------------- CHECKOUT (Razorpay) -------------------
+// ------------------- CHECKOUT (Razorpay & YouPI) -------------------
+$r->get('/checkout/pending', function () {
+    Auth::require();
+    $pid = (int)($_GET['p'] ?? 0);
+    $pmt = DB::one('SELECT p.*, pk.name AS package_name, pk.price AS package_price 
+                    FROM payments p 
+                    LEFT JOIN packages pk ON pk.id = p.package_id 
+                    WHERE p.id = ? AND p.user_id = ?', [$pid, Auth::id()]);
+    if (!$pmt) {
+        redirect('/dashboard');
+        return;
+    }
+    if ($pmt['status'] === 'paid') {
+        redirect('/checkout/success?p=' . $pmt['id']);
+        return;
+    }
+    view('checkout/pending', ['payment' => $pmt, 'user' => Auth::user()]);
+});
+
 // One entrypoint per purchase kind so notes/receipts stay honest.
 $r->get('/checkout/{id}', function ($a) { checkout_start('package', (int)$a['id']); });
 $r->get('/checkout/addon/{id}', function ($a) { checkout_start('addon', (int)$a['id']); });
@@ -613,24 +631,6 @@ $r->post('/checkout/verify-utr', function () {
 
     flash('info', 'Your UPI Reference Number (UTR: ' . htmlspecialchars($cleanUtr) . ') has been submitted. Your membership will activate automatically as soon as our banking system verifies the credit (usually 5–15 minutes).');
     redirect('/checkout/pending?p=' . $pmt['id']);
-});
-
-$r->get('/checkout/pending', function () {
-    Auth::require();
-    $pid = (int)($_GET['p'] ?? 0);
-    $pmt = DB::one('SELECT p.*, pk.name AS package_name, pk.price AS package_price 
-                    FROM payments p 
-                    LEFT JOIN packages pk ON pk.id = p.package_id 
-                    WHERE p.id = ? AND p.user_id = ?', [$pid, Auth::id()]);
-    if (!$pmt) {
-        redirect('/dashboard');
-        return;
-    }
-    if ($pmt['status'] === 'paid') {
-        redirect('/checkout/success?p=' . $pmt['id']);
-        return;
-    }
-    view('checkout/pending', ['payment' => $pmt, 'user' => Auth::user()]);
 });
 
 // ------------------- RAZORPAY WEBHOOK -------------------
