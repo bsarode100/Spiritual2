@@ -44,6 +44,32 @@ $shortlistsText = $membership['shortlists_left'] === null ? 'Unlimited' : (strin
                 <a href="/profile/edit" class="btn btn-ghost btn-sm">Edit Profile</a>
             </div>
 
+            <?php if (!empty($pendingPayment)): ?>
+                <div class="pending-payment-card mb-4" style="background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%); border: 2px solid #f59e0b; border-radius: 14px; padding: 1.15rem 1.4rem; color: #92400e; box-shadow: 0 4px 6px -1px rgba(245, 158, 11, 0.1);">
+                    <div style="display: flex; align-items: flex-start; gap: 0.85rem;">
+                        <span style="font-size: 1.75rem; line-height: 1;">⏳</span>
+                        <div style="flex: 1;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
+                                <h3 style="margin: 0; color: #78350f; font-size: 1.1rem; font-weight: 700;">
+                                    Payment Under Verification
+                                </h3>
+                                <span class="pill gold" style="font-size: 0.78rem; padding: 0.2rem 0.6rem;">Pending Approval</span>
+                            </div>
+                            <p style="margin: 0.4rem 0 0.45rem; font-size: 0.9rem; line-height: 1.45; color: #854d0e;">
+                                We received your payment for <strong><?= e($pendingPayment['package_name'] ?? 'Membership Plan') ?></strong> (₹<?= number_format((float)$pendingPayment['amount'], 0) ?>) with UTR Reference <strong><code><?= e($pendingPayment['gateway_payment_id']) ?></code></strong>.
+                            </p>
+                            <div style="font-size: 0.82rem; color: #a16207; display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap;">
+                                <span>Submitted: <?= date('M j, Y · h:i A', strtotime($pendingPayment['created_at'])) ?></span>
+                                <span>·</span>
+                                <span>Status: <strong>Waiting for Bank Confirmation</strong></span>
+                                <span>·</span>
+                                <a href="/checkout/pending?p=<?= (int)$pendingPayment['id'] ?>" style="color: #78350f; font-weight: 700; text-decoration: underline;">View Status Page →</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            <?php endif; ?>
+
             <!-- Activity Cross-Navigation Tabs -->
             <?php include __DIR__ . '/../partials/activity_tabs.php'; ?>
 

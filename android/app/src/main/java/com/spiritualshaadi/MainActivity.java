@@ -240,45 +240,33 @@ public class MainActivity extends AppCompatActivity {
                     try {
                         Intent intent = Intent.parseUri(url, Intent.URI_INTENT_SCHEME);
                         if (intent != null) {
-                            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
                             String pkg = intent.getPackage();
-                            PackageManager pm = getPackageManager();
-
-                            boolean isInstalled = false;
+                            Intent launchIntent = new Intent(Intent.ACTION_VIEW);
+                            if (intent.getData() != null) {
+                                launchIntent.setData(intent.getData());
+                            }
                             if (pkg != null && !pkg.isEmpty()) {
-                                try {
-                                    pm.getPackageInfo(pkg, PackageManager.GET_ACTIVITIES);
-                                    isInstalled = true;
-                                } catch (PackageManager.NameNotFoundException e) {
-                                    isInstalled = false;
+                                launchIntent.setPackage(pkg);
+                            }
+                            launchIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+
+                            try {
+                                startActivity(launchIntent);
+                                return true;
+                            } catch (ActivityNotFoundException e) {
+                                String appName = "Requested UPI app";
+                                if ("com.google.android.apps.nbu.paisa.user".equals(pkg)) {
+                                    appName = "Google Pay";
+                                } else if ("com.phonepe.app".equals(pkg)) {
+                                    appName = "PhonePe";
+                                } else if ("net.one97.paytm".equals(pkg)) {
+                                    appName = "Paytm";
+                                } else if ("com.dreamplug.androidapp".equals(pkg)) {
+                                    appName = "CRED";
                                 }
-                            } else if (intent.resolveActivity(pm) != null) {
-                                isInstalled = true;
+                                Toast.makeText(MainActivity.this, appName + " is not installed on your phone. Please choose another UPI app or scan QR.", Toast.LENGTH_LONG).show();
+                                return true;
                             }
-
-                            if (isInstalled) {
-                                try {
-                                    startActivity(intent);
-                                    return true;
-                                } catch (ActivityNotFoundException e) {
-                                    // Handled below
-                                }
-                            }
-
-                            // If target app package isn't installed, inform user specifically
-                            String appName = "Requested UPI app";
-                            if ("com.google.android.apps.nbu.paisa.user".equals(pkg)) {
-                                appName = "Google Pay";
-                            } else if ("com.phonepe.app".equals(pkg)) {
-                                appName = "PhonePe";
-                            } else if ("net.one97.paytm".equals(pkg)) {
-                                appName = "Paytm";
-                            } else if ("com.dreamplug.androidapp".equals(pkg)) {
-                                appName = "CRED";
-                            }
-
-                            Toast.makeText(MainActivity.this, appName + " is not installed on your phone", Toast.LENGTH_LONG).show();
-                            return true;
                         }
                     } catch (Exception e) {
                         Toast.makeText(MainActivity.this, "Unable to launch payment app", Toast.LENGTH_SHORT).show();

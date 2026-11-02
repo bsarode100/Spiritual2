@@ -68,6 +68,13 @@ $fallbackQrUrl  = "https://api.qrserver.com/v1/create-qr-code/?size=260x260&marg
 
 // Default to dynamic QR so scanning auto-fills the exact price!
 $displayQrUrl   = $generatedQrUrl;
+
+// Detect Android for native intent links
+$isAndroid = isset($_SERVER['HTTP_USER_AGENT']) && stripos($_SERVER['HTTP_USER_AGENT'], 'Android') !== false;
+$linkPhonepe = $isAndroid ? $intentPhonepe : $upiUriButtons;
+$linkGpay    = $isAndroid ? $intentGpay    : $upiUriButtons;
+$linkPaytm   = $isAndroid ? $intentPaytm   : $upiUriButtons;
+$alreadySubmittedUtr = !empty($payment['gateway_payment_id']) ? $payment['gateway_payment_id'] : '';
 ?>
 <!doctype html>
 <html lang="en">
@@ -404,6 +411,23 @@ body {
             </div>
         <?php endif; ?>
 
+        <?php if (!empty($alreadySubmittedUtr)): ?>
+            <div style="background: #fffbeb; border: 2px solid #f59e0b; border-radius: 12px; padding: 1rem 1.25rem; margin-bottom: 1.25rem; color: #92400e;">
+                <div style="display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; flex-wrap: wrap;">
+                    <strong style="display: flex; align-items: center; gap: 0.35rem;">
+                        <span>⏳</span> UTR Submitted — Under Verification
+                    </strong>
+                    <span style="background: #fef3c7; color: #92400e; font-size: 0.75rem; font-weight: 700; padding: 0.2rem 0.5rem; border-radius: 9999px; border: 1px solid #fde68a;">Pending</span>
+                </div>
+                <p style="margin: 0.4rem 0 0; font-size: 0.85rem; line-height: 1.45;">
+                    Your UPI Reference Number (UTR: <code><?= e($alreadySubmittedUtr) ?></code>) was received. We are waiting for bank credit confirmation. Your plan will activate automatically within 5–15 minutes.
+                </p>
+                <div style="margin-top: 0.6rem; font-size: 0.82rem;">
+                    <a href="/dashboard" style="color: #78350f; font-weight: 700; text-decoration: underline;">← Return to Dashboard</a>
+                </div>
+            </div>
+        <?php endif; ?>
+
         <!-- One-Tap UPI App Buttons -->
         <div class="upi-section-title">Tap to Pay via UPI App</div>
         <div class="btn-app-grid">
@@ -411,18 +435,18 @@ body {
                 <span>⚡ Pay with Any UPI App</span>
                 <span>→</span>
             </a>
-            <button type="button" onclick="payWithApp('phonepe')" class="btn-upi-app btn-phonepe">
+            <a href="<?= e($linkPhonepe) ?>" class="btn-upi-app btn-phonepe">
                 <span>PhonePe</span>
                 <span>Pay ₹<?= e(number_format((float)$pkg['price'], 0)) ?></span>
-            </button>
-            <button type="button" onclick="payWithApp('gpay')" class="btn-upi-app btn-gpay">
+            </a>
+            <a href="<?= e($linkGpay) ?>" class="btn-upi-app btn-gpay">
                 <span>Google Pay</span>
                 <span>Pay ₹<?= e(number_format((float)$pkg['price'], 0)) ?></span>
-            </button>
-            <button type="button" onclick="payWithApp('paytm')" class="btn-upi-app btn-paytm">
+            </a>
+            <a href="<?= e($linkPaytm) ?>" class="btn-upi-app btn-paytm">
                 <span>Paytm</span>
                 <span>Pay ₹<?= e(number_format((float)$pkg['price'], 0)) ?></span>
-            </button>
+            </a>
         </div>
 
         <!-- Copy UPI ID Feature -->
@@ -467,17 +491,17 @@ body {
         <!-- Fallback UTR Submission -->
         <div class="utr-section">
             <button type="button" class="utr-btn-toggle" onclick="toggleUtr()">
-                <span>Paid but page didn't auto-redirect?</span>
-                <span id="utrArrow">▼</span>
+                <span><?= !empty($alreadySubmittedUtr) ? '✓ UTR Submitted (' . e($alreadySubmittedUtr) . ')' : 'Paid but page didn\'t auto-redirect?' ?></span>
+                <span id="utrArrow"><?= !empty($alreadySubmittedUtr) ? '▲' : '▼' ?></span>
             </button>
-            <form class="utr-box" id="utrBox" method="post" action="/checkout/verify-utr">
+            <form class="utr-box" id="utrBox" method="post" action="/checkout/verify-utr" style="<?= !empty($alreadySubmittedUtr) ? 'display:block;' : '' ?>">
                 <?= csrf_field() ?>
                 <input type="hidden" name="payment_id" value="<?= (int)$payment['id'] ?>">
                 <p style="font-size:0.75rem; color:#64748b; margin:0.35rem 0 0.5rem;">
                     Enter the 12-digit UTR / UPI Reference Number from your payment receipt:
                 </p>
-                <input type="text" name="utr" class="utr-field" placeholder="e.g. 429812345678" maxlength="25" required>
-                <button type="submit" class="utr-submit-btn">Submit UTR for Verification</button>
+                <input type="text" name="utr" class="utr-field" placeholder="e.g. 429812345678" value="<?= e($alreadySubmittedUtr) ?>" maxlength="25" required>
+                <button type="submit" class="utr-submit-btn"><?= !empty($alreadySubmittedUtr) ? 'Update Submitted UTR' : 'Submit UTR for Verification' ?></button>
             </form>
         </div>
     </div>

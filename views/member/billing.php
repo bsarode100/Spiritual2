@@ -123,10 +123,18 @@ $statusPill = fn(string $s) => match ($s) {
                             <td><?= e($p['item_name']) ?></td>
                             <td><span class="pill"><?= e(ucfirst($p['purchase_type'] ?? 'package')) ?></span></td>
                             <td>Rs <?= number_format((float)$p['amount'], 0) ?></td>
-                            <td><span class="pill <?= $statusPill($p['status']) ?>"><?= e($p['status']) ?></span></td>
+                            <td>
+                                <?php if ($p['status'] === 'paid'): ?>
+                                    <span class="pill green">Paid / Active</span>
+                                <?php elseif ($p['status'] === 'created' && !empty($p['gateway_payment_id'])): ?>
+                                    <span class="pill gold">Pending Verification</span>
+                                <?php else: ?>
+                                    <span class="pill <?= $statusPill($p['status']) ?>"><?= e($p['status']) ?></span>
+                                <?php endif; ?>
+                            </td>
                             <td>
                                 <?php if (!empty($p['gateway_payment_id'])): ?>
-                                    <code style="font-size: .78rem;"><?= e($p['gateway_payment_id']) ?></code>
+                                    <code style="font-size: .78rem;">UTR: <?= e($p['gateway_payment_id']) ?></code>
                                 <?php elseif (!empty($p['gateway_order_id'])): ?>
                                     <code style="font-size: .78rem;"><?= e($p['gateway_order_id']) ?></code>
                                 <?php else: ?>

@@ -612,7 +612,25 @@ $r->post('/checkout/verify-utr', function () {
     ], ['id' => $pmt['id']]);
 
     flash('info', 'Your UPI Reference Number (UTR: ' . htmlspecialchars($cleanUtr) . ') has been submitted. Your membership will activate automatically as soon as our banking system verifies the credit (usually 5–15 minutes).');
-    redirect('/dashboard');
+    redirect('/checkout/pending?p=' . $pmt['id']);
+});
+
+$r->get('/checkout/pending', function () {
+    Auth::require();
+    $pid = (int)($_GET['p'] ?? 0);
+    $pmt = DB::one('SELECT p.*, pk.name AS package_name, pk.price AS package_price 
+                    FROM payments p 
+                    LEFT JOIN packages pk ON pk.id = p.package_id 
+                    WHERE p.id = ? AND p.user_id = ?', [$pid, Auth::id()]);
+    if (!$pmt) {
+        redirect('/dashboard');
+        return;
+    }
+    if ($pmt['status'] === 'paid') {
+        redirect('/checkout/success?p=' . $pmt['id']);
+        return;
+    }
+    view('checkout/pending', ['payment' => $pmt, 'user' => Auth::user()]);
 });
 
 // ------------------- RAZORPAY WEBHOOK -------------------
@@ -1283,7 +1301,13 @@ $r->get('/dashboard', function () {
                                   WHERE i.receiver_id = ?
                                     AND u.role = 'member' AND u.status = 'active'
                                ORDER BY i.created_at DESC LIMIT 5", [$uid]);
-    view('member/dashboard', compact('stats','matches','recent_interests','membership'));
+    $pendingPayment = DB::one("SELECT p.*, pk.name AS package_name, pk.price AS package_price 
+                               FROM payments p 
+                               LEFT JOIN packages pk ON pk.id = p.package_id 
+                               WHERE p.user_id = ? AND p.status = 'created' AND p.gateway_payment_id IS NOT NULL AND p.gateway_payment_id != '' 
+                               ORDER BY p.id DESC LIMIT 1", [$uid]);
+
+    view('member/dashboard', compact('stats','matches','recent_interests','membership','pendingPayment'));
 });
 
 // ------------------- BILLING (member payment history) -------------------
