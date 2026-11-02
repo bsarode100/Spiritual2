@@ -36,47 +36,19 @@ $isConfigured = !empty($upiId) && str_contains($upiId, '@') && $upiId !== 'spiri
 
 $amount = number_format((float)$pkg['price'], 2, '.', '');
 $orderRef = $payment['gateway_order_id'] ?? ('SS' . $payment['id']);
-$cleanNote = preg_replace('/[^a-zA-Z0-9]/', '', $orderRef);
-if (empty($cleanNote)) {
-    $cleanNote = 'SS' . $payment['id'];
-}
-if (strlen($cleanNote) > 20) {
-    $cleanNote = substr($cleanNote, 0, 20);
-}
 
 $encodedPayee = rawurlencode($cleanPayee);
 $uploadedQrUrl = trim((string)setting('payment_upi_qr_url', ''));
 
-// Universal YouPI-PG standard UPI format (accepted by Google Pay, PhonePe, Paytm without bank fraud refusal)
-// NOTE: We do NOT append mode=02, arbitrary mc=5499, or e-commerce order codes in tn=
-// because personal savings bank accounts decline commercial order codes for security reasons.
-$baseUpiQuery     = "pa={$upiId}&pn={$encodedPayee}&am={$amount}&cu=INR";
-$baseUpiQueryOpen = "pa={$upiId}&pn={$encodedPayee}&cu=INR";
-
-// Universal generic URI
-$upiUriButtons = "upi://pay?{$baseUpiQuery}";
-$upiUriOpen    = "upi://pay?{$baseUpiQueryOpen}";
+// Standard NPCI Dynamic QR with exact pre-filled amount
+$baseUpiQuery  = "pa={$upiId}&pn={$encodedPayee}&am={$amount}&cu=INR";
 $upiUriQr      = "upi://pay?{$baseUpiQuery}";
-
-// Direct Android App Intents
-$intentPhonepe = "intent://pay?{$baseUpiQuery}#Intent;scheme=upi;package=com.phonepe.app;end";
-$intentGpay    = "intent://pay?{$baseUpiQuery}#Intent;scheme=upi;package=com.google.android.apps.nbu.paisa.user;end";
-$intentPaytm   = "intent://pay?{$baseUpiQuery}#Intent;scheme=upi;package=net.one97.paytm;end";
 
 // Generate reliable dynamic QR codes with exact amount pre-filled
 $generatedQrUrl = "https://quickchart.io/qr?size=260&margin=2&text=" . rawurlencode($upiUriQr);
 $fallbackQrUrl  = "https://api.qrserver.com/v1/create-qr-code/?size=260x260&margin=8&data=" . rawurlencode($upiUriQr);
 
-// Default to dynamic QR so scanning auto-fills the exact price!
 $displayQrUrl   = $generatedQrUrl;
-
-// For installed mobile app WebViews, upi:// is universally supported without intent resolution issues
-$ua = $_SERVER['HTTP_USER_AGENT'] ?? '';
-$isWebView = (stripos($ua, 'wv') !== false || stripos($ua, 'Version/4.0') !== false || stripos($ua, 'SpiritualShaadi') !== false);
-
-$linkPhonepe = $isWebView ? $upiUriButtons : $intentPhonepe;
-$linkGpay    = $isWebView ? $upiUriButtons : $intentGpay;
-$linkPaytm   = $isWebView ? $upiUriButtons : $intentPaytm;
 $alreadySubmittedUtr = !empty($payment['gateway_payment_id']) ? $payment['gateway_payment_id'] : '';
 ?>
 <!doctype html>
@@ -180,7 +152,7 @@ body {
     margin-top: 0.25rem;
 }
 
-/* Config Warning if Admin hasn't set UPI ID */
+/* Config Warning */
 .warning-box {
     background: #fef2f2;
     border: 1px solid #fecaca;
@@ -193,56 +165,51 @@ body {
     line-height: 1.4;
 }
 
-/* Direct UPI App Buttons */
-.upi-section-title {
-    font-size: 0.82rem;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
-    color: #64748b;
-    margin: 1rem 0 0.6rem;
-    text-align: left;
+/* QR Code Display Wrapper */
+.qr-wrapper {
+    display: block;
+    margin-top: 0.5rem;
+    padding: 1rem 0.85rem;
+    background: #ffffff;
+    border-radius: 16px;
+    border: 2px solid #e2e8f0;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
 }
-
-.btn-app-grid {
-    display: flex;
-    flex-direction: column;
-    gap: 0.55rem;
-}
-
-.btn-upi-app {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    width: 100%;
-    padding: 0.85rem 1rem;
+.qr-wrapper img {
+    width: 220px;
+    height: 220px;
     border-radius: 12px;
-    text-decoration: none;
-    font-size: 0.95rem;
+    display: block;
+    margin: 0 auto;
+    border: 1px solid #e2e8f0;
+}
+.btn-save-qr {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    background: #047857;
+    color: #ffffff;
+    font-size: 0.88rem;
     font-weight: 700;
+    padding: 0.65rem 1.15rem;
+    border-radius: 9999px;
+    text-decoration: none;
+    box-shadow: 0 2px 6px rgba(4,120,87,0.25);
     transition: transform 0.1s, opacity 0.15s;
-    border: none;
-    cursor: pointer;
 }
-.btn-upi-app:active { transform: scale(0.98); opacity: 0.9; }
+.btn-save-qr:active { transform: scale(0.97); }
+.btn-save-qr:hover { opacity: 0.95; }
 
-.btn-any-upi {
-    background: linear-gradient(135deg, #059669 0%, #047857 100%);
-    color: #ffffff;
-    box-shadow: 0 4px 12px rgba(5,150,105,0.25);
-    font-size: 1rem;
-}
-.btn-phonepe {
-    background: #5f259f;
-    color: #ffffff;
-}
-.btn-gpay {
-    background: #1a73e8;
-    color: #ffffff;
-}
-.btn-paytm {
-    background: #002e6e;
-    color: #ffffff;
+.qr-mobile-guide {
+    margin-top: 0.85rem;
+    background: #ecfdf5;
+    border: 1px solid #a7f3d0;
+    border-radius: 10px;
+    padding: 0.75rem 0.85rem;
+    font-size: 0.78rem;
+    color: #065f46;
+    line-height: 1.5;
+    text-align: left;
 }
 
 /* Copy UPI ID Box */
@@ -251,7 +218,7 @@ body {
     border: 1px solid #e2e8f0;
     border-radius: 10px;
     padding: 0.65rem 0.85rem;
-    margin: 0.85rem 0;
+    margin: 0.85rem 0 0;
     text-align: left;
 }
 .copy-upi-row {
@@ -272,66 +239,58 @@ body {
 }
 .btn-copy:active { background: #e2e8f0; }
 
-/* QR Code Toggle */
-.qr-toggle-btn {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.4rem;
-    width: 100%;
+/* Step 2: UTR Submission Form */
+.utr-card {
+    margin-top: 1.25rem;
     background: #f8fafc;
-    border: 1px dashed #cbd5e1;
-    border-radius: 10px;
-    padding: 0.65rem;
-    margin-top: 0.85rem;
-    font-size: 0.85rem;
-    font-weight: 600;
-    color: #475569;
-    cursor: pointer;
-}
-.qr-wrapper {
-    display: block;
-    margin-top: 1rem;
+    border: 1.5px solid #cbd5e1;
+    border-radius: 14px;
     padding: 1rem;
-    background: #ffffff;
-    border-radius: 16px;
-    border: 2px solid #e2e8f0;
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
-}
-.qr-wrapper img {
-    width: 220px;
-    height: 220px;
-    border-radius: 12px;
-    display: block;
-    margin: 0 auto;
-    border: 1px solid #e2e8f0;
-}
-.btn-save-qr {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.35rem;
-    background: #047857;
-    color: #ffffff;
-    font-size: 0.84rem;
-    font-weight: 700;
-    padding: 0.55rem 0.95rem;
-    border-radius: 9999px;
-    text-decoration: none;
-    box-shadow: 0 2px 6px rgba(4,120,87,0.25);
-    transition: opacity 0.15s;
-}
-.btn-save-qr:hover { opacity: 0.92; }
-.qr-mobile-guide {
-    margin-top: 0.75rem;
-    background: #ecfdf5;
-    border: 1px solid #a7f3d0;
-    border-radius: 10px;
-    padding: 0.65rem 0.85rem;
-    font-size: 0.78rem;
-    color: #065f46;
-    line-height: 1.45;
     text-align: left;
 }
+.utr-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 0.5rem;
+}
+.utr-card-title {
+    font-size: 0.88rem;
+    font-weight: 700;
+    color: #0f172a;
+}
+.utr-field {
+    width: 100%;
+    padding: 0.75rem 0.85rem;
+    border: 1.5px solid #94a3b8;
+    border-radius: 10px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    background: #ffffff;
+    letter-spacing: 0.05em;
+    margin-top: 0.4rem;
+    margin-bottom: 0.65rem;
+    outline: none;
+    transition: border-color 0.15s;
+}
+.utr-field:focus {
+    border-color: #2563eb;
+    box-shadow: 0 0 0 3px rgba(37,99,235,0.15);
+}
+.utr-submit-btn {
+    width: 100%;
+    padding: 0.75rem;
+    background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+    color: #ffffff;
+    border: none;
+    border-radius: 10px;
+    font-size: 0.92rem;
+    font-weight: 700;
+    cursor: pointer;
+    box-shadow: 0 2px 6px rgba(15,23,42,0.2);
+    transition: transform 0.1s, opacity 0.15s;
+}
+.utr-submit-btn:active { transform: scale(0.98); opacity: 0.92; }
 
 /* Polling Live Status */
 .status-pill {
@@ -339,10 +298,11 @@ body {
     align-items: center;
     justify-content: center;
     gap: 0.5rem;
-    margin-top: 1.1rem;
-    padding: 0.55rem;
+    margin-top: 1rem;
+    padding: 0.6rem;
     background: #f8fafc;
-    border-radius: 8px;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
     font-size: 0.82rem;
     color: #475569;
 }
@@ -354,50 +314,6 @@ body {
     animation: pulse 1.6s infinite ease-in-out;
 }
 @keyframes pulse { 0% { transform: scale(0.85); opacity: 0.7; } 50% { transform: scale(1.4); opacity: 1; } 100% { transform: scale(0.85); opacity: 0.7; } }
-
-/* UTR Manual Fallback */
-.utr-section {
-    margin-top: 1.25rem;
-    border-top: 1px solid #f1f5f9;
-    padding-top: 0.85rem;
-    text-align: left;
-}
-.utr-btn-toggle {
-    font-size: 0.82rem;
-    color: #64748b;
-    background: none;
-    border: none;
-    padding: 0;
-    cursor: pointer;
-    font-weight: 600;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    width: 100%;
-}
-.utr-box {
-    display: none;
-    margin-top: 0.65rem;
-}
-.utr-field {
-    width: 100%;
-    padding: 0.65rem 0.75rem;
-    border: 1px solid #cbd5e1;
-    border-radius: 8px;
-    font-size: 0.9rem;
-    margin-bottom: 0.5rem;
-}
-.utr-submit-btn {
-    width: 100%;
-    padding: 0.65rem;
-    background: #0f172a;
-    color: #fff;
-    border: none;
-    border-radius: 8px;
-    font-size: 0.88rem;
-    font-weight: 700;
-    cursor: pointer;
-}
 
 .bottom-cancel {
     margin-top: 1.25rem;
@@ -443,7 +359,7 @@ body {
         <?php endif; ?>
 
         <?php if (!empty($alreadySubmittedUtr)): ?>
-            <div style="background: #fffbeb; border: 2px solid #f59e0b; border-radius: 12px; padding: 1rem 1.25rem; margin-bottom: 1.25rem; color: #92400e;">
+            <div style="background: #fffbeb; border: 2px solid #f59e0b; border-radius: 12px; padding: 1rem 1.25rem; margin-bottom: 1.25rem; color: #92400e; text-align: left;">
                 <div style="display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; flex-wrap: wrap;">
                     <strong style="display: flex; align-items: center; gap: 0.35rem;">
                         <span>⏳</span> UTR Submitted — Under Verification
@@ -451,22 +367,22 @@ body {
                     <span style="background: #fef3c7; color: #92400e; font-size: 0.75rem; font-weight: 700; padding: 0.2rem 0.5rem; border-radius: 9999px; border: 1px solid #fde68a;">Pending</span>
                 </div>
                 <p style="margin: 0.4rem 0 0; font-size: 0.85rem; line-height: 1.45;">
-                    Your UPI Reference Number (UTR: <code><?= e($alreadySubmittedUtr) ?></code>) was received. We are waiting for bank credit confirmation. Your plan will activate automatically within 5–15 minutes.
+                    Your UPI Reference Number (UTR: <code><?= e($alreadySubmittedUtr) ?></code>) was received. We are verifying bank credit. Your plan will activate within 5–15 minutes.
                 </p>
                 <div style="margin-top: 0.6rem; font-size: 0.82rem;">
-                    <a href="/dashboard" style="color: #78350f; font-weight: 700; text-decoration: underline;">← Return to Dashboard</a>
+                    <a href="/checkout/pending?p=<?= (int)$payment['id'] ?>" style="color: #78350f; font-weight: 700; text-decoration: underline;">View Status Page →</a>
                 </div>
             </div>
         <?php endif; ?>
 
-        <!-- Option 1: 100% Reliable Dynamic QR Code (Works with All Banks) -->
-        <div class="qr-wrapper" id="qrWrapper" style="margin-top: 0.5rem;">
+        <!-- STEP 1: 100% Reliable Dynamic QR Code (Works with All UPI Apps) -->
+        <div class="qr-wrapper" id="qrWrapper">
             <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.75rem;">
                 <span style="font-size: 0.85rem; font-weight: 700; color: #0f172a; text-transform: uppercase; letter-spacing: 0.03em;">
-                    ⚡ Scan &amp; Pay (Recommended)
+                    ⚡ Step 1: Scan &amp; Pay ₹<?= e(number_format((float)$pkg['price'], 0)) ?>
                 </span>
                 <span style="font-size: 0.72rem; font-weight: 700; color: #047857; background: #ecfdf5; border: 1px solid #a7f3d0; padding: 0.2rem 0.55rem; border-radius: 9999px;">
-                    ✓ 100% Accepted by All Banks
+                    ✓ 100% Accepted
                 </span>
             </div>
 
@@ -475,10 +391,10 @@ body {
                  alt="UPI QR Code" id="qrImage">
             
             <p style="font-size:0.95rem; font-weight:800; color:#0f172a; margin-top:0.65rem;">
-                Scan to pay ₹<?= e(number_format((float)$pkg['price'], 0)) ?>
+                Pay ₹<?= e(number_format((float)$pkg['price'], 0)) ?> to <?= e($cleanPayee) ?>
             </p>
             <p style="font-size:0.75rem; color:#64748b; margin-top:0.2rem;">
-                Payee: <strong><?= e($cleanPayee) ?></strong> (<code><?= e($upiId) ?></code>)
+                UPI ID: <code><?= e($upiId) ?></code>
             </p>
 
             <!-- Save / Download QR for Single Phone Mobile Users -->
@@ -490,12 +406,12 @@ body {
 
             <!-- Single Phone Instructions -->
             <div class="qr-mobile-guide">
-                <strong>📱 Paying from this phone?</strong>
+                <strong>📱 Paying from this phone? (Single-device steps):</strong>
                 <ol style="margin: 0.35rem 0 0 1.15rem; padding: 0; line-height: 1.45;">
                     <li>Tap <strong>Save QR Image</strong> above (or take a screenshot).</li>
                     <li>Open <strong>PhonePe, Google Pay, or Paytm</strong>.</li>
-                    <li>Tap the <strong>Scan 📷</strong> icon, then select the <strong>Gallery 🖼️</strong> icon to pick this QR code.</li>
-                    <li>The amount <strong>₹<?= e(number_format((float)$pkg['price'], 0)) ?></strong> is auto-filled. Enter UPI PIN to complete!</li>
+                    <li>Tap <strong>Scan 📷</strong>, then tap the <strong>Gallery 🖼️</strong> icon to select this QR code.</li>
+                    <li>The amount <strong>₹<?= e(number_format((float)$pkg['price'], 0)) ?></strong> is auto-filled. Enter your UPI PIN to pay!</li>
                 </ol>
             </div>
 
@@ -517,65 +433,29 @@ body {
             </div>
         <?php endif; ?>
 
-        <!-- Option 2: Direct UPI App Buttons -->
-        <div style="margin-top: 1.25rem; border-top: 1px solid #e2e8f0; padding-top: 1rem;">
-            <div class="upi-section-title" style="margin-top: 0; display: flex; align-items: center; justify-content: space-between;">
-                <span>Option 2: Tap UPI App Button</span>
-                <span style="font-size: 0.7rem; color: #64748b; font-weight: normal; text-transform: none;">Direct web intent</span>
+        <!-- STEP 2: Submit UTR for Instant Activation -->
+        <div class="utr-card">
+            <div class="utr-card-header">
+                <span class="utr-card-title">📝 Step 2: Submit 12-Digit UTR</span>
+                <span style="font-size: 0.72rem; color: #64748b; font-weight: 600;">Fast Activation</span>
             </div>
-
-            <div class="btn-app-grid">
-                <a href="<?= e($upiUriButtons) ?>" class="btn-upi-app btn-any-upi">
-                    <span>⚡ Pay with Any UPI App</span>
-                    <span>→</span>
-                </a>
-                <a href="<?= e($linkPhonepe) ?>" class="btn-upi-app btn-phonepe">
-                    <span>PhonePe</span>
-                    <span>Pay ₹<?= e(number_format((float)$pkg['price'], 0)) ?></span>
-                </a>
-                <a href="<?= e($linkGpay) ?>" class="btn-upi-app btn-gpay">
-                    <span>Google Pay</span>
-                    <span>Pay ₹<?= e(number_format((float)$pkg['price'], 0)) ?></span>
-                </a>
-                <a href="<?= e($linkPaytm) ?>" class="btn-upi-app btn-paytm">
-                    <span>Paytm</span>
-                    <span>Pay ₹<?= e(number_format((float)$pkg['price'], 0)) ?></span>
-                </a>
-            </div>
-
-            <div style="margin-top: 0.65rem; background: #fffbeb; border: 1px solid #fef3c7; border-radius: 8px; padding: 0.55rem 0.75rem; font-size: 0.74rem; color: #92400e; text-align: left; line-height: 1.4;">
-                <strong>ℹ️ Bank Security Notice:</strong> If your bank declines button clicks with <em>"declined for security reason"</em>, your bank restricts web links to personal UPI accounts. Please use <strong>Option 1 (Scan QR via Gallery)</strong> or <strong>Copy UPI ID</strong> above, which are 100% accepted by all banks.
-            </div>
-
-            <!-- Manual Amount Link if Bank blocks locked amounts on web links -->
-            <div style="margin-top: 0.5rem; text-align: center;">
-                <a href="<?= e($upiUriOpen) ?>" style="font-size: 0.78rem; color: #4338ca; font-weight: 600; text-decoration: underline;">
-                    Or tap here to pay with open amount (enter ₹<?= e(number_format((float)$pkg['price'], 0)) ?> manually) →
-                </a>
-            </div>
+            <p style="font-size: 0.76rem; color: #64748b; line-height: 1.4;">
+                After payment, copy the 12-digit <strong>UPI Reference / UTR Number</strong> from your PhonePe/GPay receipt and paste it below:
+            </p>
+            <form method="post" action="/checkout/verify-utr">
+                <?= csrf_field() ?>
+                <input type="hidden" name="payment_id" value="<?= (int)$payment['id'] ?>">
+                <input type="text" name="utr" class="utr-field" placeholder="e.g. 429812345678" value="<?= e($alreadySubmittedUtr) ?>" maxlength="25" pattern="[0-9A-Za-z]{6,25}" required>
+                <button type="submit" class="utr-submit-btn">
+                    <?= !empty($alreadySubmittedUtr) ? 'Update Submitted UTR' : 'Submit UTR & Activate Plan' ?>
+                </button>
+            </form>
         </div>
 
         <!-- Live Auto-Confirmation Status -->
         <div class="status-pill" id="statusPill">
             <span class="pulse-dot"></span>
             <span id="statusText">Waiting for payment confirmation…</span>
-        </div>
-
-        <!-- Fallback UTR Submission -->
-        <div class="utr-section">
-            <button type="button" class="utr-btn-toggle" onclick="toggleUtr()">
-                <span><?= !empty($alreadySubmittedUtr) ? '✓ UTR Submitted (' . e($alreadySubmittedUtr) . ')' : 'Paid but page didn\'t auto-redirect?' ?></span>
-                <span id="utrArrow"><?= !empty($alreadySubmittedUtr) ? '▲' : '▼' ?></span>
-            </button>
-            <form class="utr-box" id="utrBox" method="post" action="/checkout/verify-utr" style="<?= !empty($alreadySubmittedUtr) ? 'display:block;' : '' ?>">
-                <?= csrf_field() ?>
-                <input type="hidden" name="payment_id" value="<?= (int)$payment['id'] ?>">
-                <p style="font-size:0.75rem; color:#64748b; margin:0.35rem 0 0.5rem;">
-                    Enter the 12-digit UTR / UPI Reference Number from your payment receipt:
-                </p>
-                <input type="text" name="utr" class="utr-field" placeholder="e.g. 429812345678" value="<?= e($alreadySubmittedUtr) ?>" maxlength="25" required>
-                <button type="submit" class="utr-submit-btn"><?= !empty($alreadySubmittedUtr) ? 'Update Submitted UTR' : 'Submit UTR for Verification' ?></button>
-            </form>
         </div>
     </div>
 
@@ -587,32 +467,8 @@ body {
 <script>
 const paymentId = <?= json_encode((int)$payment['id']) ?>;
 const successUrl = '/checkout/success?p=' + encodeURIComponent(paymentId);
-const universalUri = <?= json_encode($upiUriButtons) ?>;
-const intentPhonepe = <?= json_encode($intentPhonepe) ?>;
-const intentGpay = <?= json_encode($intentGpay) ?>;
-const intentPaytm = <?= json_encode($intentPaytm) ?>;
 
 let pollTimer = null;
-
-function payWithApp(app) {
-    const isAndroid = /android/i.test(navigator.userAgent);
-    
-    if (!isAndroid) {
-        window.location.href = universalUri;
-        return;
-    }
-    
-    // On Android: route directly to the chosen UPI app's package intent
-    if (app === 'phonepe') {
-        window.location.href = intentPhonepe;
-    } else if (app === 'gpay') {
-        window.location.href = intentGpay;
-    } else if (app === 'paytm') {
-        window.location.href = intentPaytm;
-    } else {
-        window.location.href = universalUri;
-    }
-}
 
 function copyUpi() {
     const text = document.getElementById('upiIdText')?.textContent;
@@ -655,19 +511,6 @@ function checkStatus() {
 
 pollTimer = setInterval(checkStatus, 2500);
 
-function toggleQr() {
-    const w = document.getElementById('qrWrapper');
-    const t = document.getElementById('qrToggleText');
-    if (!w || !t) return;
-    if (w.style.display === 'block') {
-        w.style.display = 'none';
-        t.textContent = 'Show QR Code (to scan from another phone)';
-    } else {
-        w.style.display = 'block';
-        t.textContent = 'Hide QR Code';
-    }
-}
-
 let showingOfficial = false;
 const officialQrUrl = <?= json_encode($uploadedQrUrl) ?>;
 const dynamicQrUrl  = <?= json_encode($generatedQrUrl) ?>;
@@ -684,18 +527,6 @@ function toggleQrType() {
         img.src = officialQrUrl;
         link.textContent = 'Switch back to auto-fill ₹<?= e(number_format((float)$pkg['price'], 0)) ?> QR';
         showingOfficial = true;
-    }
-}
-
-function toggleUtr() {
-    const b = document.getElementById('utrBox');
-    const a = document.getElementById('utrArrow');
-    if (b.style.display === 'block') {
-        b.style.display = 'none';
-        a.textContent = '▼';
-    } else {
-        b.style.display = 'block';
-        a.textContent = '▲';
     }
 }
 </script>
