@@ -1,5 +1,6 @@
 <?php /** @var string $email */
 /** @var string|null $mode */
+/** @var int|null $cooldown */
 $isSignup = ($mode ?? 'reset') === 'signup';
 $formAction = $isSignup ? '/verify-signup-otp' : '/verify-otp';
 $resendAction = $isSignup ? '/resend-signup-otp' : '/resend-otp';
@@ -7,6 +8,7 @@ $startOverUrl = $isSignup ? '/register' : '/forgot-password';
 $heading = $isSignup ? 'Verify your email' : 'Enter the 6-digit code';
 $button = $isSignup ? 'Create my account' : 'Verify code';
 $footerPrompt = $isSignup ? 'Already have an account?' : 'Remembered it?';
+$cooldownSec = max(0, (int)($cooldown ?? 0));
 $masked = (function ($e) {
     if (!str_contains($e, '@')) return $e;
     [$user, $domain] = explode('@', $e, 2);
@@ -37,12 +39,14 @@ $masked = (function ($e) {
     <button class="btn btn-primary btn-block btn-lg"><?= e($button) ?></button>
 </form>
 
-<form method="post" action="<?= e($resendAction) ?>" style="margin-top: 1em;">
+<form method="post" action="<?= e($resendAction) ?>" id="resendOtpForm" style="margin-top: 1.25em;">
     <?= csrf_field() ?>
     <button type="submit"
+            id="resendOtpBtn"
             class="btn btn-link btn-block"
-            style="background: none; border: 0; color: var(--c-muted); cursor: pointer;">
-        Didn't receive it? Resend code
+            <?= $cooldownSec > 0 ? 'disabled' : '' ?>
+            style="background: none; border: 0; color: var(--c-muted); cursor: <?= $cooldownSec > 0 ? 'not-allowed' : 'pointer' ?>; font-size: 0.92rem; transition: opacity .2s; <?= $cooldownSec > 0 ? 'opacity: 0.65;' : '' ?>">
+        <?= $cooldownSec > 0 ? 'Resend code in ' . $cooldownSec . 's' : "Didn't receive it? Resend code" ?>
     </button>
 </form>
 
@@ -52,3 +56,49 @@ $masked = (function ($e) {
 <div class="small-link" style="color: var(--c-muted);">
     <?= e($footerPrompt) ?> <a href="/login">Back to sign in</a>
 </div>
+
+<script>
+(function() {
+    var cooldown = <?= $cooldownSec ?>;
+    var btn = document.getElementById('resendOtpBtn');
+    var form = document.getElementById('resendOtpForm');
+    if (!btn || !form) return;
+
+    var timer = null;
+
+    function renderCooldown() {
+        if (cooldown > 0) {
+            btn.disabled = true;
+            btn.style.cursor = 'not-allowed';
+            btn.style.opacity = '0.65';
+            btn.textContent = 'Resend code in ' + cooldown + 's';
+        } else {
+            btn.disabled = false;
+            btn.style.cursor = 'pointer';
+            btn.style.opacity = '1';
+            btn.textContent = "Didn't receive it? Resend code";
+            if (timer) {
+                clearInterval(timer);
+                timer = null;
+            }
+        }
+    }
+
+    if (cooldown > 0) {
+        timer = setInterval(function() {
+            cooldown--;
+            renderCooldown();
+        }, 1000);
+    }
+
+    form.addEventListener('submit', function(e) {
+        if (cooldown > 0 || btn.disabled) {
+            e.preventDefault();
+            return false;
+        }
+        btn.disabled = true;
+        btn.style.opacity = '0.65';
+        btn.textContent = 'Sending fresh code...';
+    });
+})();
+</script>

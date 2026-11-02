@@ -864,9 +864,12 @@ $r->post('/register', function () {
 $r->get('/verify-signup-otp', function () {
     if (Auth::check()) redirect('/dashboard');
     if (empty($_SESSION['pending_signup']['email'])) redirect('/register');
+    $last = $_SESSION['signup_otp_last_sent'] ?? 0;
+    $cooldown = max(0, 60 - (time() - (int)$last));
     view('auth/verify_otp', [
-        'email' => $_SESSION['pending_signup']['email'],
-        'mode' => 'signup',
+        'email'    => $_SESSION['pending_signup']['email'],
+        'mode'     => 'signup',
+        'cooldown' => $cooldown,
     ], 'auth');
 });
 
@@ -1048,14 +1051,28 @@ $r->post('/onboarding', function () {
 $r->post('/resend-signup-otp', function () {
     if (empty($_SESSION['pending_signup']['email'])) redirect('/register');
     $last = $_SESSION['signup_otp_last_sent'] ?? 0;
-    if (time() - $last < 60) {
-        flash('error', 'Please wait a minute before requesting another code.');
+    $elapsed = time() - (int)$last;
+    if ($elapsed < 60) {
+        $wait = 60 - $elapsed;
+        flash('error', "Please wait {$wait} seconds before requesting another code.");
         redirect('/verify-signup-otp');
     }
     if (DB::val('SELECT 1 FROM users WHERE email = ?', [$_SESSION['pending_signup']['email']])) {
         clear_signup_otp_session();
         flash('error', 'An account with this email already exists. Please sign in.');
         redirect('/login');
+    }
+    $lastSignupOtp = DB::one(
+        'SELECT TIMESTAMPDIFF(SECOND, created_at, NOW()) AS sec_ago 
+         FROM signup_otps 
+         WHERE email = ? 
+         ORDER BY id DESC LIMIT 1',
+        [$_SESSION['pending_signup']['email']]
+    );
+    if ($lastSignupOtp && $lastSignupOtp['sec_ago'] !== null && (int)$lastSignupOtp['sec_ago'] < 60) {
+        $wait = 60 - (int)$lastSignupOtp['sec_ago'];
+        flash('error', "Please wait {$wait} seconds before requesting another code.");
+        redirect('/verify-signup-otp');
     }
     if (!issue_signup_otp($_SESSION['pending_signup'])) {
         $mailErr = !empty($GLOBALS['last_mail_error']) ? ': ' . $GLOBALS['last_mail_error'] : '.';
@@ -1077,7 +1094,12 @@ $r->get('/logout', function () { Auth::logout(); redirect('/'); });
 // ------------------- FORGOT / RESET PASSWORD (Email OTP) -------------------
 $r->get('/forgot-password', function () {
     if (Auth::check()) redirect('/dashboard');
-    view('auth/forgot', [], 'auth');
+    $last = $_SESSION['otp_last_sent'] ?? 0;
+    $cooldown = max(0, 60 - (time() - (int)$last));
+    view('auth/forgot', [
+        'cooldown' => $cooldown,
+        'email'    => $_SESSION['otp_email'] ?? '',
+    ], 'auth');
 });
 
 $r->post('/forgot-password', function () {
@@ -1085,16 +1107,44 @@ $r->post('/forgot-password', function () {
     $generic = 'If an account exists for that email, we have sent a 6-digit code. Please check your inbox (and spam folder).';
 
     if (filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        // Enforce 60-second waiting period if an OTP was recently sent in this session
+        $last = $_SESSION['otp_last_sent'] ?? 0;
+        $elapsed = time() - (int)$last;
+        if (!empty($_SESSION['otp_email']) && strtolower($_SESSION['otp_email']) === strtolower($email) && $elapsed < 60) {
+            $wait = 60 - $elapsed;
+            flash('error', "Please wait {$wait} seconds before requesting another code.");
+            redirect('/verify-otp');
+        }
+
         $u = DB::one('SELECT id, name, email FROM users WHERE email = ? AND status != "blocked"', [$email]);
-        if ($u && !issue_password_otp($u)) {
-            $mailErr = !empty($GLOBALS['last_mail_error']) ? ': ' . $GLOBALS['last_mail_error'] : '.';
-            flash('error', 'Could not send the verification email' . $mailErr . ' Please check SMTP settings or contact support.');
-            redirect('/forgot-password');
+        if ($u) {
+            // DB-level rate limiting to prevent spamming across multiple sessions/browsers
+            $lastReset = DB::one(
+                'SELECT TIMESTAMPDIFF(SECOND, created_at, NOW()) AS sec_ago 
+                 FROM password_resets 
+                 WHERE user_id = ? 
+                 ORDER BY id DESC LIMIT 1',
+                [$u['id']]
+            );
+            if ($lastReset && $lastReset['sec_ago'] !== null && (int)$lastReset['sec_ago'] < 60) {
+                $_SESSION['otp_email'] = $email;
+                $_SESSION['otp_last_sent'] = time() - (int)$lastReset['sec_ago'];
+                $wait = 60 - (int)$lastReset['sec_ago'];
+                flash('error', "Please wait {$wait} seconds before requesting another code.");
+                redirect('/verify-otp');
+            }
+
+            if (!issue_password_otp($u)) {
+                $mailErr = !empty($GLOBALS['last_mail_error']) ? ': ' . $GLOBALS['last_mail_error'] : '.';
+                flash('error', 'Could not send the verification email' . $mailErr . ' Please check SMTP settings or contact support.');
+                redirect('/forgot-password');
+            }
         }
     }
     // Carry the email into the verify step regardless, so the response is identical
     // whether the email exists or not — avoids leaking which emails are registered.
     $_SESSION['otp_email'] = $email;
+    $_SESSION['otp_last_sent'] = time();
     flash('success', $generic);
     redirect('/verify-otp');
 });
@@ -1102,7 +1152,13 @@ $r->post('/forgot-password', function () {
 $r->get('/verify-otp', function () {
     if (Auth::check()) redirect('/dashboard');
     if (empty($_SESSION['otp_email'])) redirect('/forgot-password');
-    view('auth/verify_otp', ['email' => $_SESSION['otp_email']], 'auth');
+    $last = $_SESSION['otp_last_sent'] ?? 0;
+    $cooldown = max(0, 60 - (time() - (int)$last));
+    view('auth/verify_otp', [
+        'email'    => $_SESSION['otp_email'],
+        'cooldown' => $cooldown,
+        'mode'     => 'reset',
+    ], 'auth');
 });
 
 $r->post('/verify-otp', function () {
@@ -1152,21 +1208,39 @@ $r->post('/verify-otp', function () {
     DB::q('UPDATE password_resets SET used_at = NOW() WHERE user_id = ? AND used_at IS NULL', [$u['id']]);
     $_SESSION['reset_authorized_user_id'] = (int) $u['id'];
     $_SESSION['reset_authorized_until']   = time() + 600; // 10 minutes to choose a password
-    unset($_SESSION['otp_email']);
+    unset($_SESSION['otp_email'], $_SESSION['otp_last_sent']);
     redirect('/reset-password');
 });
 
 $r->post('/resend-otp', function () {
     if (empty($_SESSION['otp_email'])) redirect('/forgot-password');
     $last = $_SESSION['otp_last_sent'] ?? 0;
-    if (time() - $last < 60) {
-        flash('error', 'Please wait a minute before requesting another code.');
+    $elapsed = time() - (int)$last;
+    if ($elapsed < 60) {
+        $wait = 60 - $elapsed;
+        flash('error', "Please wait {$wait} seconds before requesting another code.");
         redirect('/verify-otp');
     }
     $u = DB::one('SELECT id, name, email FROM users WHERE email = ? AND status != "blocked"', [$_SESSION['otp_email']]);
-    if ($u && !issue_password_otp($u)) {
-        flash('error', 'Could not send the verification email. Please check SMTP settings or contact support.');
-        redirect('/verify-otp');
+    if ($u) {
+        // DB-level rate limiting
+        $lastReset = DB::one(
+            'SELECT TIMESTAMPDIFF(SECOND, created_at, NOW()) AS sec_ago 
+             FROM password_resets 
+             WHERE user_id = ? 
+             ORDER BY id DESC LIMIT 1',
+            [$u['id']]
+        );
+        if ($lastReset && $lastReset['sec_ago'] !== null && (int)$lastReset['sec_ago'] < 60) {
+            $wait = 60 - (int)$lastReset['sec_ago'];
+            flash('error', "Please wait {$wait} seconds before requesting another code.");
+            redirect('/verify-otp');
+        }
+
+        if (!issue_password_otp($u)) {
+            flash('error', 'Could not send the verification email. Please check SMTP settings or contact support.');
+            redirect('/verify-otp');
+        }
     }
     $_SESSION['otp_last_sent'] = time();
     flash('success', 'If your email is registered, a fresh code has been sent.');
