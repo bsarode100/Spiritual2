@@ -226,39 +226,58 @@ public class MainActivity extends AppCompatActivity {
                     try {
                         Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
                         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                        startActivity(intent);
+                        Intent chooser = Intent.createChooser(intent, "Pay with UPI App");
+                        chooser.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                        startActivity(chooser);
                     } catch (ActivityNotFoundException e) {
                         Toast.makeText(MainActivity.this, "No UPI payment app found on your device", Toast.LENGTH_LONG).show();
                     }
                     return true;
                 }
 
-                // Android Intent schemes (e.g. intent://pay?...#Intent;scheme=upi;...)
+                // Android Intent schemes (e.g. intent://pay?...#Intent;scheme=upi;package=...;end)
                 if (url.startsWith("intent://")) {
                     try {
                         Intent intent = Intent.parseUri(url, Intent.URI_INTENT_SCHEME);
                         if (intent != null) {
                             intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                            String pkg = intent.getPackage();
                             PackageManager pm = getPackageManager();
-                            if (intent.resolveActivity(pm) != null) {
-                                startActivity(intent);
-                                return true;
+
+                            boolean isInstalled = false;
+                            if (pkg != null && !pkg.isEmpty()) {
+                                try {
+                                    pm.getPackageInfo(pkg, PackageManager.GET_ACTIVITIES);
+                                    isInstalled = true;
+                                } catch (PackageManager.NameNotFoundException e) {
+                                    isInstalled = false;
+                                }
+                            } else if (intent.resolveActivity(pm) != null) {
+                                isInstalled = true;
                             }
-                            // If target app package isn't installed, fallback to generic UPI data URI
-                            Uri dataUri = intent.getData();
-                            if (dataUri != null && "upi".equalsIgnoreCase(dataUri.getScheme())) {
-                                Intent upiIntent = new Intent(Intent.ACTION_VIEW, dataUri);
-                                upiIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                                startActivity(upiIntent);
-                                return true;
+
+                            if (isInstalled) {
+                                try {
+                                    startActivity(intent);
+                                    return true;
+                                } catch (ActivityNotFoundException e) {
+                                    // Handled below
+                                }
                             }
-                            // Browser fallback URL if present
-                            String fallbackUrl = intent.getStringExtra("browser_fallback_url");
-                            if (fallbackUrl != null && !fallbackUrl.isEmpty()) {
-                                webView.loadUrl(fallbackUrl);
-                                return true;
+
+                            // If target app package isn't installed, inform user specifically
+                            String appName = "Requested UPI app";
+                            if ("com.google.android.apps.nbu.paisa.user".equals(pkg)) {
+                                appName = "Google Pay";
+                            } else if ("com.phonepe.app".equals(pkg)) {
+                                appName = "PhonePe";
+                            } else if ("net.one97.paytm".equals(pkg)) {
+                                appName = "Paytm";
+                            } else if ("com.dreamplug.androidapp".equals(pkg)) {
+                                appName = "CRED";
                             }
-                            Toast.makeText(MainActivity.this, "Requested payment app is not installed on your phone", Toast.LENGTH_SHORT).show();
+
+                            Toast.makeText(MainActivity.this, appName + " is not installed on your phone", Toast.LENGTH_LONG).show();
                             return true;
                         }
                     } catch (Exception e) {

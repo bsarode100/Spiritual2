@@ -13,11 +13,8 @@ $qrImageUrl = $values['payment_upi_qr_url'] ?? '';
 
 // Sample preview URI
 $sampleCleanPayee = rawurlencode(preg_replace('/[^a-zA-Z0-9 ]/', '', substr($payeeName ?: 'SpiritualShaadi', 0, 25)));
-if ($upiType === 'merchant') {
-    $previewUri = "upi://pay?pa=" . rawurlencode($upiId) . "&pn=" . $sampleCleanPayee . "&mc=" . rawurlencode($mcc) . "&tr=SS_TEST_101&am=999.00&cu=INR&tn=SpiritualShaadi&mode=02";
-} else {
-    $previewUri = "upi://pay?pa=" . rawurlencode($upiId) . "&pn=" . $sampleCleanPayee . "&cu=INR";
-}
+// Universal standard preview URI (NPCI compliant, accepted by Google Pay, PhonePe, Paytm)
+$previewUri = "upi://pay?pa=" . rawurlencode($upiId) . "&pn=" . $sampleCleanPayee . "&am=349.00&cu=INR&tn=SS_TEST_101";
 $previewQr = "https://quickchart.io/qr?size=180&margin=2&text=" . rawurlencode($previewUri);
 ?>
 <div class="admin-head">

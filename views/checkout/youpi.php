@@ -37,52 +37,37 @@ $isConfigured = !empty($upiId) && str_contains($upiId, '@') && $upiId !== 'spiri
 $amount = number_format((float)$pkg['price'], 2, '.', '');
 $orderRef = $payment['gateway_order_id'] ?? ('SS' . $payment['id']);
 $cleanNote = preg_replace('/[^a-zA-Z0-9]/', '', $orderRef);
+if (empty($cleanNote)) {
+    $cleanNote = 'SS' . $payment['id'];
+}
 if (strlen($cleanNote) > 20) {
     $cleanNote = substr($cleanNote, 0, 20);
-}
-
-// Merchant detection & configuration
-$upiType = (string)setting('payment_upi_type', 'merchant');
-$mcc = trim((string)(setting('payment_upi_mcc') ?: $extractedMcc ?: ''));
-
-// Auto-detect merchant if not explicitly marked
-$isMerchant = ($upiType === 'merchant');
-if ($upiType === '' || $upiType === 'auto') {
-    if (!empty($mcc) || preg_match('/(paytmqr|@okbizaxis|@bharatpe|^q\d+@ybl|@ibl)/i', $upiId)) {
-        $isMerchant = true;
-    }
-}
-if ($isMerchant && empty($mcc)) {
-    $mcc = '5499'; // Default merchant category code
 }
 
 $encodedPayee = rawurlencode($cleanPayee);
 $uploadedQrUrl = trim((string)setting('payment_upi_qr_url', ''));
 
-if ($isMerchant) {
-    // NPCI compliant P2M Merchant Format (PhonePe, GPay, Paytm accept amount for merchants)
-    $upiUriButtons = "upi://pay?pa={$upiId}&pn={$encodedPayee}&mc={$mcc}&tr={$cleanNote}&am={$amount}&cu=INR&tn={$cleanNote}&mode=02";
-    $upiUriQr      = "upi://pay?pa={$upiId}&pn={$encodedPayee}&mc={$mcc}&tr={$cleanNote}&am={$amount}&cu=INR&tn={$cleanNote}&mode=02";
+// Universal YouPI-PG standard UPI format (accepted by Google Pay, PhonePe, Paytm without bank fraud refusal)
+// NOTE: We do NOT append mode=02 or arbitrary mc=5499 on online button intents.
+// mode=02 is specifically for physical POS terminal QRs and triggers bank fraud refusal when launched via app/intent.
+$baseUpiQuery = "pa={$upiId}&pn={$encodedPayee}&am={$amount}&cu=INR&tn={$cleanNote}";
 
-    // Direct app intents
-    $intentPhonepe = "intent://pay?pa={$upiId}&pn={$encodedPayee}&mc={$mcc}&tr={$cleanNote}&am={$amount}&cu=INR&tn={$cleanNote}&mode=02#Intent;scheme=upi;package=com.phonepe.app;end";
-    // For Google Pay, use direct universal upi:// scheme to prevent GPay's package block "Something went wrong"
-    $intentGpay    = $upiUriButtons;
-    $intentPaytm   = "intent://pay?pa={$upiId}&pn={$encodedPayee}&mc={$mcc}&tr={$cleanNote}&am={$amount}&cu=INR&tn={$cleanNote}&mode=02#Intent;scheme=upi;package=net.one97.paytm;end";
-} else {
-    // Clean P2P format for personal UPI
-    $upiUriButtons = "upi://pay?pa={$upiId}&pn={$encodedPayee}&am={$amount}&cu=INR&tn={$cleanNote}";
-    $upiUriQr      = "upi://pay?pa={$upiId}&pn={$encodedPayee}&cu=INR";
+// Universal generic URI
+$upiUriButtons = "upi://pay?{$baseUpiQuery}";
+$upiUriQr      = "upi://pay?{$baseUpiQuery}";
 
-    $intentPhonepe = "intent://pay?pa={$upiId}&pn={$encodedPayee}&am={$amount}&cu=INR&tn={$cleanNote}#Intent;scheme=upi;package=com.phonepe.app;end";
-    $intentGpay    = $upiUriButtons;
-    $intentPaytm   = "intent://pay?pa={$upiId}&pn={$encodedPayee}&am={$amount}&cu=INR&tn={$cleanNote}#Intent;scheme=upi;package=net.one97.paytm;end";
-}
+// Direct Android App Intents targeting each app's official package name
+$intentPhonepe = "intent://pay?{$baseUpiQuery}#Intent;scheme=upi;package=com.phonepe.app;end";
+$intentGpay    = "intent://pay?{$baseUpiQuery}#Intent;scheme=upi;package=com.google.android.apps.nbu.paisa.user;end";
+$intentPaytm   = "intent://pay?{$baseUpiQuery}#Intent;scheme=upi;package=net.one97.paytm;end";
+$intentCred    = "intent://pay?{$baseUpiQuery}#Intent;scheme=upi;package=com.dreamplug.androidapp;end";
 
-// Generate reliable dynamic QR codes
+// Generate reliable dynamic QR codes with exact amount pre-filled
 $generatedQrUrl = "https://quickchart.io/qr?size=260&margin=2&text=" . rawurlencode($upiUriQr);
 $fallbackQrUrl  = "https://api.qrserver.com/v1/create-qr-code/?size=260x260&margin=8&data=" . rawurlencode($upiUriQr);
-$displayQrUrl   = !empty($uploadedQrUrl) ? $uploadedQrUrl : $generatedQrUrl;
+
+// Default to dynamic QR so scanning auto-fills the exact price!
+$displayQrUrl   = $generatedQrUrl;
 ?>
 <!doctype html>
 <html lang="en">
@@ -465,11 +450,10 @@ body {
             </p>
             <p style="font-size:0.75rem; color:#64748b; margin-top:0.25rem;">
                 Account: <?= e($cleanPayee) ?> (<code><?= e($upiId) ?></code>)
-                <?php if ($isMerchant): ?> · <span style="color:#059669; font-weight:600;">✓ Merchant (MCC <?= e($mcc) ?>)</span><?php endif; ?>
             </p>
             <?php if (!empty($uploadedQrUrl)): ?>
                 <div style="margin-top:0.4rem;">
-                    <a href="javascript:void(0)" onclick="toggleQrType()" id="qrSwitchLink" style="font-size:0.75rem; color:#4338ca; text-decoration:underline;">Switch to dynamic amount QR</a>
+                    <a href="javascript:void(0)" onclick="toggleQrType()" id="qrSwitchLink" style="font-size:0.75rem; color:#4338ca; text-decoration:underline;">Switch to store / merchant QR</a>
                 </div>
             <?php endif; ?>
         </div>
@@ -515,21 +499,21 @@ let pollTimer = null;
 
 function payWithApp(app) {
     const isAndroid = /android/i.test(navigator.userAgent);
-    let target = universalUri;
     
-    if (isAndroid) {
-        if (app === 'phonepe') target = intentPhonepe;
-        else if (app === 'gpay') target = intentGpay;
-        else if (app === 'paytm') target = intentPaytm;
+    if (!isAndroid) {
+        window.location.href = universalUri;
+        return;
     }
     
-    window.location.href = target;
-    
-    // Fallback to universal UPI if the specific intent didn't launch
-    if (isAndroid && target !== universalUri) {
-        setTimeout(() => {
-            window.location.href = universalUri;
-        }, 1500);
+    // On Android: route directly to the chosen UPI app's package intent
+    if (app === 'phonepe') {
+        window.location.href = intentPhonepe;
+    } else if (app === 'gpay') {
+        window.location.href = intentGpay;
+    } else if (app === 'paytm') {
+        window.location.href = intentPaytm;
+    } else {
+        window.location.href = universalUri;
     }
 }
 
@@ -586,7 +570,7 @@ function toggleQr() {
     }
 }
 
-let showingOfficial = <?= !empty($uploadedQrUrl) ? 'true' : 'false' ?>;
+let showingOfficial = false;
 const officialQrUrl = <?= json_encode($uploadedQrUrl) ?>;
 const dynamicQrUrl  = <?= json_encode($generatedQrUrl) ?>;
 
@@ -596,11 +580,11 @@ function toggleQrType() {
     if (!img || !link) return;
     if (showingOfficial) {
         img.src = dynamicQrUrl;
-        link.textContent = 'Switch back to official merchant QR';
+        link.textContent = 'Switch to store / merchant QR';
         showingOfficial = false;
     } else {
         img.src = officialQrUrl;
-        link.textContent = 'Switch to dynamic amount QR';
+        link.textContent = 'Switch back to auto-fill ₹<?= e(number_format((float)$pkg['price'], 0)) ?> QR';
         showingOfficial = true;
     }
 }
