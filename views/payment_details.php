@@ -34,9 +34,16 @@ $anything = $has_upi || $has_bank || $has_help;
                     <p style="color: var(--c-ink-soft); margin-bottom: .25rem;">UPI ID</p>
                     <p style="font-weight: 600; margin-bottom: 1rem;"><code style="background: var(--c-cream-2); padding: .25rem .5rem; border-radius: 6px;"><?= e($details['upi_id']) ?></code></p>
                 <?php endif; ?>
-                <?php if ($details['upi_qr_url'] !== ''): ?>
+                <?php 
+                $qrSrc = $details['upi_qr_url'];
+                if (empty($qrSrc) && !empty($details['upi_id'])) {
+                    $qrCleanPayee = rawurlencode(preg_replace('/[^a-zA-Z0-9 ]/', '', substr($details['payee_name'] ?: 'SpiritualShaadi', 0, 25)));
+                    $qrSrc = "https://quickchart.io/qr?size=240&margin=2&text=" . rawurlencode("upi://pay?pa=" . rawurlencode($details['upi_id']) . "&pn=" . $qrCleanPayee . "&cu=INR");
+                }
+                ?>
+                <?php if (!empty($qrSrc)): ?>
                     <div style="text-align: center; margin-top: 1rem;">
-                        <img src="<?= e($details['upi_qr_url']) ?>" alt="Scan to pay via UPI" style="max-width: 240px; width: 100%; border-radius: 12px; border: 1px solid var(--c-cream-2);">
+                        <img src="<?= e($qrSrc) ?>" alt="Scan to pay via UPI" style="max-width: 240px; width: 100%; border-radius: 12px; border: 1px solid var(--c-cream-2);">
                         <p style="color: var(--c-muted); font-size: .9rem; margin-top: .5rem;">Scan with any UPI app — GPay, PhonePe, Paytm, BHIM.</p>
                     </div>
                 <?php endif; ?>

@@ -640,8 +640,23 @@ $r->get('/admin/payment-details', $admin(function () use ($PAYMENT_KEYS) {
 }));
 
 $r->post('/admin/payment-details', $admin(function () use ($PAYMENT_KEYS) {
+    // Clean UPI ID if full URI pasted
+    $rawUpi = trim((string)($_POST['payment_upi_id'] ?? ''));
+    if (preg_match('/[?&]pa=([^&]+)/i', $rawUpi, $m)) {
+        $_POST['payment_upi_id'] = urldecode($m[1]);
+    }
+    if (preg_match('/[?&]pn=([^&]+)/i', $rawUpi, $m) && empty($_POST['payment_payee_name'])) {
+        $_POST['payment_payee_name'] = urldecode($m[1]);
+    }
+
     foreach ($PAYMENT_KEYS as $k) {
         $v = trim((string)($_POST[$k] ?? ''));
+        if ($k === 'payment_upi_id') {
+            $v = preg_replace('/^(upi:\/\/pay\?pa=|pa=|upi:|vpa:|id:)[\s\/]*/i', '', $v);
+            $v = explode('?', $v)[0];
+            $v = explode('&', $v)[0];
+            $v = preg_replace('/\s+/', '', $v);
+        }
         $exists = DB::val('SELECT 1 FROM site_settings WHERE setting_key = ?', [$k]);
         if ($exists) {
             DB::update('site_settings', ['setting_value' => $v], ['setting_key' => $k]);
@@ -697,7 +712,17 @@ $r->post('/admin/razorpay', $admin(function () use ($RAZORPAY_KEYS) {
 }));
 
 // ---------- YOUPI UPI GATEWAY ----------
-$YOUPI_KEYS = ['youpi_enabled', 'youpi_portal_url', 'youpi_admin_url', 'youpi_webhook_secret', 'payment_upi_id', 'payment_payee_name'];
+$YOUPI_KEYS = [
+    'youpi_enabled',
+    'youpi_portal_url',
+    'youpi_admin_url',
+    'youpi_webhook_secret',
+    'payment_upi_id',
+    'payment_payee_name',
+    'payment_upi_type',
+    'payment_upi_mcc',
+    'payment_upi_qr_url'
+];
 
 $r->get('/admin/youpi', $admin(function () use ($YOUPI_KEYS) {
     $values = [];
@@ -712,6 +737,12 @@ $r->get('/admin/youpi', $admin(function () use ($YOUPI_KEYS) {
     }
     if (!isset($values['youpi_enabled']) || $values['youpi_enabled'] === '') {
         $values['youpi_enabled'] = '1';
+    }
+    if (empty($values['payment_upi_type'])) {
+        $values['payment_upi_type'] = 'merchant'; // Default to merchant mode
+    }
+    if (empty($values['payment_upi_mcc'])) {
+        $values['payment_upi_mcc'] = '5499';
     }
 
     $recent = DB::all("SELECT p.*, u.name AS user_name, u.email AS user_email,
@@ -735,9 +766,27 @@ $r->get('/admin/youpi', $admin(function () use ($YOUPI_KEYS) {
 }));
 
 $r->post('/admin/youpi', $admin(function () use ($YOUPI_KEYS) {
+    // If user pasted a full upi:// URI, extract pa, mc, pn automatically
+    $rawUpi = trim((string)($_POST['payment_upi_id'] ?? ''));
+    if (preg_match('/[?&]pa=([^&]+)/i', $rawUpi, $m)) {
+        $_POST['payment_upi_id'] = urldecode($m[1]);
+    }
+    if (empty($_POST['payment_upi_mcc']) && preg_match('/[?&]mc=([^&]+)/i', $rawUpi, $m)) {
+        $_POST['payment_upi_mcc'] = urldecode($m[1]);
+    }
+    if (empty($_POST['payment_payee_name']) && preg_match('/[?&]pn=([^&]+)/i', $rawUpi, $m)) {
+        $_POST['payment_payee_name'] = urldecode($m[1]);
+    }
+
     foreach ($YOUPI_KEYS as $k) {
         $v = trim((string)($_POST[$k] ?? ''));
         if ($k === 'youpi_enabled') $v = isset($_POST[$k]) ? '1' : '0';
+        if ($k === 'payment_upi_id') {
+            $v = preg_replace('/^(upi:\/\/pay\?pa=|pa=|upi:|vpa:|id:)[\s\/]*/i', '', $v);
+            $v = explode('?', $v)[0];
+            $v = explode('&', $v)[0];
+            $v = preg_replace('/\s+/', '', $v);
+        }
         $exists = DB::val('SELECT 1 FROM site_settings WHERE setting_key = ?', [$k]);
         if ($exists) {
             DB::update('site_settings', ['setting_value' => $v], ['setting_key' => $k]);
@@ -746,6 +795,30 @@ $r->post('/admin/youpi', $admin(function () use ($YOUPI_KEYS) {
         }
     }
     flash('success', 'YouPI UPI Gateway settings saved.');
+    redirect('/admin/youpi');
+}));
+
+$r->post('/admin/youpi/approve/{id}', $admin(function ($a) {
+    $id = (int)($a['id'] ?? 0);
+    $pmt = DB::one('SELECT * FROM payments WHERE id = ?', [$id]);
+    if (!$pmt) {
+        flash('error', 'Payment record not found.');
+        redirect('/admin/youpi');
+        return;
+    }
+    if ($pmt['status'] === 'paid') {
+        flash('info', 'This payment is already marked as paid.');
+        redirect('/admin/youpi');
+        return;
+    }
+    $utr = $pmt['gateway_payment_id'] ?: ('MANUAL_OK_' . time());
+    grant_purchase_by_payment($pmt, $utr);
+    DB::update('payments', [
+        'status'             => 'paid',
+        'gateway_payment_id' => $utr,
+        'notes'              => trim(($pmt['notes'] ?? '') . ' | Manually approved by admin on ' . date('Y-m-d H:i:s')),
+    ], ['id' => $id]);
+    flash('success', "Payment #{$id} approved! Plan activated for user #{$pmt['user_id']}.");
     redirect('/admin/youpi');
 }));
 

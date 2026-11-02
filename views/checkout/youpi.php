@@ -1,10 +1,32 @@
 <?php /** @var array $pkg @var array $payment @var string $portal_url @var array $user @var string $kind */
-$upiId = trim((string)(setting('payment_upi_id') ?: setting('youpi_vpa') ?: ''));
-// Sanitize UPI ID: remove spaces and accidental prefixes like "upi:" or "id:"
-$upiId = preg_replace('/\s+/', '', $upiId);
-$upiId = preg_replace('/^(upi|vpa|id)[:\s-]+/i', '', $upiId);
+$rawUpi = trim((string)(setting('payment_upi_id') ?: setting('youpi_vpa') ?: ''));
 
-$payeeName = trim((string)(setting('payment_payee_name') ?: setting('site_name', 'SpiritualShaadi')));
+// Automatically extract parameters if full URI or query string was entered
+$extractedVpa = '';
+$extractedMcc = '';
+$extractedPn  = '';
+
+if (preg_match('/[?&]pa=([^&]+)/i', $rawUpi, $m)) {
+    $extractedVpa = urldecode($m[1]);
+}
+if (preg_match('/[?&]mc=([^&]+)/i', $rawUpi, $m)) {
+    $extractedMcc = urldecode($m[1]);
+}
+if (preg_match('/[?&]pn=([^&]+)/i', $rawUpi, $m)) {
+    $extractedPn = urldecode($m[1]);
+}
+
+if (!empty($extractedVpa)) {
+    $upiId = $extractedVpa;
+} else {
+    // Strip accidental prefixes
+    $upiId = preg_replace('/^(upi:\/\/pay\?pa=|pa=|upi:|vpa:|id:)[\s\/]*/i', '', $rawUpi);
+    $upiId = explode('?', $upiId)[0];
+    $upiId = explode('&', $upiId)[0];
+    $upiId = preg_replace('/\s+/', '', $upiId);
+}
+
+$payeeName = $extractedPn ?: trim((string)(setting('payment_payee_name') ?: setting('site_name', 'SpiritualShaadi')));
 $cleanPayee = preg_replace('/[^a-zA-Z0-9 ]/', '', substr($payeeName, 0, 25));
 if (empty($cleanPayee)) {
     $cleanPayee = 'SpiritualShaadi';
@@ -19,22 +41,48 @@ if (strlen($cleanNote) > 20) {
     $cleanNote = substr($cleanNote, 0, 20);
 }
 
-// 1. Clean P2P URI for QR Code:
-// PhonePe scanner strictly rejects personal (@axl/@ybl/@okhdfcbank) QR codes if they contain "am=" or "tr=".
-// Omitting am= creates a 100% valid P2P QR code that PhonePe/GPay/Paytm will scan without "Invalid QR Code" error.
+// Merchant detection & configuration
+$upiType = (string)setting('payment_upi_type', 'merchant');
+$mcc = trim((string)(setting('payment_upi_mcc') ?: $extractedMcc ?: ''));
+
+// Auto-detect merchant if not explicitly marked
+$isMerchant = ($upiType === 'merchant');
+if ($upiType === '' || $upiType === 'auto') {
+    if (!empty($mcc) || preg_match('/(paytmqr|@okbizaxis|@bharatpe|^q\d+@ybl|@ibl)/i', $upiId)) {
+        $isMerchant = true;
+    }
+}
+if ($isMerchant && empty($mcc)) {
+    $mcc = '5499'; // Default merchant category code
+}
+
 $encodedPayee = rawurlencode($cleanPayee);
-$upiUriQr = "upi://pay?pa={$upiId}&pn={$encodedPayee}&cu=INR";
+$uploadedQrUrl = trim((string)setting('payment_upi_qr_url', ''));
 
-// 2. Intent URI for Mobile Buttons (Where pre-filled amount works):
-$upiUriButtons = "upi://pay?pa={$upiId}&pn={$encodedPayee}&am={$amount}&cu=INR&tn={$cleanNote}";
+if ($isMerchant) {
+    // NPCI compliant P2M Merchant Format (PhonePe, GPay, Paytm accept amount for merchants)
+    $upiUriButtons = "upi://pay?pa={$upiId}&pn={$encodedPayee}&mc={$mcc}&tr={$cleanNote}&am={$amount}&cu=INR&tn={$cleanNote}&mode=02";
+    $upiUriQr      = "upi://pay?pa={$upiId}&pn={$encodedPayee}&mc={$mcc}&tr={$cleanNote}&am={$amount}&cu=INR&tn={$cleanNote}&mode=02";
 
-// Direct Android Intents
-$intentPhonepe = "intent://pay?pa={$upiId}&pn={$encodedPayee}&am={$amount}&cu=INR&tn={$cleanNote}#Intent;scheme=upi;package=com.phonepe.app;end";
-$intentGpay    = "intent://pay?pa={$upiId}&pn={$encodedPayee}&am={$amount}&cu=INR&tn={$cleanNote}#Intent;scheme=upi;package=com.google.android.apps.nbu.paisa.user;end";
-$intentPaytm   = "intent://pay?pa={$upiId}&pn={$encodedPayee}&am={$amount}&cu=INR&tn={$cleanNote}#Intent;scheme=upi;package=net.one97.paytm;end";
+    // Direct app intents
+    $intentPhonepe = "intent://pay?pa={$upiId}&pn={$encodedPayee}&mc={$mcc}&tr={$cleanNote}&am={$amount}&cu=INR&tn={$cleanNote}&mode=02#Intent;scheme=upi;package=com.phonepe.app;end";
+    // For Google Pay, use direct universal upi:// scheme to prevent GPay's package block "Something went wrong"
+    $intentGpay    = $upiUriButtons;
+    $intentPaytm   = "intent://pay?pa={$upiId}&pn={$encodedPayee}&mc={$mcc}&tr={$cleanNote}&am={$amount}&cu=INR&tn={$cleanNote}&mode=02#Intent;scheme=upi;package=net.one97.paytm;end";
+} else {
+    // Clean P2P format for personal UPI
+    $upiUriButtons = "upi://pay?pa={$upiId}&pn={$encodedPayee}&am={$amount}&cu=INR&tn={$cleanNote}";
+    $upiUriQr      = "upi://pay?pa={$upiId}&pn={$encodedPayee}&cu=INR";
 
-// QR code uses clean P2P format (single rawurlencode for API parameter)
-$qrUrl = "https://api.qrserver.com/v1/create-qr-code/?size=260x260&margin=8&data=" . rawurlencode($upiUriQr);
+    $intentPhonepe = "intent://pay?pa={$upiId}&pn={$encodedPayee}&am={$amount}&cu=INR&tn={$cleanNote}#Intent;scheme=upi;package=com.phonepe.app;end";
+    $intentGpay    = $upiUriButtons;
+    $intentPaytm   = "intent://pay?pa={$upiId}&pn={$encodedPayee}&am={$amount}&cu=INR&tn={$cleanNote}#Intent;scheme=upi;package=net.one97.paytm;end";
+}
+
+// Generate reliable dynamic QR codes
+$generatedQrUrl = "https://quickchart.io/qr?size=260&margin=2&text=" . rawurlencode($upiUriQr);
+$fallbackQrUrl  = "https://api.qrserver.com/v1/create-qr-code/?size=260x260&margin=8&data=" . rawurlencode($upiUriQr);
+$displayQrUrl   = !empty($uploadedQrUrl) ? $uploadedQrUrl : $generatedQrUrl;
 ?>
 <!doctype html>
 <html lang="en">
@@ -409,17 +457,21 @@ body {
             <span id="qrToggleText">Show QR Code (to scan from another phone)</span>
         </button>
         <div class="qr-wrapper" id="qrWrapper">
-            <img src="<?= e($qrUrl) ?>" alt="UPI QR Code" id="qrImage">
+            <img src="<?= e($displayQrUrl) ?>" 
+                 onerror="if(this.src!=='<?= e($fallbackQrUrl) ?>'){this.src='<?= e($fallbackQrUrl) ?>';}" 
+                 alt="UPI QR Code" id="qrImage">
             <p style="font-size:0.85rem; font-weight:700; color:#0f172a; margin-top:0.5rem;">
                 Scan with PhonePe, GPay, Paytm &amp; pay ₹<?= e(number_format((float)$pkg['price'], 0)) ?>
             </p>
-            <p style="font-size:0.72rem; color:#64748b; margin-top:0.25rem;">
+            <p style="font-size:0.75rem; color:#64748b; margin-top:0.25rem;">
                 Account: <?= e($cleanPayee) ?> (<code><?= e($upiId) ?></code>)
+                <?php if ($isMerchant): ?> · <span style="color:#059669; font-weight:600;">✓ Merchant (MCC <?= e($mcc) ?>)</span><?php endif; ?>
             </p>
-        </div>
-
-        <div style="font-size:0.75rem; color:#64748b; background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:0.5rem 0.65rem; margin-top:0.75rem; line-height:1.4; text-align:left;">
-            💡 <strong>Testing tip:</strong> If testing on your phone, pay using a different bank account / second phone. (UPI apps block transfers to yourself).
+            <?php if (!empty($uploadedQrUrl)): ?>
+                <div style="margin-top:0.4rem;">
+                    <a href="javascript:void(0)" onclick="toggleQrType()" id="qrSwitchLink" style="font-size:0.75rem; color:#4338ca; text-decoration:underline;">Switch to dynamic amount QR</a>
+                </div>
+            <?php endif; ?>
         </div>
 
         <!-- Live Auto-Confirmation Status -->
@@ -441,7 +493,7 @@ body {
                     Enter the 12-digit UTR / UPI Reference Number from your payment receipt:
                 </p>
                 <input type="text" name="utr" class="utr-field" placeholder="e.g. 429812345678" maxlength="25" required>
-                <button type="submit" class="utr-submit-btn">Verify &amp; Activate Plan</button>
+                <button type="submit" class="utr-submit-btn">Submit UTR for Verification</button>
             </form>
         </div>
     </div>
@@ -531,6 +583,25 @@ function toggleQr() {
     } else {
         w.style.display = 'block';
         t.textContent = 'Hide QR Code';
+    }
+}
+
+let showingOfficial = <?= !empty($uploadedQrUrl) ? 'true' : 'false' ?>;
+const officialQrUrl = <?= json_encode($uploadedQrUrl) ?>;
+const dynamicQrUrl  = <?= json_encode($generatedQrUrl) ?>;
+
+function toggleQrType() {
+    const img = document.getElementById('qrImage');
+    const link = document.getElementById('qrSwitchLink');
+    if (!img || !link) return;
+    if (showingOfficial) {
+        img.src = dynamicQrUrl;
+        link.textContent = 'Switch back to official merchant QR';
+        showingOfficial = false;
+    } else {
+        img.src = officialQrUrl;
+        link.textContent = 'Switch to dynamic amount QR';
+        showingOfficial = true;
     }
 }
 

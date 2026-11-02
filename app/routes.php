@@ -584,19 +584,35 @@ $r->post('/checkout/verify-utr', function () {
         redirect('/checkout/success?p=' . $pmt['id']);
         return;
     }
-    if (!empty($utr)) {
-        grant_purchase_by_payment($pmt, $utr);
-        DB::update('payments', [
-            'status'             => 'paid',
-            'gateway'            => 'youpi',
-            'gateway_payment_id' => $utr,
-        ], ['id' => $pmt['id']]);
-        flash('success', 'Payment confirmed! Your plan is now active.');
-        redirect('/checkout/success?p=' . $pmt['id']);
+
+    $cleanUtr = preg_replace('/[^a-zA-Z0-9]/', '', $utr);
+    if (strlen($cleanUtr) < 8 || strlen($cleanUtr) > 30) {
+        flash('error', 'Please enter a valid 12-digit UPI Reference Number (UTR).');
+        redirect('/checkout/' . (int)($pmt['package_id'] ?? 1));
         return;
     }
-    flash('error', 'Please enter your 12-digit UPI reference number.');
-    redirect('/checkout/' . (int)($pmt['package_id'] ?? 1));
+
+    // Check if this UTR was already approved on another payment
+    $duplicate = DB::one('SELECT id FROM payments WHERE gateway_payment_id = ? AND status = "paid" AND id != ?', [$cleanUtr, $pmt['id']]);
+    if ($duplicate) {
+        flash('error', 'This UPI Reference Number (UTR) has already been used for another transaction.');
+        redirect('/checkout/' . (int)($pmt['package_id'] ?? 1));
+        return;
+    }
+
+    // Record the submitted UTR and set to pending review without activating the plan
+    $existingNotes = trim((string)($pmt['notes'] ?? ''));
+    $noteEntry = "Manual UTR submitted: {$cleanUtr} on " . date('Y-m-d H:i:s');
+    $updatedNotes = $existingNotes ? ($existingNotes . " | " . $noteEntry) : $noteEntry;
+
+    DB::update('payments', [
+        'gateway'            => 'youpi',
+        'gateway_payment_id' => $cleanUtr,
+        'notes'              => $updatedNotes,
+    ], ['id' => $pmt['id']]);
+
+    flash('info', 'Your UPI Reference Number (UTR: ' . htmlspecialchars($cleanUtr) . ') has been submitted. Your membership will activate automatically as soon as our banking system verifies the credit (usually 5–15 minutes).');
+    redirect('/dashboard');
 });
 
 // ------------------- RAZORPAY WEBHOOK -------------------
@@ -668,10 +684,16 @@ $r->post('/youpi/webhook', function () {
     $isSuccess = in_array($status, ['SUCCESS', 'PAID', 'PAYMENT.SUCCESS', 'COMPLETED', 'SESSION.COMPLETED'], true)
                  || str_contains($status, 'SUCCESS');
 
-    if ($isSuccess && $orderId) {
-        $pmt = is_numeric($orderId)
-            ? DB::one('SELECT * FROM payments WHERE id = ?', [(int)$orderId])
-            : DB::one('SELECT * FROM payments WHERE gateway_order_id = ? OR id = ?', [$orderId, (int)$orderId]);
+    if ($isSuccess) {
+        $pmt = null;
+        if ($orderId) {
+            $pmt = is_numeric($orderId)
+                ? DB::one('SELECT * FROM payments WHERE id = ?', [(int)$orderId])
+                : DB::one('SELECT * FROM payments WHERE gateway_order_id = ? OR id = ?', [$orderId, (int)$orderId]);
+        }
+        if (!$pmt && !empty($utr)) {
+            $pmt = DB::one('SELECT * FROM payments WHERE gateway_payment_id = ? AND status != "paid"', [(string)$utr]);
+        }
 
         if ($pmt && $pmt['status'] !== 'paid') {
             grant_purchase_by_payment($pmt, (string)$utr);

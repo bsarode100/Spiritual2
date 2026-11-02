@@ -1,5 +1,6 @@
 # Local env (do not commit real secrets)
 .env
+.git_work/
 
 # Claude Code local state
 .claude/

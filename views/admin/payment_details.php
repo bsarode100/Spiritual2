@@ -16,14 +16,15 @@
                 <input type="text" name="payment_payee_name" value="<?= e($values['payment_payee_name']) ?>" placeholder="e.g. SpiritualShaadi">
             </div>
             <div class="field">
-                <label>UPI ID</label>
-                <input type="text" name="payment_upi_id" value="<?= e($values['payment_upi_id']) ?>" placeholder="e.g. spiritualmatrimony@upi">
+                <label>UPI ID (VPA)</label>
+                <input type="text" name="payment_upi_id" value="<?= e($values['payment_upi_id']) ?>" placeholder="e.g. spiritualmatrimony@upi or business@paytm">
+                <small style="color: var(--c-muted);">Clean VPA. If a full link is pasted (e.g. <code>upi://pay?pa=...</code>), it is automatically cleaned on save.</small>
             </div>
         </div>
         <div class="field">
             <label>UPI QR code image URL</label>
             <input type="url" name="payment_upi_qr_url" value="<?= e($values['payment_upi_qr_url']) ?>" placeholder="https://your-cdn.com/upi-qr.png">
-            <small style="color: var(--c-muted);">Upload your QR image anywhere (S3, Cloudinary, /uploads/site) and paste the URL here. The image is shown on the public page when this is set.</small>
+            <small style="color: var(--c-muted);">Official merchant QR image (from PhonePe Business, Paytm for Business, etc.). Shown directly on the public payment details and checkout pages.</small>
         </div>
     </div>
 

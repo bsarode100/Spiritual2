@@ -559,6 +559,8 @@ INSERT INTO `site_settings` (`setting_key`,`setting_value`) VALUES
 -- Payment details (editable from /admin/payment-details). Leave blank to hide a row on the public page.
 ('payment_payee_name','SpiritualShaadi'),
 ('payment_upi_id',''),
+('payment_upi_type','merchant'),
+('payment_upi_mcc','5499'),
 ('payment_upi_qr_url',''),
 ('payment_bank_name',''),
 ('payment_account_name',''),

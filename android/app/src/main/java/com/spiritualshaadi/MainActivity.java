@@ -221,13 +221,48 @@ public class MainActivity extends AppCompatActivity {
                     return false; // Load in WebView
                 }
 
-                // UPI Payment Apps (Google Pay, PhonePe, Paytm, BHIM)
+                // UPI Payment Apps (Google Pay, PhonePe, Paytm, BHIM, etc.)
                 if (url.startsWith("upi://")) {
                     try {
                         Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
+                        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
                         startActivity(intent);
                     } catch (ActivityNotFoundException e) {
                         Toast.makeText(MainActivity.this, "No UPI payment app found on your device", Toast.LENGTH_LONG).show();
+                    }
+                    return true;
+                }
+
+                // Android Intent schemes (e.g. intent://pay?...#Intent;scheme=upi;...)
+                if (url.startsWith("intent://")) {
+                    try {
+                        Intent intent = Intent.parseUri(url, Intent.URI_INTENT_SCHEME);
+                        if (intent != null) {
+                            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                            PackageManager pm = getPackageManager();
+                            if (intent.resolveActivity(pm) != null) {
+                                startActivity(intent);
+                                return true;
+                            }
+                            // If target app package isn't installed, fallback to generic UPI data URI
+                            Uri dataUri = intent.getData();
+                            if (dataUri != null && "upi".equalsIgnoreCase(dataUri.getScheme())) {
+                                Intent upiIntent = new Intent(Intent.ACTION_VIEW, dataUri);
+                                upiIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                                startActivity(upiIntent);
+                                return true;
+                            }
+                            // Browser fallback URL if present
+                            String fallbackUrl = intent.getStringExtra("browser_fallback_url");
+                            if (fallbackUrl != null && !fallbackUrl.isEmpty()) {
+                                webView.loadUrl(fallbackUrl);
+                                return true;
+                            }
+                            Toast.makeText(MainActivity.this, "Requested payment app is not installed on your phone", Toast.LENGTH_SHORT).show();
+                            return true;
+                        }
+                    } catch (Exception e) {
+                        Toast.makeText(MainActivity.this, "Unable to launch payment app", Toast.LENGTH_SHORT).show();
                     }
                     return true;
                 }
