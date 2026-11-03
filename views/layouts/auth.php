@@ -3,7 +3,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, interactive-widget=resizes-content">
 <meta name="theme-color" content="#FAF7F2">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
@@ -27,7 +27,10 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,500;1,600&family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,500;1,600&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&family=Tangerine:wght@400;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="<?= asset('css/app.css') ?>">
 </head>
-<body>
+<?php
+$_isNativeApp = str_contains($_SERVER['HTTP_USER_AGENT'] ?? '', 'SpiritualShaadiApp');
+?>
+<body class="<?= $_isNativeApp ? 'is-native-app' : '' ?>">
 <?php include __DIR__ . '/../partials/app_banner.php'; ?>
 <?php
 $isOnboarding = str_contains($_SERVER['REQUEST_URI'] ?? '', 'onboarding');

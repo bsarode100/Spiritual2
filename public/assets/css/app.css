@@ -701,9 +701,9 @@ p {
 
 @media (max-width: 640px) {
     .nav-inner {
-        padding: 0.55rem 0;
+        padding: 0.42rem 0;
         gap: 0.5rem;
-        min-height: 52px;
+        min-height: 48px;
     }
     .brand {
         gap: 0.5rem;
@@ -863,7 +863,7 @@ p {
 .hero-trust .avatars div:first-child { margin-left: 0; }
 
 @media (max-width: 900px) {
-    .hero { padding: 3rem 0 3.5rem; }
+    .hero { padding: 1.75rem 0 2.5rem; }
     .hero-grid { grid-template-columns: 1fr; gap: 0; text-align: left; }
     .hero-grid h1 {
         font-size: clamp(2rem, 7.5vw, 2.75rem);
@@ -872,8 +872,14 @@ p {
     .hero-sub {
         font-size: 1.05rem;
         line-height: 1.6;
-        margin-bottom: 1.75rem;
+        margin-bottom: 1.5rem;
     }
+}
+
+@media (max-width: 640px) {
+    .hero { padding: 0.95rem 0 1.85rem; }
+    .hero .eyebrow { margin-bottom: 0.45rem; }
+    .hero-sub { margin-bottom: 1.15rem; }
 }
 
 @media (max-width: 540px) {
@@ -4552,5 +4558,22 @@ p {
     }
 }
 
-
-
+/* =====================================================================
+   Native App Optimization (SpiritualShaadiApp Android Fullscreen & Insets)
+   ===================================================================== */
+body.is-native-app .nav {
+    padding-top: 0 !important;
+}
+body.is-native-app .nav.scrolled {
+    padding-top: 0 !important;
+}
+body.is-native-app .mobile-bottom-nav {
+    height: 54px !important;
+    padding-bottom: 0 !important;
+}
+body.is-native-app:not(.is-chat-page) {
+    padding-bottom: 56px !important;
+}
+body.is-native-app .ss-app-banner {
+    display: none !important;
+}

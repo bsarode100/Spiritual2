@@ -56,8 +56,12 @@
 </head>
 <?php
 $_isChatPage = preg_match('#^/messages/\d+#', parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH));
+$_isNativeApp = str_contains($_SERVER['HTTP_USER_AGENT'] ?? '', 'SpiritualShaadiApp');
+$_bodyClasses = [];
+if ($_isChatPage) $_bodyClasses[] = 'is-chat-page';
+if ($_isNativeApp) $_bodyClasses[] = 'is-native-app';
 ?>
-<body class="<?= $_isChatPage ? 'is-chat-page' : '' ?>">
+<body class="<?= implode(' ', $_bodyClasses) ?>">
 <?php include __DIR__ . '/../partials/app_banner.php'; ?>
 <?php include __DIR__ . '/../partials/nav.php'; ?>
 

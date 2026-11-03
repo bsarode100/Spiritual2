@@ -7,6 +7,7 @@ import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.Color;
+import android.graphics.Rect;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
@@ -14,6 +15,7 @@ import android.os.Environment;
 import android.provider.MediaStore;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.ViewTreeObserver;
 import android.webkit.CookieManager;
 import android.webkit.ValueCallback;
 import android.webkit.WebChromeClient;
@@ -84,23 +86,8 @@ public class MainActivity extends AppCompatActivity {
         View rootLayout = findViewById(R.id.rootLayout);
         View statusBarSpacer = findViewById(R.id.statusBarSpacer);
 
-        // Dynamically adjust top status bar spacer height based on device status bar & cutout insets
-        ViewCompat.setOnApplyWindowInsetsListener(rootLayout, (v, windowInsets) -> {
-            Insets systemBars = windowInsets.getInsets(
-                    WindowInsetsCompat.Type.systemBars() | WindowInsetsCompat.Type.displayCutout()
-            );
-
-            if (statusBarSpacer != null) {
-                ViewGroup.LayoutParams lp = statusBarSpacer.getLayoutParams();
-                lp.height = systemBars.top;
-                statusBarSpacer.setLayoutParams(lp);
-            }
-
-            if (rootLayout != null) {
-                rootLayout.setPadding(0, 0, 0, systemBars.bottom);
-            }
-            return windowInsets;
-        });
+        // Dynamic insets: top status bar spacer + soft keyboard (IME) responsive resize
+        setupWindowInsetsAndKeyboard(rootLayout, statusBarSpacer);
 
         webView = findViewById(R.id.webView);
         progressBar = findViewById(R.id.progressBar);
@@ -117,6 +104,73 @@ public class MainActivity extends AppCompatActivity {
         }
 
         checkPermissions();
+    }
+
+    /**
+     * Handles status bar height dynamically and ensures the WebView resizes smoothly
+     * when the soft keyboard (IME) appears, keeping inputs visible and eliminating
+     * awkward blank spaces below bottom navigation tabs.
+     */
+    private void setupWindowInsetsAndKeyboard(View rootLayout, View statusBarSpacer) {
+        if (rootLayout == null) return;
+
+        // 1. AndroidX WindowInsets listener for status bar cutout & soft keyboard (IME)
+        ViewCompat.setOnApplyWindowInsetsListener(rootLayout, (v, windowInsets) -> {
+            Insets statusBars = windowInsets.getInsets(
+                    WindowInsetsCompat.Type.statusBars() | WindowInsetsCompat.Type.displayCutout()
+            );
+            Insets imeInsets = windowInsets.getInsets(WindowInsetsCompat.Type.ime());
+
+            if (statusBarSpacer != null) {
+                ViewGroup.LayoutParams lp = statusBarSpacer.getLayoutParams();
+                if (lp.height != statusBars.top) {
+                    lp.height = statusBars.top;
+                    statusBarSpacer.setLayoutParams(lp);
+                }
+            }
+
+            // Keyboard responsive adjustment:
+            // When soft keyboard (IME) opens, pad bottom to shrink WebView above the keyboard.
+            // When keyboard is closed, pad bottom to 0 for a seamless edge-to-edge full screen with no tab gaps.
+            int imeBottom = imeInsets.bottom;
+            applyBottomPadding(rootLayout, imeBottom);
+
+            return windowInsets;
+        });
+
+        // 2. ViewTreeObserver fallback: ensures keyboard resize works across all Android OEM skins (OneUI, MIUI, ColorOS)
+        rootLayout.getViewTreeObserver().addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
+            private int lastReportedPadding = -1;
+
+            @Override
+            public void onGlobalLayout() {
+                Rect r = new Rect();
+                rootLayout.getWindowVisibleDisplayFrame(r);
+                int screenHeight = rootLayout.getRootView().getHeight();
+                int keypadHeight = screenHeight - r.bottom;
+
+                // Threshold of 15% screen height distinguishes the soft keyboard from transient UI bar shifts
+                int targetPadding = 0;
+                if (keypadHeight > screenHeight * 0.15) {
+                    targetPadding = keypadHeight;
+                }
+
+                if (targetPadding != lastReportedPadding) {
+                    lastReportedPadding = targetPadding;
+                    applyBottomPadding(rootLayout, targetPadding);
+                }
+            }
+        });
+    }
+
+    private void applyBottomPadding(View rootLayout, int bottomPadding) {
+        if (rootLayout == null) return;
+        if (rootLayout.getPaddingBottom() != bottomPadding) {
+            rootLayout.setPadding(0, 0, 0, bottomPadding);
+            if (webView != null) {
+                webView.requestLayout();
+            }
+        }
     }
 
     @SuppressLint("SetJavaScriptEnabled")
@@ -137,9 +191,9 @@ public class MainActivity extends AppCompatActivity {
         settings.setAllowContentAccess(true);
         settings.setMediaPlaybackRequiresUserGesture(false);
 
-        // Identify native app in User-Agent so website can suppress app install prompts
+        // Identify native app in User-Agent so website can suppress app install prompts and optimize header padding
         String defaultUa = settings.getUserAgentString();
-        settings.setUserAgentString((defaultUa != null ? defaultUa : "") + " SpiritualShaadiApp/1.0.4");
+        settings.setUserAgentString((defaultUa != null ? defaultUa : "") + " SpiritualShaadiApp/1.0.5");
 
         webView.addJavascriptInterface(new Object() {
             @android.webkit.JavascriptInterface

@@ -543,6 +543,19 @@
         });
     }
 
+    // Automatic smooth-scrolling for inputs/textareas when mobile virtual keyboard opens
+    document.addEventListener('focusin', (e) => {
+        if (!e.target) return;
+        const tag = e.target.tagName;
+        if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') {
+            setTimeout(() => {
+                try {
+                    e.target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                } catch(err) {}
+            }, 300);
+        }
+    }, true);
+
     // Initialize on DOM ready
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', () => {
