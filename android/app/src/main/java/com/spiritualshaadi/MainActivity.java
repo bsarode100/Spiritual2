@@ -45,7 +45,9 @@ import java.io.File;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.Locale;
+import java.util.Map;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -97,8 +99,11 @@ public class MainActivity extends AppCompatActivity {
         setupWebView();
         setupOfflineRetry();
 
+        Map<String, String> extraHeaders = new HashMap<>();
+        extraHeaders.put("X-SpiritualShaadi-App", "1.0.5");
+
         if (savedInstanceState == null) {
-            webView.loadUrl(APP_URL);
+            webView.loadUrl(APP_URL, extraHeaders);
         } else {
             webView.restoreState(savedInstanceState);
         }
@@ -202,10 +207,13 @@ public class MainActivity extends AppCompatActivity {
             }
         }, "SpiritualShaadiNative");
 
-        // Enable Cookies
+        // Enable Cookies and inject is_native_app cookie
         CookieManager cookieManager = CookieManager.getInstance();
         cookieManager.setAcceptCookie(true);
         cookieManager.setAcceptThirdPartyCookies(webView, true);
+        try {
+            cookieManager.setCookie("https://spiritualshaadi.com", "is_native_app=1; path=/; max-age=31536000");
+        } catch (Exception ignored) {}
 
         // WebChromeClient for File Uploads and Progress
         webView.setWebChromeClient(new WebChromeClient() {
@@ -368,10 +376,25 @@ public class MainActivity extends AppCompatActivity {
             public void onPageStarted(WebView view, String url, Bitmap favicon) {
                 offlineLayout.setVisibility(View.GONE);
                 webView.setVisibility(View.VISIBLE);
+                // Immediately remove any play store download banner if present
+                view.evaluateJavascript(
+                        "(function(){" +
+                        "window.isSpiritualShaadiApp=true;" +
+                        "if(document.body)document.body.classList.add('is-native-app');" +
+                        "var b=document.getElementById('ss-app-banner');if(b)b.remove();" +
+                        "})();", null
+                );
             }
 
             @Override
             public void onPageFinished(WebView view, String url) {
+                view.evaluateJavascript(
+                        "(function(){" +
+                        "window.isSpiritualShaadiApp=true;" +
+                        "if(document.body)document.body.classList.add('is-native-app');" +
+                        "var b=document.getElementById('ss-app-banner');if(b)b.remove();" +
+                        "})();", null
+                );
             }
 
             @Override

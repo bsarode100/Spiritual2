@@ -3,8 +3,22 @@
  * Smart App Banner for Google Play Store
  * Appears as a top notification bar with close (x) button.
  * Remembers user dismissal via localStorage (7-day cooldown).
- * Automatically hides inside the native Android app.
+ * Automatically suppressed inside the native Android app across all versions.
  */
+$ua  = $_SERVER['HTTP_USER_AGENT'] ?? '';
+$xrw = $_SERVER['HTTP_X_REQUESTED_WITH'] ?? '';
+$isNativeApp = !empty($_COOKIE['is_native_app'])
+    || !empty($_SERVER['HTTP_X_SPIRITUALSHAADI_APP'])
+    || str_contains($ua, 'SpiritualShaadiApp')
+    || str_contains($xrw, 'com.spiritualshaadi')
+    || str_contains($xrw, 'spiritualshaadi')
+    || (str_contains($ua, 'Android') && str_contains($ua, 'Version/') && str_contains($ua, 'Chrome/'))
+    || (str_contains($ua, 'Android') && str_contains($ua, '; wv'));
+
+if ($isNativeApp) {
+    return; // Completely suppress banner on server side for Android app
+}
+
 $playStoreUrl = 'https://play.google.com/store/apps/details?id=com.spiritualshaadi&pcampaignid=web_share';
 ?>
 <div id="ss-app-banner" class="ss-app-banner" style="display:none;" role="banner" aria-label="SpiritualShaadi Android App">
@@ -194,13 +208,19 @@ $playStoreUrl = 'https://play.google.com/store/apps/details?id=com.spiritualshaa
         var banner = document.getElementById('ss-app-banner');
         if (!banner) return;
 
-        // 1. Check if inside Native Android App
+        // 1. Comprehensive Native App / WebView Detection
         var isNativeApp = false;
         if (window.SpiritualShaadiNative || window.isSpiritualShaadiApp) {
             isNativeApp = true;
         }
+        if (document.cookie && document.cookie.indexOf('is_native_app=1') !== -1) {
+            isNativeApp = true;
+        }
         var ua = (navigator.userAgent || navigator.vendor || window.opera || '').toLowerCase();
-        if (ua.indexOf('spiritualshaadiapp') !== -1 || (ua.indexOf('wv') !== -1 && ua.indexOf('android') !== -1)) {
+        if (ua.indexOf('spiritualshaadiapp') !== -1 ||
+            ua.indexOf('com.spiritualshaadi') !== -1 ||
+            (ua.indexOf('android') !== -1 && ua.indexOf('wv') !== -1) ||
+            (ua.indexOf('android') !== -1 && ua.indexOf('version/') !== -1 && ua.indexOf('chrome/') !== -1)) {
             isNativeApp = true;
         }
         if (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) {
@@ -222,7 +242,7 @@ $playStoreUrl = 'https://play.google.com/store/apps/details?id=com.spiritualshaa
             }
         }
 
-        // Show banner
+        // Show banner only to non-app web visitors
         banner.style.display = 'block';
 
         // 3. Handle Close Click
