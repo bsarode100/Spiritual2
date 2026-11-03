@@ -817,15 +817,27 @@ $r->get('/register', function () {
 });
 
 $r->post('/register', function () {
-    // Bot honeypot and speed check
+    // 1. Bot Honeypot and speed check
     if (is_bot_submission()) {
         flash('error', 'Automated submission detected. Please submit the form normally.');
         redirect('/register');
     }
 
-    // IP rate limit: max 5 registration attempts per IP per 15 minutes
+    // 2. Cryptographic Human Interaction Check (stops headless curl/python scripts)
+    if (!verify_human_token()) {
+        flash('error', 'Security verification failed. Please submit the form directly from your browser.');
+        redirect('/register');
+    }
+
+    // 3. IP Rate Limit: max 5 registration attempts per IP per 15 minutes
     if (!check_ip_rate_limit('register', 5, 15)) {
         flash('error', 'Too many registration attempts from this network. Please wait 15 minutes before trying again.');
+        redirect('/register');
+    }
+
+    // 4. Global Circuit Breaker: prevents bot floods from exhausting daily SMTP quota
+    if (!check_global_signup_rate_limit(30)) {
+        flash('error', 'High registration traffic detected. For security, please wait a few minutes before trying again or contact support.');
         redirect('/register');
     }
 
@@ -842,6 +854,29 @@ $r->post('/register', function () {
         flash('error', 'Please fill all fields. Password must be at least 6 characters.');
         redirect('/register');
     }
+
+    // 5. Disposable/Temporary Email Filter
+    if (is_disposable_email($email)) {
+        flash('error', 'Temporary or disposable email addresses are not permitted. Please use a personal email like Gmail, Yahoo, or Outlook.');
+        redirect('/register');
+    }
+
+    // 6. Strict Indian Mobile Number Validation (6-9 followed by 9 digits)
+    $phoneDigits = preg_replace('/\D/', '', $phone);
+    if (!preg_match('/^[6-9]\d{9}$/', $phoneDigits)) {
+        flash('error', 'Please enter a valid 10-digit Indian mobile number.');
+        redirect('/register');
+    }
+    // Block obvious dummy repetitions (e.g. 9999999999, 1234567890)
+    if (preg_match('/^(\d)\1{9}$/', $phoneDigits) || in_array($phoneDigits, ['9876543210', '9898989898', '9000000000', '9123456789', '9988776655'])) {
+        flash('error', 'Please enter a valid personal mobile number.');
+        redirect('/register');
+    }
+    if (DB::val('SELECT 1 FROM users WHERE phone = ?', [$phoneDigits])) {
+        flash('error', 'An account with this mobile number already exists. Please sign in.');
+        redirect('/register');
+    }
+
     // Legal consent — client-side checkbox can be bypassed, so re-check here.
     if (empty($_POST['agree'])) {
         flash('error', 'Please accept the Terms, Privacy Policy, Refund Policy and Cookie Policy to continue.');
@@ -855,7 +890,7 @@ $r->post('/register', function () {
         'created_for'   => $created_for,
         'name'          => $name,
         'email'         => $email,
-        'phone'         => $phone,
+        'phone'         => $phoneDigits,
         'password_hash' => password_hash($pass, PASSWORD_BCRYPT),
         'gender'        => $gender,
         'dob'           => $dob,
@@ -1196,7 +1231,13 @@ $r->post('/forgot-password', function () {
         redirect('/forgot-password');
     }
 
-    // 2. IP Rate Limit: max 5 forgot-password attempts per IP per 15 minutes
+    // 2. Cryptographic Human Interaction Check
+    if (!verify_human_token()) {
+        flash('error', 'Security verification failed. Please submit the form directly from your browser.');
+        redirect('/forgot-password');
+    }
+
+    // 3. IP Rate Limit: max 5 forgot-password attempts per IP per 15 minutes
     if (!check_ip_rate_limit('forgot_password', 5, 15)) {
         flash('error', 'Too many password reset requests from your network. Please wait 15 minutes before trying again.');
         redirect('/forgot-password');
@@ -1209,7 +1250,7 @@ $r->post('/forgot-password', function () {
         redirect('/forgot-password');
     }
 
-    // 3. User Existence Verification (Pre-check registered accounts):
+    // 4. User Existence Verification (Pre-check registered accounts):
     // If not registered with SpiritualShaadi, reject immediately without issuing or sending any OTP!
     $u = DB::one('SELECT id, name, email FROM users WHERE email = ? AND status != "blocked"', [$email]);
     if (!$u) {

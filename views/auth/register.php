@@ -12,10 +12,11 @@
 
 <form method="post" action="/register" id="registerForm">
     <?= csrf_field() ?>
-    <!-- Bot Protection Honeypot -->
+    <!-- Bot Protection Honeypot & Cryptographic Human Token -->
     <div style="display:none !important; visibility:hidden; height:0; width:0; overflow:hidden;" aria-hidden="true">
         <input type="text" name="b_hp_email" tabindex="-1" autocomplete="off" value="">
         <input type="hidden" name="form_loaded_at" value="<?= time() ?>">
+        <input type="hidden" name="human_token" id="reg-human-token" value="">
     </div>
 
     <!-- Profile Created For (Interactive Pills) -->
@@ -105,3 +106,32 @@
 <div class="small-link text-center mt-3" style="font-size: .92rem; color: var(--c-muted);">
     Already registered? <a href="/login" style="font-weight: 600; color: var(--c-rose);">Sign in</a>
 </div>
+
+<script>
+(function() {
+    var tokenField = document.getElementById('reg-human-token');
+    var token = '<?= human_token_hash() ?>';
+    var userActive = false;
+
+    function activateHuman() {
+        if (!userActive) {
+            userActive = true;
+            if (tokenField) tokenField.value = token;
+        }
+    }
+
+    // Trigger token on genuine user interaction
+    ['mousemove', 'touchstart', 'scroll', 'keydown', 'input', 'click'].forEach(function(ev) {
+        window.addEventListener(ev, activateHuman, { once: true, passive: true });
+    });
+
+    var form = document.getElementById('registerForm');
+    if (form) {
+        form.addEventListener('submit', function() {
+            if (tokenField && !tokenField.value) {
+                activateHuman();
+            }
+        });
+    }
+})();
+</script>

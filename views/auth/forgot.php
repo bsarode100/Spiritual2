@@ -13,12 +13,13 @@ $hourlyBlocked = max(0, (int)($hourlyWaitMins ?? 0));
     </div>
 <?php endif; ?>
 
-<form method="post" action="/forgot-password" onsubmit="var b=this.querySelector('button[type=submit]'); if(b){b.disabled=true; b.textContent='Sending code...';}">
+<form method="post" action="/forgot-password" id="forgotForm" onsubmit="var b=this.querySelector('button[type=submit]'); if(b){b.disabled=true; b.textContent='Sending code...';}">
     <?= csrf_field() ?>
-    <!-- Bot Protection Honeypot -->
+    <!-- Bot Protection Honeypot & Human Verification -->
     <div style="display:none !important; visibility:hidden; height:0; width:0; overflow:hidden;" aria-hidden="true">
         <input type="text" name="b_hp_email" tabindex="-1" autocomplete="off" value="">
         <input type="hidden" name="form_loaded_at" value="<?= time() ?>">
+        <input type="hidden" name="human_token" id="forgot-human-token" value="">
     </div>
     <div class="field">
         <label>Email address</label>
@@ -41,3 +42,31 @@ $hourlyBlocked = max(0, (int)($hourlyWaitMins ?? 0));
 <div class="small-link" style="color: var(--c-muted);">
     Didn't get an email? <a href="/contact">Contact support</a> and we'll help you in.
 </div>
+
+<script>
+(function() {
+    var tokenField = document.getElementById('forgot-human-token');
+    var token = '<?= human_token_hash() ?>';
+    var userActive = false;
+
+    function activateHuman() {
+        if (!userActive) {
+            userActive = true;
+            if (tokenField) tokenField.value = token;
+        }
+    }
+
+    ['mousemove', 'touchstart', 'scroll', 'keydown', 'input', 'click'].forEach(function(ev) {
+        window.addEventListener(ev, activateHuman, { once: true, passive: true });
+    });
+
+    var form = document.getElementById('forgotForm');
+    if (form) {
+        form.addEventListener('submit', function() {
+            if (tokenField && !tokenField.value) {
+                activateHuman();
+            }
+        });
+    }
+})();
+</script>

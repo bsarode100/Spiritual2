@@ -162,7 +162,7 @@ function is_bot_submission(): bool {
     if (!empty($_POST['b_hp_email'])) {
         return true;
     }
-    // 2. Minimum submission delay (humans take > 1.2s to fill and submit)
+    // 2. Minimum submission delay (humans take > 1s to fill and submit)
     if (!empty($_POST['form_loaded_at'])) {
         $loadedAt = (int)$_POST['form_loaded_at'];
         if ($loadedAt > 0 && (time() - $loadedAt) < 1) {
@@ -170,6 +170,62 @@ function is_bot_submission(): bool {
         }
     }
     return false;
+}
+
+/**
+ * Generates/retrieves the session-bound human verification hash.
+ */
+function human_token_hash(): string {
+    if (empty($_SESSION['human_seed'])) {
+        $_SESSION['human_seed'] = bin2hex(random_bytes(16));
+    }
+    return hash('sha256', $_SESSION['human_seed'] . ':spiritual_shaadi_human_verified');
+}
+
+/**
+ * Validates the dynamic cryptographic human verification token.
+ * Automated headless scripts and HTTP POST bots that don't execute JS will fail this check.
+ */
+function verify_human_token(): bool {
+    $seed = $_SESSION['human_seed'] ?? '';
+    if (empty($seed)) return false;
+    $token = trim($_POST['human_token'] ?? '');
+    if (empty($token)) return false;
+    $expected = hash('sha256', $seed . ':spiritual_shaadi_human_verified');
+    return hash_equals($expected, $token);
+}
+
+/**
+ * Checks if an email belongs to a disposable/temporary throwaway inbox service.
+ */
+function is_disposable_email(string $email): bool {
+    $parts = explode('@', strtolower($email));
+    if (count($parts) < 2) return true;
+    $domain = trim($parts[1]);
+    $disposableDomains = [
+        'mailinator.com', 'guerrillamail.com', '10minutemail.com', 'tempmail.com',
+        'temp-mail.org', 'yopmail.com', 'trashmail.com', 'dispostable.com',
+        'sharklasers.com', 'guerrillamail.net', 'guerrillamail.org', 'fakeinbox.com',
+        'getairmail.com', 'throwawaymail.com', 'generator.email', 'tempmail.net',
+        'mohmal.com', 'mytemp.email', 'crazymailing.com', 'emailondeck.com',
+        'trashmail.net', 'trashmail.me', 'temp-mail.io', 'inboxkitten.com'
+    ];
+    return in_array($domain, $disposableDomains, true);
+}
+
+/**
+ * Global circuit breaker to prevent high-volume bot surges from exhausting SMTP quota.
+ * Caps signup verification emails across the whole site at $maxPerHour.
+ */
+function check_global_signup_rate_limit(int $maxPerHour = 30): bool {
+    try {
+        $recent = (int) DB::val(
+            'SELECT COUNT(*) FROM `signup_otps` WHERE `created_at` > DATE_SUB(NOW(), INTERVAL 1 HOUR)'
+        );
+        return $recent < $maxPerHour;
+    } catch (\Throwable $e) {
+        return true;
+    }
 }
 
 function setting(string $key, ?string $default = null): ?string {
