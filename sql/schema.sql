@@ -283,6 +283,17 @@ CREATE TABLE `signup_otps` (
   KEY `signup_otps_active_idx` (`email`, `used_at`, `expires_at`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- ---------- AUTH RATE LIMITS (Bot & Spam Protection) ----------
+DROP TABLE IF EXISTS `auth_rate_limits`;
+CREATE TABLE `auth_rate_limits` (
+  `id`         BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `ip`         VARCHAR(45) NOT NULL,
+  `action`     VARCHAR(30) NOT NULL,
+  `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `auth_rate_limits_idx` (`ip`, `action`, `created_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 -- ---------- PAYMENTS (Razorpay) ----------
 DROP TABLE IF EXISTS `payments`;
 CREATE TABLE `payments` (

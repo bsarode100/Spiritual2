@@ -817,6 +817,18 @@ $r->get('/register', function () {
 });
 
 $r->post('/register', function () {
+    // Bot honeypot and speed check
+    if (is_bot_submission()) {
+        flash('error', 'Automated submission detected. Please submit the form normally.');
+        redirect('/register');
+    }
+
+    // IP rate limit: max 5 registration attempts per IP per 15 minutes
+    if (!check_ip_rate_limit('register', 5, 15)) {
+        flash('error', 'Too many registration attempts from this network. Please wait 15 minutes before trying again.');
+        redirect('/register');
+    }
+
     $created_for = trim($_POST['created_for'] ?? 'self');
     $name   = trim($_POST['name'] ?? '');
     $email  = trim($_POST['email'] ?? '');
@@ -1071,6 +1083,13 @@ $r->post('/onboarding', function () {
 
 $r->post('/resend-signup-otp', function () {
     if (empty($_SESSION['pending_signup']['email'])) redirect('/register');
+
+    // IP rate limit on resending signup OTP
+    if (!check_ip_rate_limit('resend_signup_otp', 5, 15)) {
+        flash('error', 'Too many OTP requests from this network. Please wait 15 minutes.');
+        redirect('/verify-signup-otp');
+    }
+
     $email = $_SESSION['pending_signup']['email'];
     $last = $_SESSION['signup_otp_last_sent'] ?? 0;
     $elapsed = time() - (int)$last;
@@ -1171,69 +1190,93 @@ $r->get('/forgot-password', function () {
 });
 
 $r->post('/forgot-password', function () {
-    $email = trim($_POST['email'] ?? '');
-    $generic = 'If an account exists for that email, we have sent a 6-digit code. Please check your inbox (and spam folder).';
-
-    if (filter_var($email, FILTER_VALIDATE_EMAIL)) {
-        // Enforce 60-second waiting period if an OTP was recently sent in this session
-        $last = $_SESSION['otp_last_sent'] ?? 0;
-        $elapsed = time() - (int)$last;
-        if (!empty($_SESSION['otp_email']) && strtolower($_SESSION['otp_email']) === strtolower($email) && $elapsed < 60) {
-            $wait = 60 - $elapsed;
-            flash('error', "Please wait {$wait} seconds before requesting another code.");
-            redirect('/verify-otp');
-        }
-
-        $u = DB::one('SELECT id, name, email FROM users WHERE email = ? AND status != "blocked"', [$email]);
-        if ($u) {
-            // Check 60-minute rate limit (max 5 requests per hour)
-            $hourlyCount = (int) DB::val(
-                'SELECT COUNT(*) FROM password_resets 
-                 WHERE user_id = ? AND created_at > DATE_SUB(NOW(), INTERVAL 1 HOUR)',
-                [$u['id']]
-            );
-            if ($hourlyCount >= 5) {
-                $oldestInHour = DB::one(
-                    'SELECT TIMESTAMPDIFF(MINUTE, NOW(), DATE_ADD(created_at, INTERVAL 1 HOUR)) AS mins_left
-                     FROM password_resets 
-                     WHERE user_id = ? AND created_at > DATE_SUB(NOW(), INTERVAL 1 HOUR)
-                     ORDER BY id ASC LIMIT 1',
-                    [$u['id']]
-                );
-                $waitMins = max(1, (int)($oldestInHour['mins_left'] ?? 60));
-                $_SESSION['otp_email'] = $email;
-                flash('error', "Too many OTP requests. For security, please wait {$waitMins} minute" . ($waitMins > 1 ? 's' : '') . " before requesting another code, or contact support.");
-                redirect('/verify-otp');
-            }
-
-            // DB-level rate limiting (60 seconds) to prevent spamming across multiple sessions/browsers
-            $lastReset = DB::one(
-                'SELECT TIMESTAMPDIFF(SECOND, created_at, NOW()) AS sec_ago 
-                 FROM password_resets 
-                 WHERE user_id = ? 
-                 ORDER BY id DESC LIMIT 1',
-                [$u['id']]
-            );
-            if ($lastReset && $lastReset['sec_ago'] !== null && (int)$lastReset['sec_ago'] < 60) {
-                $_SESSION['otp_email'] = $email;
-                $_SESSION['otp_last_sent'] = time() - (int)$lastReset['sec_ago'];
-                $wait = 60 - (int)$lastReset['sec_ago'];
-                flash('error', "Please wait {$wait} seconds before requesting another code.");
-                redirect('/verify-otp');
-            }
-
-            if (!issue_password_otp($u)) {
-                $mailErr = !empty($GLOBALS['last_mail_error']) ? ': ' . $GLOBALS['last_mail_error'] : '.';
-                flash('error', 'Could not send the verification email' . $mailErr . ' Please check SMTP settings or contact support.');
-                redirect('/forgot-password');
-            }
-        }
+    // 1. Bot Honeypot & Timing Check
+    if (is_bot_submission()) {
+        flash('error', 'Automated request detected. Please submit the form normally.');
+        redirect('/forgot-password');
     }
-    // Carry the email into the verify step regardless, so the response is identical
-    // whether the email exists or not — avoids leaking which emails are registered.
+
+    // 2. IP Rate Limit: max 5 forgot-password attempts per IP per 15 minutes
+    if (!check_ip_rate_limit('forgot_password', 5, 15)) {
+        flash('error', 'Too many password reset requests from your network. Please wait 15 minutes before trying again.');
+        redirect('/forgot-password');
+    }
+
+    $email = trim($_POST['email'] ?? '');
+
+    if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        flash('error', 'Please enter a valid email address.');
+        redirect('/forgot-password');
+    }
+
+    // 3. User Existence Verification (Pre-check registered accounts):
+    // If not registered with SpiritualShaadi, reject immediately without issuing or sending any OTP!
+    $u = DB::one('SELECT id, name, email FROM users WHERE email = ? AND status != "blocked"', [$email]);
+    if (!$u) {
+        $blocked = DB::one('SELECT id FROM users WHERE email = ? AND status = "blocked"', [$email]);
+        if ($blocked) {
+            flash('error', 'Your account is blocked. Please contact customer support.');
+        } else {
+            flash('error', 'This email address is not registered with SpiritualShaadi. Please check your spelling or register for an account.');
+        }
+        redirect('/forgot-password');
+    }
+
+    // 4. Session-level 60-second cooldown check
+    $last = $_SESSION['otp_last_sent'] ?? 0;
+    $elapsed = time() - (int)$last;
+    if (!empty($_SESSION['otp_email']) && strtolower($_SESSION['otp_email']) === strtolower($email) && $elapsed < 60) {
+        $wait = 60 - $elapsed;
+        flash('error', "Please wait {$wait} seconds before requesting another code.");
+        redirect('/verify-otp');
+    }
+
+    // 5. Hourly limit (max 5 requests per hour per user)
+    $hourlyCount = (int) DB::val(
+        'SELECT COUNT(*) FROM password_resets 
+         WHERE user_id = ? AND created_at > DATE_SUB(NOW(), INTERVAL 1 HOUR)',
+        [$u['id']]
+    );
+    if ($hourlyCount >= 5) {
+        $oldestInHour = DB::one(
+            'SELECT TIMESTAMPDIFF(MINUTE, NOW(), DATE_ADD(created_at, INTERVAL 1 HOUR)) AS mins_left
+             FROM password_resets 
+             WHERE user_id = ? AND created_at > DATE_SUB(NOW(), INTERVAL 1 HOUR)
+             ORDER BY id ASC LIMIT 1',
+            [$u['id']]
+        );
+        $waitMins = max(1, (int)($oldestInHour['mins_left'] ?? 60));
+        $_SESSION['otp_email'] = $email;
+        flash('error', "Too many OTP requests. For security, please wait {$waitMins} minute" . ($waitMins > 1 ? 's' : '') . " before requesting another code, or contact support.");
+        redirect('/verify-otp');
+    }
+
+    // 6. DB-level 60-second cooldown check across browsers/sessions
+    $lastReset = DB::one(
+        'SELECT TIMESTAMPDIFF(SECOND, created_at, NOW()) AS sec_ago 
+         FROM password_resets 
+         WHERE user_id = ? 
+         ORDER BY id DESC LIMIT 1',
+        [$u['id']]
+    );
+    if ($lastReset && $lastReset['sec_ago'] !== null && (int)$lastReset['sec_ago'] < 60) {
+        $_SESSION['otp_email'] = $email;
+        $_SESSION['otp_last_sent'] = time() - (int)$lastReset['sec_ago'];
+        $wait = 60 - (int)$lastReset['sec_ago'];
+        flash('error', "Please wait {$wait} seconds before requesting another code.");
+        redirect('/verify-otp');
+    }
+
+    // 7. Issue and send OTP email only for verified registered users
+    if (!issue_password_otp($u)) {
+        $mailErr = !empty($GLOBALS['last_mail_error']) ? ': ' . $GLOBALS['last_mail_error'] : '.';
+        flash('error', 'Could not send the verification email' . $mailErr . ' Please check SMTP settings or contact support.');
+        redirect('/forgot-password');
+    }
+
     $_SESSION['otp_email'] = $email;
     $_SESSION['otp_last_sent'] = time();
-    flash('success', $generic);
+    flash('success', 'A 6-digit verification code has been sent to ' . e($email) . '. Please check your inbox (and spam folder).');
     redirect('/verify-otp');
 });
 
@@ -1326,6 +1369,13 @@ $r->post('/verify-otp', function () {
 
 $r->post('/resend-otp', function () {
     if (empty($_SESSION['otp_email'])) redirect('/forgot-password');
+
+    // IP rate limit: max 5 resend attempts per IP per 15 minutes
+    if (!check_ip_rate_limit('resend_otp', 5, 15)) {
+        flash('error', 'Too many requests from this network. Please wait 15 minutes.');
+        redirect('/verify-otp');
+    }
+
     $email = $_SESSION['otp_email'];
     $last = $_SESSION['otp_last_sent'] ?? 0;
     $elapsed = time() - (int)$last;
@@ -1335,47 +1385,52 @@ $r->post('/resend-otp', function () {
         redirect('/verify-otp');
     }
     $u = DB::one('SELECT id, name, email FROM users WHERE email = ? AND status != "blocked"', [$email]);
-    if ($u) {
-        // Check 60-minute rate limit (max 5 OTP requests per hour)
-        $hourlyCount = (int) DB::val(
-            'SELECT COUNT(*) FROM password_resets 
-             WHERE user_id = ? AND created_at > DATE_SUB(NOW(), INTERVAL 1 HOUR)',
-            [$u['id']]
-        );
-        if ($hourlyCount >= 5) {
-            $oldestInHour = DB::one(
-                'SELECT TIMESTAMPDIFF(MINUTE, NOW(), DATE_ADD(created_at, INTERVAL 1 HOUR)) AS mins_left
-                 FROM password_resets 
-                 WHERE user_id = ? AND created_at > DATE_SUB(NOW(), INTERVAL 1 HOUR)
-                 ORDER BY id ASC LIMIT 1',
-                [$u['id']]
-            );
-            $waitMins = max(1, (int)($oldestInHour['mins_left'] ?? 60));
-            flash('error', "Too many OTP requests. For security, please wait {$waitMins} minute" . ($waitMins > 1 ? 's' : '') . " before requesting another code, or contact support.");
-            redirect('/verify-otp');
-        }
-
-        // DB-level 60-second cooldown check
-        $lastReset = DB::one(
-            'SELECT TIMESTAMPDIFF(SECOND, created_at, NOW()) AS sec_ago 
-             FROM password_resets 
-             WHERE user_id = ? 
-             ORDER BY id DESC LIMIT 1',
-            [$u['id']]
-        );
-        if ($lastReset && $lastReset['sec_ago'] !== null && (int)$lastReset['sec_ago'] < 60) {
-            $wait = 60 - (int)$lastReset['sec_ago'];
-            flash('error', "Please wait {$wait} seconds before requesting another code.");
-            redirect('/verify-otp');
-        }
-
-        if (!issue_password_otp($u)) {
-            flash('error', 'Could not send the verification email. Please check SMTP settings or contact support.');
-            redirect('/verify-otp');
-        }
+    if (!$u) {
+        unset($_SESSION['otp_email'], $_SESSION['otp_last_sent']);
+        flash('error', 'This email address is not registered with us.');
+        redirect('/forgot-password');
     }
+
+    // Check 60-minute rate limit (max 5 OTP requests per hour)
+    $hourlyCount = (int) DB::val(
+        'SELECT COUNT(*) FROM password_resets 
+         WHERE user_id = ? AND created_at > DATE_SUB(NOW(), INTERVAL 1 HOUR)',
+        [$u['id']]
+    );
+    if ($hourlyCount >= 5) {
+        $oldestInHour = DB::one(
+            'SELECT TIMESTAMPDIFF(MINUTE, NOW(), DATE_ADD(created_at, INTERVAL 1 HOUR)) AS mins_left
+             FROM password_resets 
+             WHERE user_id = ? AND created_at > DATE_SUB(NOW(), INTERVAL 1 HOUR)
+             ORDER BY id ASC LIMIT 1',
+            [$u['id']]
+        );
+        $waitMins = max(1, (int)($oldestInHour['mins_left'] ?? 60));
+        flash('error', "Too many OTP requests. For security, please wait {$waitMins} minute" . ($waitMins > 1 ? 's' : '') . " before requesting another code, or contact support.");
+        redirect('/verify-otp');
+    }
+
+    // DB-level 60-second cooldown check
+    $lastReset = DB::one(
+        'SELECT TIMESTAMPDIFF(SECOND, created_at, NOW()) AS sec_ago 
+         FROM password_resets 
+         WHERE user_id = ? 
+         ORDER BY id DESC LIMIT 1',
+        [$u['id']]
+    );
+    if ($lastReset && $lastReset['sec_ago'] !== null && (int)$lastReset['sec_ago'] < 60) {
+        $wait = 60 - (int)$lastReset['sec_ago'];
+        flash('error', "Please wait {$wait} seconds before requesting another code.");
+        redirect('/verify-otp');
+    }
+
+    if (!issue_password_otp($u)) {
+        flash('error', 'Could not send the verification email. Please check SMTP settings or contact support.');
+        redirect('/verify-otp');
+    }
+
     $_SESSION['otp_last_sent'] = time();
-    flash('success', 'If your email is registered, a fresh code has been sent.');
+    flash('success', 'A fresh 6-digit code has been sent to ' . e($email) . '.');
     redirect('/verify-otp');
 });
 
@@ -1449,7 +1504,7 @@ function issue_password_otp(array $user): bool {
         'user_id'      => $user['id'],
         'otp_hash'     => $hash,
         'expires_at'   => date('Y-m-d H:i:s', strtotime('+10 minutes')),
-        'requested_ip' => $_SERVER['REMOTE_ADDR'] ?? null,
+        'requested_ip' => client_ip(),
     ]);
     return send_password_reset_email($user, $otp);
 }
@@ -1465,7 +1520,7 @@ function issue_signup_otp(array $pending): bool {
         'email'        => $pending['email'],
         'otp_hash'     => hash('sha256', $otp),
         'expires_at'   => date('Y-m-d H:i:s', strtotime('+10 minutes')),
-        'requested_ip' => $_SERVER['REMOTE_ADDR'] ?? null,
+        'requested_ip' => client_ip(),
     ]);
     return send_signup_otp_email($pending, $otp);
 }

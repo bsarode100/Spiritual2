@@ -12,6 +12,11 @@
 
 <form method="post" action="/register" id="registerForm">
     <?= csrf_field() ?>
+    <!-- Bot Protection Honeypot -->
+    <div style="display:none !important; visibility:hidden; height:0; width:0; overflow:hidden;" aria-hidden="true">
+        <input type="text" name="b_hp_email" tabindex="-1" autocomplete="off" value="">
+        <input type="hidden" name="form_loaded_at" value="<?= time() ?>">
+    </div>
 
     <!-- Profile Created For (Interactive Pills) -->
     <div class="field mb-4">

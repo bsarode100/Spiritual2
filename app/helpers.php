@@ -79,6 +79,99 @@ function csrf_check(): void {
     }
 }
 
+/**
+ * Resolves the true client IP address, handling Cloudflare,
+ * Docker networks, and reverse proxies (Traefik, Nginx, Caddy).
+ */
+function client_ip(): string {
+    if (!empty($_SERVER['HTTP_CF_CONNECTING_IP'])) {
+        $ip = trim($_SERVER['HTTP_CF_CONNECTING_IP']);
+        if (filter_var($ip, FILTER_VALIDATE_IP)) return $ip;
+    }
+    if (!empty($_SERVER['HTTP_X_FORWARDED_FOR'])) {
+        $ips = explode(',', $_SERVER['HTTP_X_FORWARDED_FOR']);
+        $ip = trim($ips[0]);
+        if (filter_var($ip, FILTER_VALIDATE_IP)) return $ip;
+    }
+    if (!empty($_SERVER['HTTP_X_REAL_IP'])) {
+        $ip = trim($_SERVER['HTTP_X_REAL_IP']);
+        if (filter_var($ip, FILTER_VALIDATE_IP)) return $ip;
+    }
+    return $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0';
+}
+
+/**
+ * Ensures the auth_rate_limits table exists in the database.
+ */
+function ensure_auth_rate_limits_table(): void {
+    static $checked = false;
+    if ($checked) return;
+    try {
+        DB::q("CREATE TABLE IF NOT EXISTS `auth_rate_limits` (
+            `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+            `ip` VARCHAR(45) NOT NULL,
+            `action` VARCHAR(30) NOT NULL,
+            `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY (`id`),
+            KEY `auth_rate_limits_idx` (`ip`, `action`, `created_at`)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+        $checked = true;
+    } catch (\Throwable $e) {
+        // Fail silently if table already exists or DB read-only
+    }
+}
+
+/**
+ * Rate limits sensitive auth actions by IP address across sessions.
+ * Returns true if allowed, false if limit exceeded.
+ */
+function check_ip_rate_limit(string $action, int $maxAttempts = 5, int $windowMinutes = 15): bool {
+    $ip = client_ip();
+    ensure_auth_rate_limits_table();
+    try {
+        // 2% chance of self-pruning old rate limit records (older than 2 hours)
+        if (random_int(1, 50) === 1) {
+            DB::q('DELETE FROM `auth_rate_limits` WHERE `created_at` < DATE_SUB(NOW(), INTERVAL 2 HOUR)');
+        }
+
+        $count = (int) DB::val(
+            'SELECT COUNT(*) FROM `auth_rate_limits` WHERE `ip` = ? AND `action` = ? AND `created_at` > DATE_SUB(NOW(), INTERVAL ? MINUTE)',
+            [$ip, $action, $windowMinutes]
+        );
+
+        if ($count >= $maxAttempts) {
+            return false;
+        }
+
+        DB::insert('auth_rate_limits', [
+            'ip'         => $ip,
+            'action'     => $action,
+            'created_at' => date('Y-m-d H:i:s'),
+        ]);
+        return true;
+    } catch (\Throwable $e) {
+        return true; // Fail open if error
+    }
+}
+
+/**
+ * Detects automated bots submitting forms via invisible honeypot or impossibly fast submission.
+ */
+function is_bot_submission(): bool {
+    // 1. Invisible honeypot field must remain empty
+    if (!empty($_POST['b_hp_email'])) {
+        return true;
+    }
+    // 2. Minimum submission delay (humans take > 1.2s to fill and submit)
+    if (!empty($_POST['form_loaded_at'])) {
+        $loadedAt = (int)$_POST['form_loaded_at'];
+        if ($loadedAt > 0 && (time() - $loadedAt) < 1) {
+            return true;
+        }
+    }
+    return false;
+}
+
 function setting(string $key, ?string $default = null): ?string {
     static $cache = null;
     if ($cache === null) {
