@@ -73,6 +73,7 @@ $statusPill = fn(string $s) => match ($s) {
                 <?php if (!$subs): ?>
                     <p style="color: var(--c-muted);">You have no membership records yet. <a href="/packages">Choose a plan →</a></p>
                 <?php else: ?>
+                <div style="overflow-x: auto; -webkit-overflow-scrolling: touch; width: 100%;">
                 <table class="tbl">
                     <thead>
                         <tr>
@@ -97,6 +98,7 @@ $statusPill = fn(string $s) => match ($s) {
                     <?php endforeach; ?>
                     </tbody>
                 </table>
+                </div>
                 <?php endif; ?>
             </div>
 
@@ -105,6 +107,7 @@ $statusPill = fn(string $s) => match ($s) {
                 <?php if (!$payments): ?>
                     <p style="color: var(--c-muted);">No payment records yet.</p>
                 <?php else: ?>
+                <div style="overflow-x: auto; -webkit-overflow-scrolling: touch; width: 100%;">
                 <table class="tbl">
                     <thead>
                         <tr>
@@ -145,6 +148,7 @@ $statusPill = fn(string $s) => match ($s) {
                     <?php endforeach; ?>
                     </tbody>
                 </table>
+                </div>
                 <?php endif; ?>
             </div>
         </div>

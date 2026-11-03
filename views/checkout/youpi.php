@@ -55,12 +55,16 @@ $alreadySubmittedUtr = !empty($payment['gateway_payment_id']) ? $payment['gatewa
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=5.0, interactive-widget=resizes-content">
+<meta name="theme-color" content="#FAF7F2">
 <title>Pay ₹<?= e(number_format((float)$pkg['price'], 0)) ?> — <?= e($cleanPayee) ?></title>
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
-body {
-    background: #f1f5f9;
+html, body {
+    width: 100%;
+    max-width: 100%;
+    overflow-x: hidden;
+    background: #FAF7F2;
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
     color: #0f172a;
     -webkit-tap-highlight-color: transparent;

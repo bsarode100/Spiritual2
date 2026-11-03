@@ -86,16 +86,19 @@ public class MainActivity extends AppCompatActivity {
 
         // Dynamically adjust top status bar spacer height based on device status bar & cutout insets
         ViewCompat.setOnApplyWindowInsetsListener(rootLayout, (v, windowInsets) -> {
-            Insets statusBars = windowInsets.getInsets(
-                    WindowInsetsCompat.Type.statusBars() | WindowInsetsCompat.Type.displayCutout()
+            Insets systemBars = windowInsets.getInsets(
+                    WindowInsetsCompat.Type.systemBars() | WindowInsetsCompat.Type.displayCutout()
             );
 
             if (statusBarSpacer != null) {
                 ViewGroup.LayoutParams lp = statusBarSpacer.getLayoutParams();
-                lp.height = statusBars.top;
+                lp.height = systemBars.top;
                 statusBarSpacer.setLayoutParams(lp);
             }
 
+            if (rootLayout != null) {
+                rootLayout.setPadding(0, 0, 0, systemBars.bottom);
+            }
             return windowInsets;
         });
 
@@ -127,6 +130,9 @@ public class MainActivity extends AppCompatActivity {
         settings.setSupportZoom(false);
         settings.setBuiltInZoomControls(false);
         settings.setDisplayZoomControls(false);
+        settings.setTextZoom(100);
+        webView.setOverScrollMode(View.OVER_SCROLL_NEVER);
+        webView.setHorizontalScrollBarEnabled(false);
         settings.setAllowFileAccess(true);
         settings.setAllowContentAccess(true);
         settings.setMediaPlaybackRequiresUserGesture(false);

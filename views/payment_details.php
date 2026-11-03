@@ -4,7 +4,7 @@ $has_bank = $details['account_number'] !== '' || $details['ifsc'] !== '' || $det
 $has_help = $details['contact_phone'] !== '' || $details['contact_email'] !== '' || $details['instructions'] !== '';
 $anything = $has_upi || $has_bank || $has_help;
 ?>
-<section class="section-tight" style="padding: 5rem 0 3rem; background: linear-gradient(180deg, var(--c-cream-2), transparent);">
+<section class="section-tight" style="padding: clamp(2.5rem, 5vw, 4rem) 1rem 2rem; background: linear-gradient(180deg, var(--c-cream-2), transparent);">
     <div class="container text-center">
         <span class="eyebrow">Payments</span>
         <h1>Payment <em style="color: var(--c-saffron); font-family: var(--f-display);">Details</em></h1>

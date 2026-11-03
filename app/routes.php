@@ -339,7 +339,7 @@ $r->get('/checkout/pending', function () {
         redirect('/checkout/success?p=' . $pmt['id']);
         return;
     }
-    view('checkout/pending', ['payment' => $pmt, 'user' => Auth::user()]);
+    view('checkout/pending', ['payment' => $pmt, 'user' => Auth::user()], null);
 });
 
 // One entrypoint per purchase kind so notes/receipts stay honest.
