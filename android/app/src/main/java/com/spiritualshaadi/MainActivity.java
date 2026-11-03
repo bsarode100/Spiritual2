@@ -87,9 +87,10 @@ public class MainActivity extends AppCompatActivity {
 
         View rootLayout = findViewById(R.id.rootLayout);
         View statusBarSpacer = findViewById(R.id.statusBarSpacer);
+        View navigationBarSpacer = findViewById(R.id.navigationBarSpacer);
 
-        // Dynamic insets: top status bar spacer + soft keyboard (IME) responsive resize
-        setupWindowInsetsAndKeyboard(rootLayout, statusBarSpacer);
+        // Dynamic insets: status bar spacer + bottom navigation bar spacer + soft keyboard resize
+        setupWindowInsetsAndKeyboard(rootLayout, statusBarSpacer, navigationBarSpacer);
 
         webView = findViewById(R.id.webView);
         progressBar = findViewById(R.id.progressBar);
@@ -100,7 +101,7 @@ public class MainActivity extends AppCompatActivity {
         setupOfflineRetry();
 
         Map<String, String> extraHeaders = new HashMap<>();
-        extraHeaders.put("X-SpiritualShaadi-App", "1.0.5");
+        extraHeaders.put("X-SpiritualShaadi-App", "1.0.6");
 
         if (savedInstanceState == null) {
             webView.loadUrl(APP_URL, extraHeaders);
@@ -112,20 +113,24 @@ public class MainActivity extends AppCompatActivity {
     }
 
     /**
-     * Handles status bar height dynamically and ensures the WebView resizes smoothly
-     * when the soft keyboard (IME) appears, keeping inputs visible and eliminating
-     * awkward blank spaces below bottom navigation tabs.
+     * Handles status bar and system navigation bar heights dynamically and ensures
+     * the WebView resizes smoothly when the soft keyboard (IME) appears, keeping inputs visible
+     * and preventing system buttons (Back/Home/Recents) from covering bottom navigation tabs.
      */
-    private void setupWindowInsetsAndKeyboard(View rootLayout, View statusBarSpacer) {
+    private void setupWindowInsetsAndKeyboard(View rootLayout, View statusBarSpacer, View navigationBarSpacer) {
         if (rootLayout == null) return;
 
-        // 1. AndroidX WindowInsets listener for status bar cutout & soft keyboard (IME)
+        // 1. AndroidX WindowInsets listener for status bar cutout, system navigation bars & soft keyboard (IME)
         ViewCompat.setOnApplyWindowInsetsListener(rootLayout, (v, windowInsets) -> {
             Insets statusBars = windowInsets.getInsets(
                     WindowInsetsCompat.Type.statusBars() | WindowInsetsCompat.Type.displayCutout()
             );
+            Insets navBars = windowInsets.getInsets(
+                    WindowInsetsCompat.Type.navigationBars()
+            );
             Insets imeInsets = windowInsets.getInsets(WindowInsetsCompat.Type.ime());
 
+            // Top status bar spacer: matches exact device status bar / display cutout notch height
             if (statusBarSpacer != null) {
                 ViewGroup.LayoutParams lp = statusBarSpacer.getLayoutParams();
                 if (lp.height != statusBars.top) {
@@ -134,11 +139,30 @@ public class MainActivity extends AppCompatActivity {
                 }
             }
 
-            // Keyboard responsive adjustment:
-            // When soft keyboard (IME) opens, pad bottom to shrink WebView above the keyboard.
-            // When keyboard is closed, pad bottom to 0 for a seamless edge-to-edge full screen with no tab gaps.
-            int imeBottom = imeInsets.bottom;
-            applyBottomPadding(rootLayout, imeBottom);
+            // Keyboard & System Navigation Bar handling:
+            // When soft keyboard (IME) opens, collapse navigationBarSpacer and pad layout by keyboard height.
+            // When keyboard is closed, bottom padding is 0, and navigationBarSpacer matches navBars.bottom
+            // so the 3 system buttons (Back/Home/Recents) do not hide our bottom navigation tabs.
+            int imeHeight = imeInsets.bottom;
+            if (imeHeight > 0) {
+                if (navigationBarSpacer != null) {
+                    ViewGroup.LayoutParams lp = navigationBarSpacer.getLayoutParams();
+                    if (lp.height != 0) {
+                        lp.height = 0;
+                        navigationBarSpacer.setLayoutParams(lp);
+                    }
+                }
+                applyBottomPadding(rootLayout, imeHeight);
+            } else {
+                applyBottomPadding(rootLayout, 0);
+                if (navigationBarSpacer != null) {
+                    ViewGroup.LayoutParams lp = navigationBarSpacer.getLayoutParams();
+                    if (lp.height != navBars.bottom) {
+                        lp.height = navBars.bottom;
+                        navigationBarSpacer.setLayoutParams(lp);
+                    }
+                }
+            }
 
             return windowInsets;
         });
@@ -154,7 +178,6 @@ public class MainActivity extends AppCompatActivity {
                 int screenHeight = rootLayout.getRootView().getHeight();
                 int keypadHeight = screenHeight - r.bottom;
 
-                // Threshold of 15% screen height distinguishes the soft keyboard from transient UI bar shifts
                 int targetPadding = 0;
                 if (keypadHeight > screenHeight * 0.15) {
                     targetPadding = keypadHeight;
@@ -162,7 +185,18 @@ public class MainActivity extends AppCompatActivity {
 
                 if (targetPadding != lastReportedPadding) {
                     lastReportedPadding = targetPadding;
-                    applyBottomPadding(rootLayout, targetPadding);
+                    if (targetPadding > 0) {
+                        if (navigationBarSpacer != null) {
+                            ViewGroup.LayoutParams lp = navigationBarSpacer.getLayoutParams();
+                            if (lp.height != 0) {
+                                lp.height = 0;
+                                navigationBarSpacer.setLayoutParams(lp);
+                            }
+                        }
+                        applyBottomPadding(rootLayout, targetPadding);
+                    } else {
+                        applyBottomPadding(rootLayout, 0);
+                    }
                 }
             }
         });
@@ -198,7 +232,7 @@ public class MainActivity extends AppCompatActivity {
 
         // Identify native app in User-Agent so website can suppress app install prompts and optimize header padding
         String defaultUa = settings.getUserAgentString();
-        settings.setUserAgentString((defaultUa != null ? defaultUa : "") + " SpiritualShaadiApp/1.0.5");
+        settings.setUserAgentString((defaultUa != null ? defaultUa : "") + " SpiritualShaadiApp/1.0.6");
 
         webView.addJavascriptInterface(new Object() {
             @android.webkit.JavascriptInterface
