@@ -864,12 +864,33 @@ $r->post('/register', function () {
 $r->get('/verify-signup-otp', function () {
     if (Auth::check()) redirect('/dashboard');
     if (empty($_SESSION['pending_signup']['email'])) redirect('/register');
+    $email = $_SESSION['pending_signup']['email'];
     $last = $_SESSION['signup_otp_last_sent'] ?? 0;
     $cooldown = max(0, 60 - (time() - (int)$last));
+
+    // Check 60-minute limit (max 5 requests per hour)
+    $hourlyWaitMins = 0;
+    $hourlyCount = (int) DB::val(
+        'SELECT COUNT(*) FROM signup_otps 
+         WHERE email = ? AND created_at > DATE_SUB(NOW(), INTERVAL 1 HOUR)',
+        [$email]
+    );
+    if ($hourlyCount >= 5) {
+        $oldestSignup = DB::one(
+            'SELECT TIMESTAMPDIFF(MINUTE, NOW(), DATE_ADD(created_at, INTERVAL 1 HOUR)) AS mins_left
+             FROM signup_otps 
+             WHERE email = ? AND created_at > DATE_SUB(NOW(), INTERVAL 1 HOUR)
+             ORDER BY id ASC LIMIT 1',
+            [$email]
+        );
+        $hourlyWaitMins = max(1, (int)($oldestSignup['mins_left'] ?? 60));
+    }
+
     view('auth/verify_otp', [
-        'email'    => $_SESSION['pending_signup']['email'],
-        'mode'     => 'signup',
-        'cooldown' => $cooldown,
+        'email'          => $email,
+        'mode'           => 'signup',
+        'cooldown'       => $cooldown,
+        'hourlyWaitMins' => $hourlyWaitMins,
     ], 'auth');
 });
 
@@ -1050,6 +1071,7 @@ $r->post('/onboarding', function () {
 
 $r->post('/resend-signup-otp', function () {
     if (empty($_SESSION['pending_signup']['email'])) redirect('/register');
+    $email = $_SESSION['pending_signup']['email'];
     $last = $_SESSION['signup_otp_last_sent'] ?? 0;
     $elapsed = time() - (int)$last;
     if ($elapsed < 60) {
@@ -1057,17 +1079,37 @@ $r->post('/resend-signup-otp', function () {
         flash('error', "Please wait {$wait} seconds before requesting another code.");
         redirect('/verify-signup-otp');
     }
-    if (DB::val('SELECT 1 FROM users WHERE email = ?', [$_SESSION['pending_signup']['email']])) {
+    if (DB::val('SELECT 1 FROM users WHERE email = ?', [$email])) {
         clear_signup_otp_session();
         flash('error', 'An account with this email already exists. Please sign in.');
         redirect('/login');
     }
+
+    // Check 60-minute rate limit (max 5 OTP requests per hour)
+    $hourlyCount = (int) DB::val(
+        'SELECT COUNT(*) FROM signup_otps 
+         WHERE email = ? AND created_at > DATE_SUB(NOW(), INTERVAL 1 HOUR)',
+        [$email]
+    );
+    if ($hourlyCount >= 5) {
+        $oldestSignup = DB::one(
+            'SELECT TIMESTAMPDIFF(MINUTE, NOW(), DATE_ADD(created_at, INTERVAL 1 HOUR)) AS mins_left
+             FROM signup_otps 
+             WHERE email = ? AND created_at > DATE_SUB(NOW(), INTERVAL 1 HOUR)
+             ORDER BY id ASC LIMIT 1',
+            [$email]
+        );
+        $waitMins = max(1, (int)($oldestSignup['mins_left'] ?? 60));
+        flash('error', "Too many OTP requests. For security, please wait {$waitMins} minute" . ($waitMins > 1 ? 's' : '') . " before requesting another code, or contact support.");
+        redirect('/verify-signup-otp');
+    }
+
     $lastSignupOtp = DB::one(
         'SELECT TIMESTAMPDIFF(SECOND, created_at, NOW()) AS sec_ago 
          FROM signup_otps 
          WHERE email = ? 
          ORDER BY id DESC LIMIT 1',
-        [$_SESSION['pending_signup']['email']]
+        [$email]
     );
     if ($lastSignupOtp && $lastSignupOtp['sec_ago'] !== null && (int)$lastSignupOtp['sec_ago'] < 60) {
         $wait = 60 - (int)$lastSignupOtp['sec_ago'];
@@ -1096,9 +1138,35 @@ $r->get('/forgot-password', function () {
     if (Auth::check()) redirect('/dashboard');
     $last = $_SESSION['otp_last_sent'] ?? 0;
     $cooldown = max(0, 60 - (time() - (int)$last));
+    $email = $_SESSION['otp_email'] ?? '';
+
+    // Check if currently under 60-minute limit
+    $hourlyWaitMins = 0;
+    if ($email) {
+        $u = DB::one('SELECT id FROM users WHERE email = ? AND status != "blocked"', [$email]);
+        if ($u) {
+            $hourlyCount = (int) DB::val(
+                'SELECT COUNT(*) FROM password_resets 
+                 WHERE user_id = ? AND created_at > DATE_SUB(NOW(), INTERVAL 1 HOUR)',
+                [$u['id']]
+            );
+            if ($hourlyCount >= 5) {
+                $oldestInHour = DB::one(
+                    'SELECT TIMESTAMPDIFF(MINUTE, NOW(), DATE_ADD(created_at, INTERVAL 1 HOUR)) AS mins_left
+                     FROM password_resets 
+                     WHERE user_id = ? AND created_at > DATE_SUB(NOW(), INTERVAL 1 HOUR)
+                     ORDER BY id ASC LIMIT 1',
+                    [$u['id']]
+                );
+                $hourlyWaitMins = max(1, (int)($oldestInHour['mins_left'] ?? 60));
+            }
+        }
+    }
+
     view('auth/forgot', [
-        'cooldown' => $cooldown,
-        'email'    => $_SESSION['otp_email'] ?? '',
+        'cooldown'       => $cooldown,
+        'hourlyWaitMins' => $hourlyWaitMins,
+        'email'          => $email,
     ], 'auth');
 });
 
@@ -1118,7 +1186,27 @@ $r->post('/forgot-password', function () {
 
         $u = DB::one('SELECT id, name, email FROM users WHERE email = ? AND status != "blocked"', [$email]);
         if ($u) {
-            // DB-level rate limiting to prevent spamming across multiple sessions/browsers
+            // Check 60-minute rate limit (max 5 requests per hour)
+            $hourlyCount = (int) DB::val(
+                'SELECT COUNT(*) FROM password_resets 
+                 WHERE user_id = ? AND created_at > DATE_SUB(NOW(), INTERVAL 1 HOUR)',
+                [$u['id']]
+            );
+            if ($hourlyCount >= 5) {
+                $oldestInHour = DB::one(
+                    'SELECT TIMESTAMPDIFF(MINUTE, NOW(), DATE_ADD(created_at, INTERVAL 1 HOUR)) AS mins_left
+                     FROM password_resets 
+                     WHERE user_id = ? AND created_at > DATE_SUB(NOW(), INTERVAL 1 HOUR)
+                     ORDER BY id ASC LIMIT 1',
+                    [$u['id']]
+                );
+                $waitMins = max(1, (int)($oldestInHour['mins_left'] ?? 60));
+                $_SESSION['otp_email'] = $email;
+                flash('error', "Too many OTP requests. For security, please wait {$waitMins} minute" . ($waitMins > 1 ? 's' : '') . " before requesting another code, or contact support.");
+                redirect('/verify-otp');
+            }
+
+            // DB-level rate limiting (60 seconds) to prevent spamming across multiple sessions/browsers
             $lastReset = DB::one(
                 'SELECT TIMESTAMPDIFF(SECOND, created_at, NOW()) AS sec_ago 
                  FROM password_resets 
@@ -1152,12 +1240,36 @@ $r->post('/forgot-password', function () {
 $r->get('/verify-otp', function () {
     if (Auth::check()) redirect('/dashboard');
     if (empty($_SESSION['otp_email'])) redirect('/forgot-password');
+    $email = $_SESSION['otp_email'];
     $last = $_SESSION['otp_last_sent'] ?? 0;
     $cooldown = max(0, 60 - (time() - (int)$last));
+
+    // Check 60-minute limit (max 5 requests per hour)
+    $hourlyWaitMins = 0;
+    $u = DB::one('SELECT id FROM users WHERE email = ? AND status != "blocked"', [$email]);
+    if ($u) {
+        $hourlyCount = (int) DB::val(
+            'SELECT COUNT(*) FROM password_resets 
+             WHERE user_id = ? AND created_at > DATE_SUB(NOW(), INTERVAL 1 HOUR)',
+            [$u['id']]
+        );
+        if ($hourlyCount >= 5) {
+            $oldestInHour = DB::one(
+                'SELECT TIMESTAMPDIFF(MINUTE, NOW(), DATE_ADD(created_at, INTERVAL 1 HOUR)) AS mins_left
+                 FROM password_resets 
+                 WHERE user_id = ? AND created_at > DATE_SUB(NOW(), INTERVAL 1 HOUR)
+                 ORDER BY id ASC LIMIT 1',
+                [$u['id']]
+            );
+            $hourlyWaitMins = max(1, (int)($oldestInHour['mins_left'] ?? 60));
+        }
+    }
+
     view('auth/verify_otp', [
-        'email'    => $_SESSION['otp_email'],
-        'cooldown' => $cooldown,
-        'mode'     => 'reset',
+        'email'          => $email,
+        'cooldown'       => $cooldown,
+        'hourlyWaitMins' => $hourlyWaitMins,
+        'mode'           => 'reset',
     ], 'auth');
 });
 
@@ -1214,6 +1326,7 @@ $r->post('/verify-otp', function () {
 
 $r->post('/resend-otp', function () {
     if (empty($_SESSION['otp_email'])) redirect('/forgot-password');
+    $email = $_SESSION['otp_email'];
     $last = $_SESSION['otp_last_sent'] ?? 0;
     $elapsed = time() - (int)$last;
     if ($elapsed < 60) {
@@ -1221,9 +1334,28 @@ $r->post('/resend-otp', function () {
         flash('error', "Please wait {$wait} seconds before requesting another code.");
         redirect('/verify-otp');
     }
-    $u = DB::one('SELECT id, name, email FROM users WHERE email = ? AND status != "blocked"', [$_SESSION['otp_email']]);
+    $u = DB::one('SELECT id, name, email FROM users WHERE email = ? AND status != "blocked"', [$email]);
     if ($u) {
-        // DB-level rate limiting
+        // Check 60-minute rate limit (max 5 OTP requests per hour)
+        $hourlyCount = (int) DB::val(
+            'SELECT COUNT(*) FROM password_resets 
+             WHERE user_id = ? AND created_at > DATE_SUB(NOW(), INTERVAL 1 HOUR)',
+            [$u['id']]
+        );
+        if ($hourlyCount >= 5) {
+            $oldestInHour = DB::one(
+                'SELECT TIMESTAMPDIFF(MINUTE, NOW(), DATE_ADD(created_at, INTERVAL 1 HOUR)) AS mins_left
+                 FROM password_resets 
+                 WHERE user_id = ? AND created_at > DATE_SUB(NOW(), INTERVAL 1 HOUR)
+                 ORDER BY id ASC LIMIT 1',
+                [$u['id']]
+            );
+            $waitMins = max(1, (int)($oldestInHour['mins_left'] ?? 60));
+            flash('error', "Too many OTP requests. For security, please wait {$waitMins} minute" . ($waitMins > 1 ? 's' : '') . " before requesting another code, or contact support.");
+            redirect('/verify-otp');
+        }
+
+        // DB-level 60-second cooldown check
         $lastReset = DB::one(
             'SELECT TIMESTAMPDIFF(SECOND, created_at, NOW()) AS sec_ago 
              FROM password_resets 

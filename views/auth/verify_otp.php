@@ -1,6 +1,7 @@
 <?php /** @var string $email */
 /** @var string|null $mode */
 /** @var int|null $cooldown */
+/** @var int|null $hourlyWaitMins */
 $isSignup = ($mode ?? 'reset') === 'signup';
 $formAction = $isSignup ? '/verify-signup-otp' : '/verify-otp';
 $resendAction = $isSignup ? '/resend-signup-otp' : '/resend-otp';
@@ -9,6 +10,7 @@ $heading = $isSignup ? 'Verify your email' : 'Enter the 6-digit code';
 $button = $isSignup ? 'Create my account' : 'Verify code';
 $footerPrompt = $isSignup ? 'Already have an account?' : 'Remembered it?';
 $cooldownSec = max(0, (int)($cooldown ?? 0));
+$hourlyBlocked = max(0, (int)($hourlyWaitMins ?? 0));
 $masked = (function ($e) {
     if (!str_contains($e, '@')) return $e;
     [$user, $domain] = explode('@', $e, 2);
@@ -41,13 +43,25 @@ $masked = (function ($e) {
 
 <form method="post" action="<?= e($resendAction) ?>" id="resendOtpForm" style="margin-top: 1.25em;">
     <?= csrf_field() ?>
-    <button type="submit"
-            id="resendOtpBtn"
-            class="btn btn-link btn-block"
-            <?= $cooldownSec > 0 ? 'disabled' : '' ?>
-            style="background: none; border: 0; color: var(--c-muted); cursor: <?= $cooldownSec > 0 ? 'not-allowed' : 'pointer' ?>; font-size: 0.92rem; transition: opacity .2s; <?= $cooldownSec > 0 ? 'opacity: 0.65;' : '' ?>">
-        <?= $cooldownSec > 0 ? 'Resend code in ' . $cooldownSec . 's' : "Didn't receive it? Resend code" ?>
-    </button>
+    <?php if ($hourlyBlocked > 0): ?>
+        <p style="font-size: 0.85rem; color: #b45309; text-align: center; margin-bottom: 0.5rem; background: #fef3c7; border: 1px solid #fde68a; padding: 8px 12px; border-radius: 6px;">
+            ⚠️ Resend limit reached (5 attempts/hr). Please wait <strong><?= $hourlyBlocked ?> min</strong> before requesting another code.
+        </p>
+        <button type="button"
+                class="btn btn-link btn-block"
+                disabled
+                style="background: none; border: 0; color: var(--c-muted); cursor: not-allowed; font-size: 0.92rem; opacity: 0.55;">
+            Resend locked (hourly limit)
+        </button>
+    <?php else: ?>
+        <button type="submit"
+                id="resendOtpBtn"
+                class="btn btn-link btn-block"
+                <?= $cooldownSec > 0 ? 'disabled' : '' ?>
+                style="background: none; border: 0; color: var(--c-muted); cursor: <?= $cooldownSec > 0 ? 'not-allowed' : 'pointer' ?>; font-size: 0.92rem; transition: opacity .2s; <?= $cooldownSec > 0 ? 'opacity: 0.65;' : '' ?>">
+            <?= $cooldownSec > 0 ? 'Resend code in ' . $cooldownSec . 's' : "Didn't receive it? Resend code" ?>
+        </button>
+    <?php endif; ?>
 </form>
 
 <div class="small-link">
@@ -57,6 +71,7 @@ $masked = (function ($e) {
     <?= e($footerPrompt) ?> <a href="/login">Back to sign in</a>
 </div>
 
+<?php if ($hourlyBlocked <= 0): ?>
 <script>
 (function() {
     var cooldown = <?= $cooldownSec ?>;
@@ -102,3 +117,4 @@ $masked = (function ($e) {
     });
 })();
 </script>
+<?php endif; ?>
