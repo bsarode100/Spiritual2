@@ -26,4 +26,12 @@
 
         <button class="btn btn-primary mt-3">Save Changes</button>
     </form>
+
+    <div class="admin-card mt-4" style="display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap;">
+        <div>
+            <h4 style="margin: 0 0 4px 0; color: var(--c-ink);">Sign Out of Your Account</h4>
+            <small style="color: var(--c-muted);">You can sign back in anytime with your email and password.</small>
+        </div>
+        <a href="/logout" class="btn btn-outline" style="color: var(--c-rose); border-color: rgba(212, 91, 122, 0.4); font-weight: 600;">🚪 Sign Out</a>
+    </div>
 </div></section>
