@@ -25,6 +25,15 @@
                     </a>
                     <?php endif; ?>
                 </div>
+                <div class="footer-app-cta" style="margin-top: 1.1rem;">
+                    <a href="https://play.google.com/store/apps/details?id=com.spiritualshaadi&pcampaignid=web_share" target="_blank" rel="noopener" style="display: inline-flex; align-items: center; gap: 9px; background: #1B1510; color: #FFF; padding: 7px 14px; border-radius: 8px; text-decoration: none; border: 1px solid rgba(255,255,255,0.14); box-shadow: 0 2px 6px rgba(0,0,0,0.25); transition: background 0.15s, border-color 0.15s;">
+                        <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor" style="flex-shrink:0;"><path d="M3.609 1.814L13.793 12 3.61 22.186c-.378-.344-.61-.836-.61-1.396V3.21c0-.56.232-1.052.609-1.396zm11.305 11.305l2.093 2.093-11.23 6.452 9.137-8.545zm2.793-1.699c.394.227.693.634.693 1.116s-.299.889-.693 1.116l-2.093 1.208-2.222-2.222 2.222-2.222 2.093 1.004zm-2.793-1.699L5.777 1.176l11.23 6.452-2.093 2.093z"/></svg>
+                        <div style="line-height: 1.15; text-align: left;">
+                            <div style="font-size: 0.65rem; color: #D4C5B5; text-transform: uppercase; letter-spacing: 0.5px;">Get it on</div>
+                            <div style="font-size: 0.88rem; font-weight: 600; color: #FFF;">Google Play</div>
+                        </div>
+                    </a>
+                </div>
             </div>
             <div>
                 <h4>Explore</h4>

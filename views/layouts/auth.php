@@ -28,6 +28,7 @@
 <link rel="stylesheet" href="<?= asset('css/app.css') ?>">
 </head>
 <body>
+<?php include __DIR__ . '/../partials/app_banner.php'; ?>
 <?php
 $isOnboarding = str_contains($_SERVER['REQUEST_URI'] ?? '', 'onboarding');
 ?>

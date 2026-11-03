@@ -137,6 +137,17 @@ public class MainActivity extends AppCompatActivity {
         settings.setAllowContentAccess(true);
         settings.setMediaPlaybackRequiresUserGesture(false);
 
+        // Identify native app in User-Agent so website can suppress app install prompts
+        String defaultUa = settings.getUserAgentString();
+        settings.setUserAgentString((defaultUa != null ? defaultUa : "") + " SpiritualShaadiApp/1.0.4");
+
+        webView.addJavascriptInterface(new Object() {
+            @android.webkit.JavascriptInterface
+            public boolean isNative() {
+                return true;
+            }
+        }, "SpiritualShaadiNative");
+
         // Enable Cookies
         CookieManager cookieManager = CookieManager.getInstance();
         cookieManager.setAcceptCookie(true);

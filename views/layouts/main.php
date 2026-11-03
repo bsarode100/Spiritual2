@@ -58,6 +58,7 @@
 $_isChatPage = preg_match('#^/messages/\d+#', parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH));
 ?>
 <body class="<?= $_isChatPage ? 'is-chat-page' : '' ?>">
+<?php include __DIR__ . '/../partials/app_banner.php'; ?>
 <?php include __DIR__ . '/../partials/nav.php'; ?>
 
 <main>

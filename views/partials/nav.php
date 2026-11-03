@@ -56,6 +56,7 @@
                 <li class="mobile-nav-item"><a href="/happy-stories" class="<?= nav_active('/happy-stories') ?>"><span class="nav-icon">🪷</span> Happy Stories</a></li>
                 <li class="mobile-nav-item"><a href="/blog" class="<?= nav_active('/blog') ?>"><span class="nav-icon">📖</span> Spiritual Wisdom</a></li>
                 <li class="mobile-nav-item"><a href="/contact" class="<?= nav_active('/contact') ?>"><span class="nav-icon">📞</span> Contact Support</a></li>
+                <li class="mobile-nav-item"><a href="https://play.google.com/store/apps/details?id=com.spiritualshaadi&pcampaignid=web_share" target="_blank" rel="noopener"><span class="nav-icon">📲</span> Get Android App <span class="nav-sub-badge" style="background:#01875F; color:#FFF;">Play Store</span></a></li>
                 <li class="mobile-nav-divider"></li>
                 <li class="mobile-nav-item"><a href="/logout" class="mobile-signout-link"><span class="nav-icon">🚪</span> Sign Out</a></li>
             <?php endif; ?>
@@ -70,6 +71,7 @@
             <li class="nav-desktop-item"><a href="/contact" class="<?= nav_active('/contact') ?>">Contact</a></li>
 
             <?php if (!Auth::check()): ?>
+                <li class="mobile-nav-item mobile-nav-app-link" style="margin-top: 0.5rem;"><a href="https://play.google.com/store/apps/details?id=com.spiritualshaadi&pcampaignid=web_share" target="_blank" rel="noopener"><span class="nav-icon">📲</span> Get Android App <span class="nav-sub-badge" style="background:#01875F; color:#FFF;">Play Store</span></a></li>
                 <li class="mobile-nav-divider"></li>
                 <li class="mobile-nav-auth-buttons">
                     <a href="/login" class="btn btn-ghost btn-sm" style="flex: 1; justify-content: center;">Sign In</a>
