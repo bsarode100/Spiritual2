@@ -5,3 +5,7 @@ gradle-7.6/
 *.iml
 .idea/
 local.properties
+jdk*/
+sdk/
+tools/
+*.zip

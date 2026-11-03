@@ -6,8 +6,16 @@ echo   SpiritualShaadi Android APK and AAB Builder
 echo ===================================================
 echo.
 
-set "JAVA_HOME=C:\Program Files\Android\Android Studio\jbr"
-set "ANDROID_HOME=%LOCALAPPDATA%\Android\Sdk"
+if exist "%~dp0jdk-17.0.12+7" (
+    set "JAVA_HOME=%~dp0jdk-17.0.12+7"
+) else if exist "C:\Program Files\Android\Android Studio\jbr" (
+    set "JAVA_HOME=C:\Program Files\Android\Android Studio\jbr"
+)
+if exist "%~dp0sdk" (
+    set "ANDROID_HOME=%~dp0sdk"
+) else (
+    set "ANDROID_HOME=%LOCALAPPDATA%\Android\Sdk"
+)
 set "PATH=%JAVA_HOME%\bin;%PATH%"
 
 set "GRADLE_HOME=%~dp0gradle-7.6"
