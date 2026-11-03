@@ -35,10 +35,22 @@ if %ERRORLEVEL% NEQ 0 (
 )
 
 echo.
+echo [3/3] Copying signed release artifacts to release folder...
+if not exist "release" mkdir "release"
+if exist "app\build\outputs\apk\release\app-release.apk" (
+    copy /y "app\build\outputs\apk\release\app-release.apk" "release\SpiritualShaadi-v1.0.4.apk"
+    copy /y "app\build\outputs\apk\release\app-release.apk" "release\SpiritualShaadi.apk"
+)
+if exist "app\build\outputs\bundle\release\app-release.aab" (
+    copy /y "app\build\outputs\bundle\release\app-release.aab" "release\SpiritualShaadi-v1.0.4.aab"
+    copy /y "app\build\outputs\bundle\release\app-release.aab" "release\com.spiritualshaadi.aab"
+)
+
+echo.
 echo ===================================================
 echo   Build Successful!
-echo   APK: app\build\outputs\apk\release\app-release.apk
-echo   AAB: app\build\outputs\bundle\release\app-release.aab
+echo   Play Store AAB: release\SpiritualShaadi-v1.0.4.aab
+echo   Direct Install APK: release\SpiritualShaadi-v1.0.4.apk
 echo ===================================================
 echo.
 pause
