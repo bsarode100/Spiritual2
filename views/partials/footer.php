@@ -60,7 +60,8 @@
             <div>
                 <h4>Connect</h4>
                 <ul>
-                    <li>📧 <a href="mailto:<?= e(setting('contact_email','hello@spiritualmatrimony.com')) ?>"><?= e(setting('contact_email','hello@spiritualmatrimony.com')) ?></a></li>
+                    <?php $footerContactEmail = setting('contact_email', 'support@spiritualshaadi.com'); ?>
+                    <li>📧 <a href="mailto:<?= e($footerContactEmail) ?>"><?= e($footerContactEmail) ?></a></li>
                     <li>📞 <a href="tel:<?= preg_replace('/[^+0-9]/', '', setting('contact_phone','+91 7744922099')) ?>"><?= e(setting('contact_phone','+91 7744922099')) ?></a></li>
                     <li>📍 <?= e(setting('contact_address','At Wagdari, Tq Deoni, Dist Latur, Maharashtra. Pincode - 413519.')) ?></li>
                 </ul>

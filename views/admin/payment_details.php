@@ -65,7 +65,7 @@
             </div>
             <div class="field">
                 <label>Support email</label>
-                <input type="email" name="payment_contact_email" value="<?= e($values['payment_contact_email']) ?>" placeholder="e.g. support@spiritualmatrimony.com">
+                <input type="email" name="payment_contact_email" value="<?= e($values['payment_contact_email']) ?>" placeholder="e.g. support@spiritualshaadi.com">
             </div>
         </div>
         <div class="field">

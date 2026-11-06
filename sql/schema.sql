@@ -555,7 +555,7 @@ INSERT INTO `site_settings` (`setting_key`,`setting_value`) VALUES
 ('hero_subheading','A sacred space for sincere seekers to find a life-companion rooted in dharma, sadhana, and love.'),
 ('hero_cta_text','Begin Your Journey'),
 ('about_short','SpiritualShaadi is a curated community for sincere seekers — devotees, sadhakas, yogis, and dharmics — looking for a life partner aligned with their spiritual journey.'),
-('contact_email','hello@spiritualmatrimony.com'),
+('contact_email','support@spiritualshaadi.com'),
 ('contact_phone','+91 7744922099'),
 ('contact_address','At Wagdari, Tq Deoni, Dist Latur, Maharashtra. Pincode - 413519.'),
 ('legal_owner',''),
@@ -579,7 +579,7 @@ INSERT INTO `site_settings` (`setting_key`,`setting_value`) VALUES
 ('payment_ifsc',''),
 ('payment_branch',''),
 ('payment_contact_phone',''),
-('payment_contact_email','hello@spiritualmatrimony.com'),
+('payment_contact_email','support@spiritualshaadi.com'),
 ('payment_instructions','After completing the payment via UPI or bank transfer, share the transaction reference and your registered email with our support team. Your premium plan will be activated within 24 hours.'),
 -- Razorpay gateway (editable from /admin/razorpay). Keep `razorpay_enabled` = 0 until you've pasted real keys.
 ('razorpay_enabled','0'),
