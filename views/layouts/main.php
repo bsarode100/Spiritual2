@@ -98,7 +98,6 @@ if ($_showFooterOnMobile): ?>
         <?php include __DIR__ . '/../partials/footer.php'; ?>
     </div>
 <?php endif; ?>
-<?php include __DIR__ . '/../partials/spiritual_path_modal.php'; ?>
 <script src="<?= asset('js/app.js') ?>"></script>
 </body>
 </html>

@@ -81,21 +81,16 @@ $popularPaths = [
     <form method="get" class="filters filters-wide mobile-filters-collapsible">
         <div class="field"><label>City / Location</label><input type="text" name="city" value="<?= e($_GET['city'] ?? '') ?>" placeholder="Any city"></div>
         <div class="field"><label>Religion</label><input type="text" name="religion" value="<?= e($_GET['religion'] ?? '') ?>" placeholder="Hindu, Buddhist..."></div>
-        <div class="field spiritual-path-filter-field">
+        <div class="field">
             <label>Spiritual Path</label>
-            <div class="spiritual-picker-trigger" id="browse_path_trigger" data-picker="spiritual-path" data-placeholder="All Spiritual Paths" tabindex="0" role="button" aria-haspopup="dialog" aria-expanded="false" title="Filter by spiritual path">
-                <input type="hidden" name="path" id="browse_path_val" value="<?= e($selectedPath) ?>">
-                <div class="spiritual-picker-display">
-                    <span class="spiritual-picker-icon">🪷</span>
-                    <span class="spiritual-picker-text <?= empty($selectedPath) ? 'is-placeholder' : '' ?>" id="browse_path_text">
-                        <?= !empty($selectedPath) ? e($selectedPath) : 'All Spiritual Paths' ?>
-                    </span>
-                </div>
-                <div class="spiritual-picker-actions">
-                    <button type="button" class="spiritual-picker-clear" id="browse_path_clear" title="Clear selection" aria-label="Clear spiritual path selection" style="<?= !empty($selectedPath) ? 'display:inline-flex;' : 'display:none;' ?>">×</button>
-                    <svg class="spiritual-picker-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M6 9l6 6 6-6"/></svg>
-                </div>
-            </div>
+            <select name="path" aria-label="Spiritual Path">
+                <option value="">All Spiritual Paths</option>
+                <?php foreach (spiritual_paths() as $p): ?>
+                    <option value="<?= e($p) ?>" <?= ($selectedPath === $p) ? 'selected' : '' ?>>
+                        🪷 <?= e($p) ?>
+                    </option>
+                <?php endforeach; ?>
+            </select>
         </div>
         <div class="field"><label>Dietary Practice</label>
             <select name="diet">
@@ -113,41 +108,16 @@ $popularPaths = [
             <div class="field"><label>Profession</label><input type="text" name="profession" value="<?= e($_GET['profession'] ?? '') ?>"></div>
             <div class="field"><label>Community</label><input type="text" name="community" value="<?= e($_GET['community'] ?? '') ?>"></div>
             <div class="field"><label>Guru / Lineage</label><input type="text" name="guru" value="<?= e($_GET['guru'] ?? '') ?>"></div>
-            <div class="field spiritual-org-filter-field">
+            <div class="field">
                 <label>Spiritual Org</label>
-                <div class="custom-combobox" id="browse_org_combobox" data-placeholder="All Organizations">
-                    <input type="hidden" name="organization" id="browse_org_val" value="<?= e($selectedOrg) ?>">
-                    <div class="combobox-trigger" id="browse_org_trigger" tabindex="0" role="combobox" aria-expanded="false" aria-haspopup="listbox" title="Search or select spiritual organization">
-                        <span class="combobox-text <?= ($selectedOrg === '') ? 'is-placeholder' : '' ?>">
-                            <?= $selectedOrg !== '' ? '🏛️ ' . e($selectedOrg) : 'All Organizations' ?>
-                        </span>
-                        <div class="combobox-icons">
-                            <button type="button" class="combobox-clear" id="browse_org_clear" title="Clear organization selection" style="<?= ($selectedOrg !== '') ? 'display:inline-flex;' : 'display:none;' ?>">×</button>
-                            <svg class="combobox-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M6 9l6 6 6-6"/></svg>
-                        </div>
-                    </div>
-
-                    <div class="combobox-dropdown" id="browse_org_dropdown" role="listbox">
-                        <div class="combobox-search-box">
-                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
-                            <input type="text" class="combobox-search-input" id="browse_org_search" placeholder="Search 40+ organizations..." autocomplete="off">
-                        </div>
-                        <div class="combobox-options-list" id="browse_org_options">
-                            <div class="combobox-option <?= ($selectedOrg === '') ? 'is-selected' : '' ?>" data-value="" data-label="All Organizations" role="option">
-                                <span class="combobox-opt-content"><span class="combobox-opt-icon">✨</span> <em>All Organizations (Any)</em></span>
-                            </div>
-                            <div class="combobox-divider"></div>
-                            <?php foreach (spiritual_organizations() as $orgItem): ?>
-                                <div class="combobox-option <?= ($selectedOrg === $orgItem) ? 'is-selected' : '' ?>" data-value="<?= e($orgItem) ?>" data-label="🏛️ <?= e($orgItem) ?>" role="option">
-                                    <span class="combobox-opt-content"><span class="combobox-opt-icon">🏛️</span> <?= e($orgItem) ?></span>
-                                </div>
-                            <?php endforeach; ?>
-                            <div class="combobox-empty" id="browse_org_empty" style="display: none;">
-                                <div>No matching organizations found</div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+                <select name="organization" aria-label="Spiritual Organization">
+                    <option value="">All Organizations</option>
+                    <?php foreach (spiritual_organizations() as $orgItem): ?>
+                        <option value="<?= e($orgItem) ?>" <?= ($selectedOrg === $orgItem) ? 'selected' : '' ?>>
+                            🏛️ <?= e($orgItem) ?>
+                        </option>
+                    <?php endforeach; ?>
+                </select>
             </div>
             <div class="field"><label>Temple Visits</label>
                 <select name="temple_frequency">

@@ -27,7 +27,10 @@ function url(string $path = '/'): string {
 }
 
 function asset(string $path): string {
-    return '/assets/' . ltrim($path, '/');
+    $clean = ltrim($path, '/');
+    $filePath = __DIR__ . '/../public/assets/' . $clean;
+    $v = file_exists($filePath) ? (string)filemtime($filePath) : '1.0';
+    return '/assets/' . $clean . '?v=' . $v;
 }
 
 function upload_url(string $path): string {

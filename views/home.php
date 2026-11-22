@@ -49,21 +49,16 @@
             <span class="glass-search-tagline">Filter by spiritual path, sadhana, lifestyle, and values</span>
         </div>
         <form method="get" action="/browse" class="glass-search-grid">
-            <div class="glass-field spiritual-path-picker-field">
+            <div class="glass-field">
                 <label>Spiritual Path</label>
-                <div class="spiritual-picker-trigger" id="home_path_trigger" data-picker="spiritual-path" data-placeholder="Select Spiritual Path..." tabindex="0" role="button" aria-haspopup="dialog" aria-expanded="false" title="Select or search spiritual path">
-                    <input type="hidden" name="path" id="home_path_val" value="<?= e($_GET['path'] ?? '') ?>">
-                    <div class="spiritual-picker-display">
-                        <span class="spiritual-picker-icon">🪷</span>
-                        <span class="spiritual-picker-text <?= empty($_GET['path']) ? 'is-placeholder' : '' ?>" id="home_path_text">
-                            <?= !empty($_GET['path']) ? e($_GET['path']) : 'Select Spiritual Path...' ?>
-                        </span>
-                    </div>
-                    <div class="spiritual-picker-actions">
-                        <button type="button" class="spiritual-picker-clear" id="home_path_clear" title="Clear selection" aria-label="Clear spiritual path selection" style="<?= !empty($_GET['path']) ? 'display:inline-flex;' : 'display:none;' ?>">×</button>
-                        <svg class="spiritual-picker-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M6 9l6 6 6-6"/></svg>
-                    </div>
-                </div>
+                <select name="path" class="glass-control" aria-label="Spiritual Path">
+                    <option value="">All Spiritual Paths</option>
+                    <?php foreach (spiritual_paths() as $hp): ?>
+                        <option value="<?= e($hp) ?>" <?= (($_GET['path'] ?? '') === $hp) ? 'selected' : '' ?>>
+                            🪷 <?= e($hp) ?>
+                        </option>
+                    <?php endforeach; ?>
+                </select>
             </div>
             <div class="glass-field">
                 <label>Dietary Practice</label>
