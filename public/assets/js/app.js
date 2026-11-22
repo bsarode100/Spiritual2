@@ -588,6 +588,122 @@
         }
     }, true);
 
+    // -------------------------------------------------------------
+    // Global 1-Click Clipboard Copy Helper
+    // -------------------------------------------------------------
+    window.copyToClipboard = function(text, triggerEl) {
+        if (!text) return;
+        const fallbackCopy = () => {
+            const temp = document.createElement('textarea');
+            temp.value = text;
+            temp.style.position = 'fixed';
+            temp.style.opacity = '0';
+            document.body.appendChild(temp);
+            temp.select();
+            try {
+                document.execCommand('copy');
+                showCopiedFeedback(triggerEl);
+            } catch (err) {
+                console.error('Fallback copy failed', err);
+            }
+            document.body.removeChild(temp);
+        };
+
+        if (navigator.clipboard && window.isSecureContext) {
+            navigator.clipboard.writeText(text).then(() => {
+                showCopiedFeedback(triggerEl);
+            }).catch(() => {
+                fallbackCopy();
+            });
+        } else {
+            fallbackCopy();
+        }
+    };
+
+    function showCopiedFeedback(el) {
+        if (!el) return;
+        const originalHtml = el.innerHTML;
+        el.classList.add('copied');
+        el.innerHTML = '✓ Copied!';
+        setTimeout(() => {
+            el.innerHTML = originalHtml;
+            el.classList.remove('copied');
+        }, 2200);
+    }
+
+    // -------------------------------------------------------------
+    // Legal Document Dynamic Table of Contents (TOC) & Smooth Scroll
+    // -------------------------------------------------------------
+    function initLegalTOC() {
+        const tocList = document.getElementById('legalTocList');
+        const docBody = document.getElementById('legalDocBody');
+        const tocCard = document.getElementById('legalTocCard');
+        if (!tocList || !docBody) return;
+
+        const headings = docBody.querySelectorAll('h2, h3');
+        if (!headings || headings.length === 0) {
+            if (tocCard) tocCard.style.display = 'none';
+            return;
+        }
+
+        tocList.innerHTML = '';
+        headings.forEach((heading, idx) => {
+            if (!heading.id) {
+                heading.id = 'policy-sec-' + (idx + 1);
+            }
+            const cleanTitle = heading.textContent.replace(/^◈\s*/, '').trim();
+            const link = document.createElement('a');
+            link.href = '#' + heading.id;
+            link.className = 'legal-toc-item';
+            link.textContent = cleanTitle;
+            link.addEventListener('click', (e) => {
+                e.preventDefault();
+                heading.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                history.replaceState(null, null, '#' + heading.id);
+            });
+            tocList.appendChild(link);
+        });
+
+        // IntersectionObserver for active heading highlighting
+        if ('IntersectionObserver' in window) {
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        const id = entry.target.id;
+                        tocList.querySelectorAll('.legal-toc-item').forEach(item => {
+                            if (item.getAttribute('href') === '#' + id) {
+                                item.classList.add('active');
+                            } else {
+                                item.classList.remove('active');
+                            }
+                        });
+                    }
+                });
+            }, { rootMargin: '-80px 0px -70% 0px' });
+
+            headings.forEach(h => observer.observe(h));
+        }
+    }
+
+    // -------------------------------------------------------------
+    // Contact Form Quick Subject Topic Pills
+    // -------------------------------------------------------------
+    function initQuickSubjectPills() {
+        const pills = document.querySelectorAll('.subject-pill');
+        const subjectInput = document.getElementById('contactSubjectInput') || document.querySelector('input[name="subject"]');
+        if (!pills.length || !subjectInput) return;
+
+        pills.forEach(pill => {
+            pill.addEventListener('click', () => {
+                const topic = pill.getAttribute('data-subject') || pill.textContent.trim();
+                subjectInput.value = topic;
+                pills.forEach(p => p.classList.remove('active'));
+                pill.classList.add('active');
+                subjectInput.focus();
+            });
+        });
+    }
+
     // Initialize on DOM ready
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', () => {
@@ -595,11 +711,15 @@
             initLocationSelectors();
             initProfileValidation();
             initMobileFilters();
+            initLegalTOC();
+            initQuickSubjectPills();
         });
     } else {
         initComboboxes();
         initLocationSelectors();
         initProfileValidation();
         initMobileFilters();
+        initLegalTOC();
+        initQuickSubjectPills();
     }
 })();
