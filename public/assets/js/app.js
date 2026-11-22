@@ -575,6 +575,230 @@
         });
     }
 
+    // =====================================================================
+    // Sacred Spiritual Path Sheet Picker (Jeevansathi / Shaadi Style Bottom Sheet)
+    // =====================================================================
+    function initSpiritualPathPicker() {
+        const modal = document.getElementById('spiritualPathModal');
+        if (!modal) return;
+
+        const backdrop    = document.getElementById('spiritualSheetBackdrop');
+        const closeBtn    = document.getElementById('spiritualSheetClose');
+        const doneBtn     = document.getElementById('spiritualSheetDone');
+        const clearAllBtn = document.getElementById('spiritualSheetClearAll');
+        const searchInput = document.getElementById('spiritualSheetSearch');
+        const searchClear = document.getElementById('spiritualSheetSearchClear');
+        const emptyState  = document.getElementById('spiritualSheetEmpty');
+        const resetSearch = document.getElementById('spiritualSheetResetSearch');
+        const items       = modal.querySelectorAll('.spiritual-sheet-item');
+        const pills       = modal.querySelectorAll('.spiritual-sheet-pill');
+        const triggers    = document.querySelectorAll('.spiritual-picker-trigger[data-picker="spiritual-path"]');
+
+        let activeTrigger = null;
+
+        const openSheet = (trigger) => {
+            activeTrigger = trigger;
+            trigger.classList.add('is-active');
+            trigger.setAttribute('aria-expanded', 'true');
+
+            // Read current value from hidden input
+            const hiddenInput = trigger.querySelector('input[type="hidden"]');
+            const currentVal = hiddenInput ? hiddenInput.value.trim() : '';
+
+            // Mark matching item in list
+            items.forEach(it => {
+                const itVal = it.getAttribute('data-value') || '';
+                if (itVal === currentVal) {
+                    it.classList.add('is-selected');
+                    setTimeout(() => {
+                        try { it.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); } catch(e) {}
+                    }, 80);
+                } else {
+                    it.classList.remove('is-selected');
+                }
+            });
+
+            // Mark matching pill
+            pills.forEach(pill => {
+                const pVal = pill.getAttribute('data-value') || '';
+                pill.classList.toggle('is-active', pVal === currentVal);
+            });
+
+            // Reset search input
+            if (searchInput) {
+                searchInput.value = '';
+                filterItems('');
+            }
+            if (searchClear) searchClear.style.display = 'none';
+
+            // Show modal
+            modal.classList.add('is-open');
+            modal.setAttribute('aria-hidden', 'false');
+            document.body.style.overflow = 'hidden';
+        };
+
+        const closeSheet = () => {
+            modal.classList.remove('is-open');
+            modal.setAttribute('aria-hidden', 'true');
+            document.body.style.overflow = '';
+            if (activeTrigger) {
+                activeTrigger.classList.remove('is-active');
+                activeTrigger.setAttribute('aria-expanded', 'false');
+                try { activeTrigger.focus(); } catch(e) {}
+            }
+        };
+
+        const applySelection = (val, label) => {
+            if (!activeTrigger) return;
+
+            const hiddenInput = activeTrigger.querySelector('input[type="hidden"]');
+            const displayText = activeTrigger.querySelector('.spiritual-picker-text');
+            const clearBtn    = activeTrigger.querySelector('.spiritual-picker-clear');
+            const defaultPlaceholder = activeTrigger.getAttribute('data-placeholder') || 'Select Spiritual Path...';
+
+            if (val) {
+                if (hiddenInput) hiddenInput.value = val;
+                if (displayText) {
+                    displayText.textContent = label || val;
+                    displayText.classList.remove('is-placeholder');
+                }
+                if (clearBtn) clearBtn.style.display = 'inline-flex';
+            } else {
+                if (hiddenInput) hiddenInput.value = '';
+                if (displayText) {
+                    displayText.textContent = defaultPlaceholder;
+                    displayText.classList.add('is-placeholder');
+                }
+                if (clearBtn) clearBtn.style.display = 'none';
+            }
+
+            closeSheet();
+        };
+
+        const filterItems = (query) => {
+            const q = query.trim().toLowerCase();
+            let matchCount = 0;
+
+            items.forEach(it => {
+                const val = (it.getAttribute('data-value') || '').toLowerCase();
+                const text = it.textContent.toLowerCase();
+                if (!q || val.includes(q) || text.includes(q)) {
+                    it.style.display = 'flex';
+                    matchCount++;
+                } else {
+                    it.style.display = 'none';
+                }
+            });
+
+            if (emptyState) {
+                emptyState.style.display = (matchCount === 0 && q.length > 0) ? 'block' : 'none';
+            }
+        };
+
+        // Wire triggers
+        triggers.forEach(tr => {
+            tr.addEventListener('click', (e) => {
+                if (e.target.closest('.spiritual-picker-clear')) return;
+                openSheet(tr);
+            });
+
+            tr.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' || e.key === ' ' || e.key === 'ArrowDown') {
+                    e.preventDefault();
+                    openSheet(tr);
+                }
+            });
+
+            const trClear = tr.querySelector('.spiritual-picker-clear');
+            if (trClear) {
+                trClear.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    activeTrigger = tr;
+                    applySelection('', '');
+                });
+            }
+        });
+
+        // Close handlers
+        if (backdrop) backdrop.addEventListener('click', closeSheet);
+        if (closeBtn) closeBtn.addEventListener('click', closeSheet);
+        if (doneBtn) doneBtn.addEventListener('click', closeSheet);
+
+        // Escape key to close
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && modal.classList.contains('is-open')) {
+                closeSheet();
+            }
+        });
+
+        // Clear All button in sheet
+        if (clearAllBtn) {
+            clearAllBtn.addEventListener('click', () => {
+                applySelection('', '');
+            });
+        }
+
+        // Option items click
+        items.forEach(it => {
+            it.addEventListener('click', () => {
+                const val = it.getAttribute('data-value');
+                const label = it.getAttribute('data-label') || val;
+                applySelection(val, label);
+            });
+        });
+
+        // Pills click
+        pills.forEach(pill => {
+            pill.addEventListener('click', () => {
+                const val = pill.getAttribute('data-value');
+                const label = val;
+                applySelection(val, label);
+            });
+        });
+
+        // Live search input
+        if (searchInput) {
+            searchInput.addEventListener('input', (e) => {
+                const q = e.target.value;
+                filterItems(q);
+                if (searchClear) searchClear.style.display = q.trim() ? 'block' : 'none';
+            });
+
+            searchInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    const firstVisible = Array.from(items).find(it => it.style.display !== 'none');
+                    if (firstVisible) {
+                        const val = firstVisible.getAttribute('data-value');
+                        const label = firstVisible.getAttribute('data-label') || val;
+                        applySelection(val, label);
+                    }
+                }
+            });
+        }
+
+        if (searchClear) {
+            searchClear.addEventListener('click', () => {
+                if (searchInput) {
+                    searchInput.value = '';
+                    filterItems('');
+                    searchClear.style.display = 'none';
+                    searchInput.focus();
+                }
+            });
+        }
+
+        if (resetSearch) {
+            resetSearch.addEventListener('click', () => {
+                if (searchInput) {
+                    searchInput.value = '';
+                    filterItems('');
+                    if (searchClear) searchClear.style.display = 'none';
+                }
+            });
+        }
+    }
+
     // Automatic smooth-scrolling for inputs/textareas when mobile virtual keyboard opens
     document.addEventListener('focusin', (e) => {
         if (!e.target) return;
@@ -592,12 +816,14 @@
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', () => {
             initComboboxes();
+            initSpiritualPathPicker();
             initLocationSelectors();
             initProfileValidation();
             initMobileFilters();
         });
     } else {
         initComboboxes();
+        initSpiritualPathPicker();
         initLocationSelectors();
         initProfileValidation();
         initMobileFilters();

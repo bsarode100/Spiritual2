@@ -83,37 +83,17 @@ $popularPaths = [
         <div class="field"><label>Religion</label><input type="text" name="religion" value="<?= e($_GET['religion'] ?? '') ?>" placeholder="Hindu, Buddhist..."></div>
         <div class="field spiritual-path-filter-field">
             <label>Spiritual Path</label>
-            <div class="custom-combobox" id="browse_path_combobox" data-placeholder="All Spiritual Paths">
+            <div class="spiritual-picker-trigger" id="browse_path_trigger" data-picker="spiritual-path" data-placeholder="All Spiritual Paths" tabindex="0" role="button" aria-haspopup="dialog" aria-expanded="false" title="Filter by spiritual path">
                 <input type="hidden" name="path" id="browse_path_val" value="<?= e($selectedPath) ?>">
-                <div class="combobox-trigger" id="browse_path_trigger" tabindex="0" role="combobox" aria-expanded="false" aria-haspopup="listbox" title="Search or select spiritual path">
-                    <span class="combobox-text <?= ($selectedPath === '') ? 'is-placeholder' : '' ?>">
-                        <?= $selectedPath !== '' ? '🪷 ' . e($selectedPath) : 'All Spiritual Paths' ?>
+                <div class="spiritual-picker-display">
+                    <span class="spiritual-picker-icon">🪷</span>
+                    <span class="spiritual-picker-text <?= empty($selectedPath) ? 'is-placeholder' : '' ?>" id="browse_path_text">
+                        <?= !empty($selectedPath) ? e($selectedPath) : 'All Spiritual Paths' ?>
                     </span>
-                    <div class="combobox-icons">
-                        <button type="button" class="combobox-clear" id="browse_path_clear" title="Clear path selection" style="<?= ($selectedPath !== '') ? 'display:inline-flex;' : 'display:none;' ?>">×</button>
-                        <svg class="combobox-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M6 9l6 6 6-6"/></svg>
-                    </div>
                 </div>
-
-                <div class="combobox-dropdown" id="browse_path_dropdown" role="listbox">
-                    <div class="combobox-search-box">
-                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
-                        <input type="text" class="combobox-search-input" id="browse_path_search" placeholder="Search 37+ traditions..." autocomplete="off">
-                    </div>
-                    <div class="combobox-options-list" id="browse_path_options">
-                        <div class="combobox-option <?= ($selectedPath === '') ? 'is-selected' : '' ?>" data-value="" data-label="All Spiritual Paths" role="option">
-                            <span class="combobox-opt-content"><span class="combobox-opt-icon">✨</span> <em>All Spiritual Paths (Any)</em></span>
-                        </div>
-                        <div class="combobox-divider"></div>
-                        <?php foreach (spiritual_paths() as $p): ?>
-                            <div class="combobox-option <?= ($selectedPath === $p) ? 'is-selected' : '' ?>" data-value="<?= e($p) ?>" data-label="🪷 <?= e($p) ?>" role="option">
-                                <span class="combobox-opt-content"><span class="combobox-opt-icon">🪷</span> <?= e($p) ?></span>
-                            </div>
-                        <?php endforeach; ?>
-                        <div class="combobox-empty" id="browse_path_empty" style="display: none;">
-                            <div>No matching spiritual paths found</div>
-                        </div>
-                    </div>
+                <div class="spiritual-picker-actions">
+                    <button type="button" class="spiritual-picker-clear" id="browse_path_clear" title="Clear selection" aria-label="Clear spiritual path selection" style="<?= !empty($selectedPath) ? 'display:inline-flex;' : 'display:none;' ?>">×</button>
+                    <svg class="spiritual-picker-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M6 9l6 6 6-6"/></svg>
                 </div>
             </div>
         </div>
