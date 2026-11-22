@@ -185,7 +185,7 @@ $cls = fn(string $key) => isset($missing[$key]) ? 'field field-error' : 'field';
             ?>
             <div id="field-spiritual_path" class="field full spiritual-path-container <?= $cls('spiritual_path') ?>">
                 <label>Spiritual Path / Lineage <span style="color: var(--c-maroon);">*</span></label>
-                <div class="custom-combobox" id="spiritual_path_combobox" data-other-wrap="spiritual_path_other_wrap" data-other-input="spiritual_path_other_input">
+                <div class="custom-combobox" id="spiritual_path_combobox" data-placeholder="Select or search spiritual path..." data-other-wrap="spiritual_path_other_wrap" data-other-input="spiritual_path_other_input">
                     <input type="hidden" name="spiritual_path" id="spiritual_path_value" value="<?= $isPathOther ? 'Other' : e($savedPath) ?>">
                     
                     <div class="combobox-trigger" id="spiritual_path_trigger" tabindex="0" role="combobox" aria-expanded="false" aria-haspopup="listbox">
@@ -249,7 +249,7 @@ $cls = fn(string $key) => isset($missing[$key]) ? 'field field-error' : 'field';
             ?>
             <div class="field full spiritual-org-container">
                 <label>Spiritual Organization / Sangha</label>
-                <div class="custom-combobox" id="spiritual_org_combobox" data-other-wrap="spiritual_org_other_wrap" data-other-input="spiritual_org_other_input">
+                <div class="custom-combobox" id="spiritual_org_combobox" data-placeholder="Select or search organization..." data-other-wrap="spiritual_org_other_wrap" data-other-input="spiritual_org_other_input">
                     <input type="hidden" name="spiritual_organization" id="spiritual_org_value" value="<?= $isOther ? 'Other' : e($savedOrg) ?>">
                     
                     <div class="combobox-trigger" id="spiritual_org_trigger" tabindex="0" role="combobox" aria-expanded="false" aria-haspopup="listbox">

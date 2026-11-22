@@ -3829,6 +3829,148 @@ p {
     to   { opacity: 1; transform: translateY(0); }
 }
 
+/* Combobox Options Typography & Iconography */
+.combobox-opt-content {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.55rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.combobox-opt-icon {
+    font-size: 1rem;
+    line-height: 1;
+    flex-shrink: 0;
+}
+
+/* Enhanced Combobox in Browse Filter Panels */
+.filters .custom-combobox {
+    position: relative;
+}
+.filters .field.is-combobox-open,
+.filters .field:has(.custom-combobox.is-open) {
+    z-index: 1050;
+    position: relative;
+}
+.filters .custom-combobox.is-open {
+    z-index: 1050;
+}
+.filters .custom-combobox .combobox-trigger {
+    background: rgba(255, 255, 255, 0.9);
+    border-radius: var(--r);
+    min-height: 48px;
+}
+.filters .custom-combobox .combobox-trigger:hover,
+.filters .custom-combobox .combobox-trigger:focus-visible,
+.filters .custom-combobox.is-open .combobox-trigger {
+    border-color: var(--c-saffron);
+    box-shadow: 0 0 0 3px rgba(217, 148, 32, 0.18), var(--shadow-sm);
+}
+.filters .combobox-dropdown {
+    min-width: 290px;
+    width: 320px;
+    max-width: 380px;
+    box-shadow: 0 24px 48px -8px rgba(92, 29, 36, 0.22), 0 0 0 1px rgba(212, 91, 122, 0.25);
+}
+@media (min-width: 961px) {
+    .filters .field:nth-child(n+4) .combobox-dropdown {
+        left: auto;
+        right: 0;
+    }
+}
+@media (max-width: 960px) and (min-width: 561px) {
+    .filters .field:nth-child(2n) .combobox-dropdown {
+        left: auto;
+        right: 0;
+    }
+}
+@media (max-width: 560px) {
+    .filters .combobox-dropdown {
+        min-width: 100%;
+        max-width: 100%;
+        width: 100%;
+        left: 0;
+        right: 0;
+    }
+}
+
+/* Quick Spiritual Path Filter Chips Bar */
+.spiritual-chips-bar {
+    display: flex;
+    align-items: center;
+    gap: 0.55rem;
+    overflow-x: auto;
+    padding: 0.25rem 0.15rem 0.95rem;
+    margin-bottom: 1.15rem;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    -webkit-overflow-scrolling: touch;
+}
+.spiritual-chips-bar::-webkit-scrollbar {
+    display: none;
+}
+.spiritual-chips-label {
+    font-size: 0.76rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    color: var(--c-muted);
+    white-space: nowrap;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    margin-right: 0.2rem;
+    flex-shrink: 0;
+}
+.spiritual-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.42rem 0.95rem;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.88);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1.5px solid var(--c-line);
+    color: var(--c-ink-soft);
+    font-size: 0.85rem;
+    font-weight: 500;
+    text-decoration: none;
+    white-space: nowrap;
+    flex-shrink: 0;
+    transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+}
+.spiritual-chip:hover {
+    border-color: var(--c-saffron);
+    background: #FFFFFF;
+    color: var(--c-maroon);
+    transform: translateY(-1.5px);
+    box-shadow: 0 6px 14px rgba(217, 148, 32, 0.15);
+}
+.spiritual-chip.is-active {
+    background: linear-gradient(135deg, var(--c-maroon) 0%, #7b2934 100%);
+    border-color: var(--c-maroon);
+    color: #FFFFFF !important;
+    font-weight: 600;
+    box-shadow: 0 6px 16px rgba(92, 29, 36, 0.25);
+    transform: translateY(-1px);
+}
+.spiritual-chip.is-active .chip-close {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 15px;
+    height: 15px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.28);
+    font-size: 11px;
+    line-height: 1;
+    margin-left: 0.25rem;
+    color: #FFFFFF;
+}
+
 /* =====================================================================
    Mobile App-like Sticky Bottom Navigation Bar (Strictly Hidden on Desktop)
    ===================================================================== */

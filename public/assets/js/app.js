@@ -262,8 +262,22 @@
             if (!trigger || !dropdown) return;
 
             const openDropdown = () => {
+                // Close any other open combobox first
+                document.querySelectorAll('.custom-combobox.is-open').forEach(other => {
+                    if (other !== cb) {
+                        other.classList.remove('is-open');
+                        const otherTrigger = other.querySelector('.combobox-trigger');
+                        if (otherTrigger) otherTrigger.setAttribute('aria-expanded', 'false');
+                        const parentField = other.closest('.field');
+                        if (parentField) parentField.classList.remove('is-combobox-open');
+                    }
+                });
+
                 cb.classList.add('is-open');
                 trigger.setAttribute('aria-expanded', 'true');
+                const parentField = cb.closest('.field');
+                if (parentField) parentField.classList.add('is-combobox-open');
+
                 if (searchInput) {
                     searchInput.value = '';
                     filterOptions('');
@@ -274,6 +288,8 @@
             const closeDropdown = () => {
                 cb.classList.remove('is-open');
                 trigger.setAttribute('aria-expanded', 'false');
+                const parentField = cb.closest('.field');
+                if (parentField) parentField.classList.remove('is-combobox-open');
             };
 
             const toggleDropdown = () => {
@@ -291,7 +307,7 @@
                     }
                     const val = (opt.getAttribute('data-value') || '').toLowerCase();
                     const text = opt.textContent.toLowerCase();
-                    if (val.includes(q) || text.includes(q)) {
+                    if (!q || val.includes(q) || text.includes(q)) {
                         opt.style.display = 'flex';
                         matchCount++;
                     } else {
@@ -345,8 +361,9 @@
 
             const resetSelection = () => {
                 if (hiddenVal) hiddenVal.value = '';
+                const placeholder = cb.getAttribute('data-placeholder') || 'Select or search...';
                 if (displayText) {
-                    displayText.textContent = 'Select or search organization...';
+                    displayText.textContent = placeholder;
                     displayText.classList.add('is-placeholder');
                 }
                 if (clearBtn) clearBtn.style.display = 'none';
@@ -354,7 +371,13 @@
                     otherWrap.style.display = 'none';
                     if (otherInput) otherInput.value = '';
                 }
-                optionsList.forEach(o => o.classList.remove('is-selected'));
+                optionsList.forEach(o => {
+                    if ((o.getAttribute('data-value') || '') === '') {
+                        o.classList.add('is-selected');
+                    } else {
+                        o.classList.remove('is-selected');
+                    }
+                });
             };
 
             // Trigger click
@@ -376,6 +399,7 @@
                 clearBtn.addEventListener('click', (e) => {
                     e.stopPropagation();
                     resetSelection();
+                    trigger.focus();
                 });
             }
 
@@ -388,6 +412,14 @@
                     if (e.key === 'Escape') {
                         closeDropdown();
                         trigger.focus();
+                    } else if (e.key === 'Enter') {
+                        e.preventDefault();
+                        const firstVisible = Array.from(optionsList).find(o => o.style.display !== 'none');
+                        if (firstVisible) {
+                            const val = firstVisible.getAttribute('data-value');
+                            const label = firstVisible.getAttribute('data-label') || firstVisible.textContent.trim().replace(/^✓\s*/, '');
+                            selectOption(val, label);
+                        }
                     }
                 });
             }
@@ -396,7 +428,7 @@
             optionsList.forEach(opt => {
                 opt.addEventListener('click', () => {
                     const val = opt.getAttribute('data-value');
-                    const label = opt.textContent.trim().replace(/^✓\s*/, '');
+                    const label = opt.getAttribute('data-label') || opt.textContent.trim().replace(/^✓\s*/, '');
                     selectOption(val, label);
                 });
             });

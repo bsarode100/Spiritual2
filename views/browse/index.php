@@ -1,4 +1,18 @@
-<?php /** @var array $rows, $page, $viewerPlan; @var int $total; @var bool $advancedAllowed */ ?>
+<?php 
+/** @var array $rows, $page, $viewerPlan; @var int $total; @var bool $advancedAllowed */ 
+$selectedPath = trim((string)($_GET['path'] ?? ''));
+$selectedOrg  = trim((string)($_GET['organization'] ?? ''));
+$popularPaths = [
+    'Advaita Vedanta'     => '🪷 Advaita Vedanta',
+    'Bhakti Yoga'         => '🕉️ Bhakti Yoga',
+    'Kriya Yoga'          => '🧘 Kriya Yoga',
+    'Vipassana'           => '☸️ Vipassana',
+    'Gaudiya Vaishnavism' => '🌸 Gaudiya Vaishnavism',
+    'Kashmir Shaivism'    => '✨ Kashmir Shaivism',
+    'Kundalini Yoga'      => '⚡ Kundalini Yoga',
+    'Sikh Dharma'         => '🕊️ Sikh Dharma',
+];
+?>
 <section class="section-tight">
 <div class="container">
     <div class="flex-between mb-4" style="flex-wrap: wrap; gap: 1rem;">
@@ -13,6 +27,40 @@
             <a href="/dashboard" class="btn btn-ghost btn-sm">Dashboard</a>
             <a href="/packages" class="btn btn-primary btn-sm">Membership Plans</a>
         </div>
+    </div>
+
+    <!-- QUICK SPIRITUAL PATH CHIPS -->
+    <div class="spiritual-chips-bar" aria-label="Quick Spiritual Path Filters">
+        <span class="spiritual-chips-label">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="color: var(--c-saffron);"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+            Popular Paths:
+        </span>
+        <?php
+        $baseParams = $_GET;
+        unset($baseParams['path'], $baseParams['page']);
+        $allUrl = '/browse' . (!empty($baseParams) ? '?' . http_build_query($baseParams) : '');
+        ?>
+        <a href="<?= e($allUrl) ?>" class="spiritual-chip <?= ($selectedPath === '') ? 'is-active' : '' ?>">
+            ✨ All Paths
+        </a>
+        <?php foreach ($popularPaths as $pKey => $pLabel): 
+            $chipParams = $_GET;
+            unset($chipParams['page']);
+            $isActive = ($selectedPath === $pKey);
+            if ($isActive) {
+                unset($chipParams['path']);
+            } else {
+                $chipParams['path'] = $pKey;
+            }
+            $chipUrl = '/browse' . (!empty($chipParams) ? '?' . http_build_query($chipParams) : '');
+        ?>
+            <a href="<?= e($chipUrl) ?>" class="spiritual-chip <?= $isActive ? 'is-active' : '' ?>" title="<?= $isActive ? 'Click to remove filter' : 'Filter by ' . e($pKey) ?>">
+                <?= $pLabel ?>
+                <?php if ($isActive): ?>
+                    <span class="chip-close" aria-hidden="true">×</span>
+                <?php endif; ?>
+            </a>
+        <?php endforeach; ?>
     </div>
 
     <!-- MOBILE FILTER TOGGLE (Jeevansathi-style) -->
@@ -33,14 +81,41 @@
     <form method="get" class="filters filters-wide mobile-filters-collapsible">
         <div class="field"><label>City / Location</label><input type="text" name="city" value="<?= e($_GET['city'] ?? '') ?>" placeholder="Any city"></div>
         <div class="field"><label>Religion</label><input type="text" name="religion" value="<?= e($_GET['religion'] ?? '') ?>" placeholder="Hindu, Buddhist..."></div>
-        <div class="field">
+        <div class="field spiritual-path-filter-field">
             <label>Spiritual Path</label>
-            <input type="text" name="path" list="browse_path_list" value="<?= e($_GET['path'] ?? '') ?>" placeholder="Search or select path...">
-            <datalist id="browse_path_list">
-                <?php foreach (spiritual_paths() as $pathItem): ?>
-                    <option value="<?= e($pathItem) ?>"></option>
-                <?php endforeach; ?>
-            </datalist>
+            <div class="custom-combobox" id="browse_path_combobox" data-placeholder="All Spiritual Paths">
+                <input type="hidden" name="path" id="browse_path_val" value="<?= e($selectedPath) ?>">
+                <div class="combobox-trigger" id="browse_path_trigger" tabindex="0" role="combobox" aria-expanded="false" aria-haspopup="listbox" title="Search or select spiritual path">
+                    <span class="combobox-text <?= ($selectedPath === '') ? 'is-placeholder' : '' ?>">
+                        <?= $selectedPath !== '' ? '🪷 ' . e($selectedPath) : 'All Spiritual Paths' ?>
+                    </span>
+                    <div class="combobox-icons">
+                        <button type="button" class="combobox-clear" id="browse_path_clear" title="Clear path selection" style="<?= ($selectedPath !== '') ? 'display:inline-flex;' : 'display:none;' ?>">×</button>
+                        <svg class="combobox-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M6 9l6 6 6-6"/></svg>
+                    </div>
+                </div>
+
+                <div class="combobox-dropdown" id="browse_path_dropdown" role="listbox">
+                    <div class="combobox-search-box">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+                        <input type="text" class="combobox-search-input" id="browse_path_search" placeholder="Search 37+ traditions..." autocomplete="off">
+                    </div>
+                    <div class="combobox-options-list" id="browse_path_options">
+                        <div class="combobox-option <?= ($selectedPath === '') ? 'is-selected' : '' ?>" data-value="" data-label="All Spiritual Paths" role="option">
+                            <span class="combobox-opt-content"><span class="combobox-opt-icon">✨</span> <em>All Spiritual Paths (Any)</em></span>
+                        </div>
+                        <div class="combobox-divider"></div>
+                        <?php foreach (spiritual_paths() as $p): ?>
+                            <div class="combobox-option <?= ($selectedPath === $p) ? 'is-selected' : '' ?>" data-value="<?= e($p) ?>" data-label="🪷 <?= e($p) ?>" role="option">
+                                <span class="combobox-opt-content"><span class="combobox-opt-icon">🪷</span> <?= e($p) ?></span>
+                            </div>
+                        <?php endforeach; ?>
+                        <div class="combobox-empty" id="browse_path_empty" style="display: none;">
+                            <div>No matching spiritual paths found</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
         <div class="field"><label>Dietary Practice</label>
             <select name="diet">
@@ -58,14 +133,41 @@
             <div class="field"><label>Profession</label><input type="text" name="profession" value="<?= e($_GET['profession'] ?? '') ?>"></div>
             <div class="field"><label>Community</label><input type="text" name="community" value="<?= e($_GET['community'] ?? '') ?>"></div>
             <div class="field"><label>Guru / Lineage</label><input type="text" name="guru" value="<?= e($_GET['guru'] ?? '') ?>"></div>
-            <div class="field">
+            <div class="field spiritual-org-filter-field">
                 <label>Spiritual Org</label>
-                <input type="text" name="organization" list="browse_org_list" value="<?= e($_GET['organization'] ?? '') ?>" placeholder="Type to filter organizations...">
-                <datalist id="browse_org_list">
-                    <?php foreach (spiritual_organizations() as $orgItem): ?>
-                        <option value="<?= e($orgItem) ?>"></option>
-                    <?php endforeach; ?>
-                </datalist>
+                <div class="custom-combobox" id="browse_org_combobox" data-placeholder="All Organizations">
+                    <input type="hidden" name="organization" id="browse_org_val" value="<?= e($selectedOrg) ?>">
+                    <div class="combobox-trigger" id="browse_org_trigger" tabindex="0" role="combobox" aria-expanded="false" aria-haspopup="listbox" title="Search or select spiritual organization">
+                        <span class="combobox-text <?= ($selectedOrg === '') ? 'is-placeholder' : '' ?>">
+                            <?= $selectedOrg !== '' ? '🏛️ ' . e($selectedOrg) : 'All Organizations' ?>
+                        </span>
+                        <div class="combobox-icons">
+                            <button type="button" class="combobox-clear" id="browse_org_clear" title="Clear organization selection" style="<?= ($selectedOrg !== '') ? 'display:inline-flex;' : 'display:none;' ?>">×</button>
+                            <svg class="combobox-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M6 9l6 6 6-6"/></svg>
+                        </div>
+                    </div>
+
+                    <div class="combobox-dropdown" id="browse_org_dropdown" role="listbox">
+                        <div class="combobox-search-box">
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+                            <input type="text" class="combobox-search-input" id="browse_org_search" placeholder="Search 40+ organizations..." autocomplete="off">
+                        </div>
+                        <div class="combobox-options-list" id="browse_org_options">
+                            <div class="combobox-option <?= ($selectedOrg === '') ? 'is-selected' : '' ?>" data-value="" data-label="All Organizations" role="option">
+                                <span class="combobox-opt-content"><span class="combobox-opt-icon">✨</span> <em>All Organizations (Any)</em></span>
+                            </div>
+                            <div class="combobox-divider"></div>
+                            <?php foreach (spiritual_organizations() as $orgItem): ?>
+                                <div class="combobox-option <?= ($selectedOrg === $orgItem) ? 'is-selected' : '' ?>" data-value="<?= e($orgItem) ?>" data-label="🏛️ <?= e($orgItem) ?>" role="option">
+                                    <span class="combobox-opt-content"><span class="combobox-opt-icon">🏛️</span> <?= e($orgItem) ?></span>
+                                </div>
+                            <?php endforeach; ?>
+                            <div class="combobox-empty" id="browse_org_empty" style="display: none;">
+                                <div>No matching organizations found</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
             <div class="field"><label>Temple Visits</label>
                 <select name="temple_frequency">
