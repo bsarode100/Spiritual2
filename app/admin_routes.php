@@ -113,7 +113,11 @@ $r->post('/admin/test-mail', $admin(function () {
 
 // ---------- BLOG ----------
 $r->get('/admin/blog', $admin(function () {
-    $rows = DB::all('SELECT * FROM blog_posts ORDER BY id DESC');
+    try {
+        $rows = DB::all('SELECT * FROM blog_posts ORDER BY id DESC');
+    } catch (Throwable $e) {
+        $rows = [];
+    }
     view('admin/blog_index', ['rows' => $rows], 'admin');
 }));
 
@@ -122,53 +126,118 @@ $r->get('/admin/blog/new', $admin(function () {
 }));
 
 $r->post('/admin/blog', $admin(function () {
-    $data = admin_blog_data();
-    if (!$data['slug']) $data['slug'] = slugify($data['title']);
-    $data['published_at'] = $data['published'] ? date('Y-m-d H:i:s') : null;
-    DB::insert('blog_posts', $data);
-    flash('success','Post published.');
-    redirect('/admin/blog');
+    try {
+        $title = trim($_POST['title'] ?? '');
+        if ($title === '') {
+            flash('error', 'Post title is required.');
+            redirect('/admin/blog/new');
+            return;
+        }
+
+        $data = admin_blog_data();
+        $data['slug'] = generate_unique_blog_slug($data['title'], $_POST['slug'] ?? null);
+        $data['published_at'] = $data['published'] ? date('Y-m-d H:i:s') : null;
+
+        DB::insert('blog_posts', $data);
+        flash('success', 'Post published successfully.');
+        redirect('/admin/blog');
+    } catch (Throwable $e) {
+        error_log('Error creating blog post: ' . $e->getMessage());
+        flash('error', 'Failed to publish post: ' . $e->getMessage());
+        redirect('/admin/blog/new');
+    }
 }));
 
 $r->get('/admin/blog/{id}/edit', $admin(function ($a) {
-    $post = DB::one('SELECT * FROM blog_posts WHERE id = ?', [$a['id']]);
-    if (!$post) { http_response_code(404); view('errors/404'); return; }
-    view('admin/blog_form', ['post' => $post], 'admin');
+    try {
+        $post = DB::one('SELECT * FROM blog_posts WHERE id = ?', [$a['id']]);
+        if (!$post) { http_response_code(404); view('errors/404'); return; }
+        view('admin/blog_form', ['post' => $post], 'admin');
+    } catch (Throwable $e) {
+        flash('error', 'Error loading post: ' . $e->getMessage());
+        redirect('/admin/blog');
+    }
 }));
 
 $r->post('/admin/blog/{id}', $admin(function ($a) {
-    $data = admin_blog_data();
-    if (!$data['slug']) $data['slug'] = slugify($data['title']);
-    DB::update('blog_posts', $data, ['id' => $a['id']]);
-    flash('success','Post updated.');
-    redirect('/admin/blog');
+    try {
+        $post = DB::one('SELECT * FROM blog_posts WHERE id = ?', [$a['id']]);
+        if (!$post) { http_response_code(404); view('errors/404'); return; }
+
+        $title = trim($_POST['title'] ?? '');
+        if ($title === '') {
+            flash('error', 'Post title is required.');
+            redirect('/admin/blog/' . (int)$a['id'] . '/edit');
+            return;
+        }
+
+        $data = admin_blog_data();
+        $data['slug'] = generate_unique_blog_slug($data['title'], $_POST['slug'] ?? null, (int)$a['id']);
+        if ($data['published'] && empty($post['published_at'])) {
+            $data['published_at'] = date('Y-m-d H:i:s');
+        }
+
+        DB::update('blog_posts', $data, ['id' => $a['id']]);
+        flash('success', 'Post updated successfully.');
+        redirect('/admin/blog');
+    } catch (Throwable $e) {
+        error_log('Error updating blog post: ' . $e->getMessage());
+        flash('error', 'Failed to update post: ' . $e->getMessage());
+        redirect('/admin/blog/' . (int)$a['id'] . '/edit');
+    }
 }));
 
 $r->post('/admin/blog/{id}/delete', $admin(function ($a) {
-    DB::q('DELETE FROM blog_posts WHERE id = ?', [$a['id']]);
-    flash('success','Post deleted.');
+    try {
+        DB::q('DELETE FROM blog_posts WHERE id = ?', [$a['id']]);
+        flash('success', 'Post deleted.');
+    } catch (Throwable $e) {
+        flash('error', 'Error deleting post: ' . $e->getMessage());
+    }
     redirect('/admin/blog');
 }));
 
 function admin_blog_data(): array {
-    $cover = $_POST['cover_image'] ?? null;
+    $cover = trim($_POST['cover_image'] ?? '');
+    $cover = $cover !== '' ? $cover : null;
+
     if (!empty($_FILES['cover']['name']) && $_FILES['cover']['error'] === UPLOAD_ERR_OK) {
-        $dir = $GLOBALS['CFG']['uploads']['blog_dir'];
-        if (!is_dir($dir)) mkdir($dir, 0775, true);
+        $allowedExts = ['jpg', 'jpeg', 'png', 'webp', 'gif'];
         $ext = strtolower(pathinfo($_FILES['cover']['name'], PATHINFO_EXTENSION));
-        $name = bin2hex(random_bytes(6)) . '.' . $ext;
-        if (move_uploaded_file($_FILES['cover']['tmp_name'], $dir . '/' . $name)) {
-            $cover = 'blog/' . $name;
+        if (in_array($ext, $allowedExts, true)) {
+            $dir = $GLOBALS['CFG']['uploads']['blog_dir'] ?? (__DIR__ . '/../public/uploads/blog');
+            if (!is_dir($dir)) {
+                @mkdir($dir, 0775, true);
+            }
+            $name = bin2hex(random_bytes(8)) . '.' . $ext;
+            if (@move_uploaded_file($_FILES['cover']['tmp_name'], $dir . '/' . $name)) {
+                $cover = 'blog/' . $name;
+            }
         }
     }
+
+    $title = trim($_POST['title'] ?? '');
+    if (mb_strlen($title) > 200) {
+        $title = mb_substr($title, 0, 200);
+    }
+
+    $category = trim($_POST['category'] ?? 'General');
+    if ($category === '') $category = 'General';
+    if (mb_strlen($category) > 80) $category = mb_substr($category, 0, 80);
+
+    $author = trim($_POST['author_name'] ?? 'Editorial Team');
+    if ($author === '') $author = 'Editorial Team';
+    if (mb_strlen($author) > 120) $author = mb_substr($author, 0, 120);
+
+    $excerpt = trim($_POST['excerpt'] ?? '');
+
     return [
-        'title'       => trim($_POST['title'] ?? ''),
-        'slug'        => slugify($_POST['slug'] ?? $_POST['title'] ?? ''),
-        'excerpt'     => $_POST['excerpt'] ?? '',
+        'title'       => $title,
+        'excerpt'     => $excerpt !== '' ? $excerpt : null,
         'body'        => $_POST['body'] ?? '',
         'cover_image' => $cover,
-        'category'    => $_POST['category'] ?? 'General',
-        'author_name' => $_POST['author_name'] ?? 'Editorial Team',
+        'category'    => $category,
+        'author_name' => $author,
         'published'   => isset($_POST['published']) ? 1 : 0,
     ];
 }

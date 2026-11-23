@@ -21,10 +21,10 @@
                         <?php endif; ?>
                     </div>
                     <div class="blog-body">
-                        <span class="blog-cat"><?= e($p['category']) ?></span>
+                        <span class="blog-cat"><?= e($p['category'] ?? 'General') ?></span>
                         <h3><a href="/blog/<?= e($p['slug']) ?>"><?= e($p['title']) ?></a></h3>
-                        <p class="blog-excerpt"><?= e($p['excerpt']) ?></p>
-                        <div class="blog-meta"><span><?= e($p['author_name']) ?></span><span>· <?= date('M j, Y', strtotime($p['published_at'] ?? $p['created_at'])) ?></span></div>
+                        <p class="blog-excerpt"><?= e($p['excerpt'] ?? '') ?></p>
+                        <div class="blog-meta"><span><?= e($p['author_name'] ?? 'Editorial Team') ?></span><span>· <?= date('M j, Y', !empty($p['published_at']) ? strtotime($p['published_at']) : (!empty($p['created_at']) ? strtotime($p['created_at']) : time())) ?></span></div>
                     </div>
                 </article>
             <?php endforeach; ?>

@@ -2,9 +2,9 @@
 <article>
 <section class="section-tight" style="padding: 5rem 0 2rem; background: linear-gradient(180deg, var(--c-cream-2), transparent);">
     <div class="container-sm text-center">
-        <span class="eyebrow"><?= e($post['category']) ?></span>
-        <h1 style="margin: .3em 0;"><?= e($post['title']) ?></h1>
-        <p style="color: var(--c-muted);"><?= e($post['author_name']) ?> · <?= date('F j, Y', strtotime($post['published_at'] ?? $post['created_at'])) ?></p>
+        <span class="eyebrow"><?= e($post['category'] ?? 'General') ?></span>
+        <h1 style="margin: .3em 0;"><?= e($post['title'] ?? '') ?></h1>
+        <p style="color: var(--c-muted);"><?= e($post['author_name'] ?? 'Editorial Team') ?> · <?= date('F j, Y', !empty($post['published_at']) ? strtotime($post['published_at']) : (!empty($post['created_at']) ? strtotime($post['created_at']) : time())) ?></p>
     </div>
 </section>
 <?php if ($post['cover_image']): ?>

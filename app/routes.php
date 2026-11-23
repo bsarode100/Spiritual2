@@ -45,7 +45,11 @@ $r->get('/', function () {
                       ORDER BY " . profile_priority_order_sql('u.created_at DESC') . " LIMIT 6");
     $stories  = DB::all("SELECT * FROM happy_stories ORDER BY is_featured DESC, id DESC LIMIT 3");
     $packages = DB::all("SELECT * FROM packages WHERE is_active = 1 ORDER BY display_order, id");
-    $posts    = DB::all("SELECT * FROM blog_posts WHERE published = 1 ORDER BY published_at DESC LIMIT 3");
+    try {
+        $posts = DB::all("SELECT * FROM blog_posts WHERE published = 1 ORDER BY published_at DESC LIMIT 3");
+    } catch (Throwable $e) {
+        $posts = [];
+    }
     view('home', compact('featured','stories','packages','posts'));
 });
 
@@ -116,15 +120,23 @@ $r->post('/contact', function () {
 
 // ------------------- BLOG -------------------
 $r->get('/blog', function () {
-    $posts = DB::all('SELECT * FROM blog_posts WHERE published = 1 ORDER BY published_at DESC');
+    try {
+        $posts = DB::all('SELECT * FROM blog_posts WHERE published = 1 ORDER BY published_at DESC');
+    } catch (Throwable $e) {
+        $posts = [];
+    }
     view('blog/index', ['posts' => $posts]);
 });
 
 $r->get('/blog/{slug}', function ($a) {
-    $post = DB::one('SELECT * FROM blog_posts WHERE slug = ? AND published = 1', [$a['slug']]);
-    if (!$post) { http_response_code(404); view('errors/404'); return; }
-    $more = DB::all('SELECT * FROM blog_posts WHERE published = 1 AND id != ? ORDER BY published_at DESC LIMIT 3', [$post['id']]);
-    view('blog/show', ['post' => $post, 'more' => $more]);
+    try {
+        $post = DB::one('SELECT * FROM blog_posts WHERE slug = ? AND published = 1', [$a['slug']]);
+        if (!$post) { http_response_code(404); view('errors/404'); return; }
+        $more = DB::all('SELECT * FROM blog_posts WHERE published = 1 AND id != ? ORDER BY published_at DESC LIMIT 3', [$post['id']]);
+        view('blog/show', ['post' => $post, 'more' => $more]);
+    } catch (Throwable $e) {
+        http_response_code(404); view('errors/404'); return;
+    }
 });
 
 // ------------------- PACKAGES -------------------

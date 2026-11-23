@@ -33,7 +33,7 @@ function asset(string $path): string {
     return '/assets/' . $clean . '?v=' . $v;
 }
 
-function upload_url(string $path): string {
+function upload_url(?string $path): string {
     if (!$path) return '';
     if (str_starts_with($path, 'http://') || str_starts_with($path, 'https://')) return $path;
     $clean = ltrim($path, '/');
@@ -1040,6 +1040,60 @@ function slugify(string $s): string {
     $s = strtolower(trim($s));
     $s = preg_replace('~[^a-z0-9]+~', '-', $s) ?? $s;
     return trim($s, '-');
+}
+
+function generate_unique_blog_slug(string $title, ?string $customSlug = null, ?int $ignoreId = null): string {
+    $candidate = trim($customSlug ?? '');
+    if ($candidate === '') {
+        $candidate = trim($title);
+    }
+
+    // Try transliterating unicode characters (e.g. Hindi, Sanskrit, accents) to Latin ASCII if available
+    if (function_exists('transliterator_transliterate')) {
+        $trans = transliterator_transliterate('Any-Latin; Latin-ASCII; Lower()', $candidate);
+        if ($trans !== false && trim($trans) !== '') {
+            $candidate = $trans;
+        }
+    } elseif (function_exists('iconv')) {
+        $iconv = @iconv('UTF-8', 'ASCII//TRANSLIT//IGNORE', $candidate);
+        if ($iconv !== false && trim($iconv) !== '') {
+            $candidate = $iconv;
+        }
+    }
+
+    $slug = slugify($candidate);
+
+    // If still empty (e.g. non-Latin characters where transliteration is unavailable), use clean random fallback
+    if ($slug === '') {
+        $slug = 'post-' . bin2hex(random_bytes(4));
+    }
+
+    // Cap length to 180 chars so suffix easily fits within VARCHAR(220)
+    if (strlen($slug) > 180) {
+        $slug = substr($slug, 0, 180);
+        $slug = rtrim($slug, '-');
+    }
+
+    // Ensure database uniqueness
+    $baseSlug = $slug;
+    $suffix = 1;
+    while (true) {
+        try {
+            if ($ignoreId) {
+                $count = (int) DB::val('SELECT COUNT(*) FROM blog_posts WHERE slug = ? AND id != ?', [$slug, $ignoreId]);
+            } else {
+                $count = (int) DB::val('SELECT COUNT(*) FROM blog_posts WHERE slug = ?', [$slug]);
+            }
+            if ($count === 0) {
+                return $slug;
+            }
+        } catch (Throwable $e) {
+            // If table doesn't exist yet or query fails, return slug directly
+            return $slug;
+        }
+        $suffix++;
+        $slug = $baseSlug . '-' . $suffix;
+    }
 }
 
 function paginate(int $total, int $perPage, int $page): array {

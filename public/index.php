@@ -59,6 +59,37 @@ try {
 
 // Lightweight idempotent migrations for existing installs (additive only).
 try {
+    DB::pdo()->exec("CREATE TABLE IF NOT EXISTS `blog_posts` (
+        `id`           BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+        `title`        VARCHAR(200) NOT NULL,
+        `slug`         VARCHAR(220) NOT NULL,
+        `excerpt`      TEXT DEFAULT NULL,
+        `body`         LONGTEXT,
+        `cover_image`  VARCHAR(255) DEFAULT NULL,
+        `category`     VARCHAR(80)  DEFAULT 'General',
+        `author_name`  VARCHAR(120) DEFAULT NULL,
+        `published`    TINYINT(1) NOT NULL DEFAULT 1,
+        `published_at` DATETIME DEFAULT NULL,
+        `created_at`   DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        `updated_at`   DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        PRIMARY KEY (`id`),
+        UNIQUE KEY `blog_slug_unique` (`slug`)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+
+    try {
+        DB::pdo()->exec("ALTER TABLE `blog_posts` MODIFY `excerpt` TEXT DEFAULT NULL");
+    } catch (Throwable $e) {}
+
+    try {
+        $hasPosts = (int) DB::val('SELECT COUNT(*) FROM `blog_posts`');
+        if ($hasPosts === 0) {
+            DB::pdo()->exec("INSERT IGNORE INTO `blog_posts` (`title`,`slug`,`excerpt`,`body`,`category`,`author_name`,`published`,`published_at`) VALUES
+                ('What Bhagavad Gita teaches us about choosing a life partner','gita-life-partner','Krishna\'s counsel to Arjuna on action, attachment, and dharma holds quiet wisdom for the most important decision of our householder life.','<p>In the Bhagavad Gita, Krishna does not speak of marriage directly — and yet every shloka about dharma, swabhava, and karma yoga applies to the choice of a life-partner more than perhaps any other decision we make...</p><p>Choose someone whose dharma harmonises with yours, not merely whose stars do. Choose stillness over sparkle, sangha over status, and you will have chosen the Gita\'s way.</p>','Wisdom','Acharya Vidyananda',1,NOW()),
+                ('Five questions to ask before your first sankalpa together','five-questions-sankalpa','Before the wedding mantras, before the saptapadi — there are five questions every spiritual couple should sit with.','<p>1. <strong>Whose feet do you bow to?</strong> A shared lineage of gurus or paths is a quiet but tremendous gift...</p><p>2. <strong>What does a Sunday morning look like in our home?</strong> Sadhana style reveals more than salary slips...</p>','Guidance','Mata Saraswati Devi',1,NOW()),
+                ('Vegetarian, Sattvic, or Vegan — does it really matter in a marriage?','sattvic-marriage-diet','The food on our plate becomes the thoughts in our mind. When two souls share a kitchen, that becomes very real, very fast.','<p>The yogi knows: anna becomes manas. Food becomes mind. So when two souls promise to share a hearth for a lifetime...</p>','Lifestyle','Yogi Hridayananda',1,NOW())");
+        }
+    } catch (Throwable $e) {}
+
     DB::pdo()->exec("CREATE TABLE IF NOT EXISTS `password_resets` (
         `id`           BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
         `user_id`      BIGINT UNSIGNED NOT NULL,
